@@ -44,8 +44,7 @@ export async function doubleClick(position?: MousePosition): Promise<WindowsCont
     if (position) {
       await libnut.moveMouse(position.x, position.y);
     }
-    await libnut.mouseClick("0"); // First click
-    await libnut.mouseClick("0"); // Second click
+    await libnut.mouseClick("0", true); // Use the built-in double click parameter
     return {
       success: true,
       message: position ? 
