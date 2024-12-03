@@ -34,6 +34,9 @@ export async function pressKey(key: string): Promise<WindowsControlResponse> {
 
 export async function pressKeyCombination(combination: KeyCombination): Promise<WindowsControlResponse> {
   try {
+    // Store original keys for the message
+    const keysForMessage = [...combination.keys];
+
     // Press down all keys in sequence
     for (const key of combination.keys) {
       await libnut.keyToggle(key, 'down');
@@ -43,13 +46,13 @@ export async function pressKeyCombination(combination: KeyCombination): Promise<
     await new Promise(resolve => setTimeout(resolve, 50));
 
     // Release all keys in reverse order
-    for (const key of combination.keys.reverse()) {
+    for (const key of [...combination.keys].reverse()) {
       await libnut.keyToggle(key, 'up');
     }
 
     return {
       success: true,
-      message: `Pressed key combination: ${combination.keys.join('+')}`
+      message: `Pressed key combination: ${keysForMessage.join('+')}`
     };
   } catch (error) {
     // Ensure all keys are released in case of error
