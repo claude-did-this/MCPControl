@@ -119,6 +119,25 @@ Generate coverage report:
 npm run test:coverage
 ```
 
+## MCP Server Configuration
+
+To use this project with Claude, add the following configuration to your MCP servers:
+
+```json
+{
+  "mcpServers": {
+    "windows-control": {
+      "command": "C:\\Program Files\\nodejs\\node.exe",
+      "args": [
+        "[INSTALL LOCATION]\\nutjs-windows-control\\build\\index.js"
+      ]
+    }
+  }
+}
+```
+
+After configuring your MCP server, restart Claude to see the windows-control service in the menu.
+
 ## Project Structure
 
 - `/src`
