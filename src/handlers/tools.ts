@@ -4,7 +4,7 @@ import {
   CallToolRequestSchema,
   TextContent
 } from "@modelcontextprotocol/sdk/types.js";
-import { MousePosition, KeyboardInput, KeyCombination, ClipboardInput } from "../types/common.js";
+import { MousePosition, KeyboardInput, KeyCombination, ClipboardInput, KeyHoldOperation } from "../types/common.js";
 import { 
   moveMouse, 
   clickMouse, 
@@ -17,7 +17,8 @@ import {
 import { 
   typeText, 
   pressKey,
-  pressKeyCombination
+  pressKeyCombination,
+  holdKey
 } from "../tools/keyboard.js";
 import { 
   getScreenSize, 
@@ -141,6 +142,29 @@ export function setupTools(server: Server): void {
             }
           },
           required: ["key"]
+        }
+      },
+      {
+        name: "hold_key",
+        description: "Hold or release a keyboard key with optional duration",
+        inputSchema: {
+          type: "object",
+          properties: {
+            key: { 
+              type: "string",
+              description: "Key to hold/release (e.g., 'shift', 'control')" 
+            },
+            duration: { 
+              type: "number",
+              description: "Duration to hold the key in milliseconds (only for 'down' state)"
+            },
+            state: {
+              type: "string",
+              enum: ["down", "up"],
+              description: "Whether to press down or release the key"
+            }
+          },
+          required: ["key", "state"]
         }
       },
       {
@@ -378,6 +402,13 @@ export function setupTools(server: Server): void {
           response = await pressKey(args.key);
           break;
 
+        case "hold_key":
+          if (!isKeyHoldOperation(args)) {
+            throw new Error("Invalid key hold arguments");
+          }
+          response = await holdKey(args);
+          break;
+
         case "press_key_combination":
           if (!isKeyCombination(args)) {
             throw new Error("Invalid key combination arguments");
@@ -519,6 +550,16 @@ function isKeyCombination(args: unknown): args is KeyCombination {
   const combo = args as Record<string, unknown>;
   if (!Array.isArray(combo.keys)) return false;
   return combo.keys.every(key => typeof key === 'string');
+}
+
+function isKeyHoldOperation(args: unknown): args is KeyHoldOperation {
+  if (typeof args !== 'object' || args === null) return false;
+  const op = args as Record<string, unknown>;
+  return (
+    typeof op.key === 'string' &&
+    (op.state === 'down' || op.state === 'up') &&
+    (op.duration === undefined || typeof op.duration === 'number')
+  );
 }
 
 function isClipboardInput(args: unknown): args is ClipboardInput {

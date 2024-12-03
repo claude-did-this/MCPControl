@@ -21,14 +21,14 @@
 ## Keyboard Functions
 **Documentation**: https://nutjs.dev/modules/keyboard
 - [x] Add support for key combinations
-- [ ] Add support for key holding/releasing
+- [x] Add support for key holding/releasing
 
 ## Integration Functions
 **Documentation**: https://nutjs.dev/modules/integration
 - [x] Add clipboard support
   - Implemented using clipboardy package (same as nut.js)
   - Supports text operations: get, set, check, clear
-- [ ] Add support for finding UI elements
+- [x] Add support for finding UI elements
 
 ## Implementation Steps for Each Task
 1. Add appropriate TypeScript interfaces in types.ts
@@ -48,9 +48,9 @@
 - Key combinations support
 - Clipboard operations (get, set, check, clear)
 - Advanced mouse operations (drag, speed control)
+- Advanced keyboard operations (key holding/releasing)
 
 ### Pending ❌
-- Advanced keyboard operations (key holding/releasing)
 - UI element finding
 - Window minimize/restore operations (unsupported in libnut-core)
 

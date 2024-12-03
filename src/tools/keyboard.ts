@@ -1,5 +1,5 @@
 import libnut from '@nut-tree/libnut';
-import { KeyboardInput, KeyCombination } from '../types/common.js';
+import { KeyboardInput, KeyCombination, KeyHoldOperation } from '../types/common.js';
 import { WindowsControlResponse } from '../types/responses.js';
 
 export async function typeText(input: KeyboardInput): Promise<WindowsControlResponse> {
@@ -64,6 +64,42 @@ export async function pressKeyCombination(combination: KeyCombination): Promise<
     return {
       success: false,
       message: `Failed to press key combination: ${error instanceof Error ? error.message : String(error)}`
+    };
+  }
+}
+
+export async function holdKey(operation: KeyHoldOperation): Promise<WindowsControlResponse> {
+  try {
+    // Toggle the key state (down/up)
+    await libnut.keyToggle(operation.key, operation.state);
+
+    // If it's a key press (down), wait for the specified duration then release
+    if (operation.state === 'down') {
+      await new Promise(resolve => setTimeout(resolve, operation.duration));
+      await libnut.keyToggle(operation.key, 'up');
+    }
+
+    return {
+      success: true,
+      message: `Key ${operation.key} ${operation.state === 'down' ? 'held' : 'released'} successfully${
+        operation.state === 'down' ? ` for ${operation.duration}ms` : ''
+      }`
+    };
+  } catch (error) {
+    // Ensure key is released in case of error during hold
+    if (operation.state === 'down') {
+      try {
+        await libnut.keyToggle(operation.key, 'up');
+      } catch {
+        // Ignore errors during cleanup
+      }
+    }
+
+    return {
+      success: false,
+      message: `Failed to ${operation.state} key ${operation.key}: ${
+        error instanceof Error ? error.message : String(error)
+      }`
     };
   }
 }
