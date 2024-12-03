@@ -2,7 +2,7 @@
 
 A Windows control server built using [nut.js](https://nutjs.dev/) and Model Context Protocol (MCP), providing programmatic control over Windows system operations including mouse, keyboard, window management, and screen capture functionality.
 
-> **Note**: This project is specifically designed for and tested on Windows. Linux and macOS support is not currently implemented.
+> **Note**: While this project may work on Linux and macOS, it has only been tested on Windows. Community feedback on cross-platform compatibility is welcome.
 
 ## ⚠️ IMPORTANT DISCLAIMER
 
@@ -137,8 +137,7 @@ npm run test:coverage
 
 ## Testing
 
-The project includes comprehensive test coverage:
-- Unit tests for all core modules
+The project currently includes unit tests for core functionality. The following test areas are planned for future development:
 - Integration tests for cross-module functionality
 - Performance testing
 - Error handling validation
@@ -148,6 +147,7 @@ The project includes comprehensive test coverage:
 - Window minimize/restore operations are currently unsupported in libnut-core
 - Advanced screen information (multiple monitors, DPI settings) is limited to main display
 - Some operations may require elevated permissions depending on the target application
+- Cross-platform support (Linux/macOS) is untested
 
 ## Contributing
 
