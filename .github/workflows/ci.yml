@@ -21,10 +21,17 @@ jobs:
         node-version: '18'
         cache: 'npm'
     
-    - name: Clone libnut-core
+    - name: Install cmake-js globally
+      run: npm install -g cmake-js
+    
+    - name: Clone and build libnut-core
       run: |
         cd ..
-        git clone https://github.com/nut-tree/libnut-core.git
+        git clone https://github.com/nut-tree/libnut.git libnut-core
+        cd libnut-core
+        npm install
+        cmake-js rebuild
+        cd ../nutjs-windows-control
     
     - name: Install dependencies
       run: npm ci
