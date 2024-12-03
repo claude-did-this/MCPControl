@@ -92,3 +92,57 @@ export async function scrollMouse(amount: number): Promise<WindowsControlRespons
     };
   }
 }
+
+export async function dragMouse(from: MousePosition, to: MousePosition, button: keyof ButtonMap = 'left'): Promise<WindowsControlResponse> {
+  try {
+    const buttonCode = buttonMap[button];
+    
+    // Move to start position
+    await libnut.moveMouse(from.x, from.y);
+    
+    // Press mouse button
+    await libnut.mouseToggle("down", String(buttonCode));
+    
+    // Move to end position
+    await libnut.moveMouse(to.x, to.y);
+    
+    // Release mouse button
+    await libnut.mouseToggle("up", String(buttonCode));
+    
+    return {
+      success: true,
+      message: `Dragged from (${from.x}, ${from.y}) to (${to.x}, ${to.y}) with ${button} button`
+    };
+  } catch (error) {
+    // Ensure mouse button is released in case of error
+    try {
+      await libnut.mouseToggle("up", String(buttonMap[button]));
+    } catch {
+      // Ignore cleanup errors
+    }
+    
+    return {
+      success: false,
+      message: `Failed to drag mouse: ${error instanceof Error ? error.message : String(error)}`
+    };
+  }
+}
+
+export async function setMouseSpeed(speed: number): Promise<WindowsControlResponse> {
+  try {
+    // Speed is in milliseconds. Lower values = faster movement
+    // Clamp between 1 and 100 for safety
+    const clampedSpeed = Math.max(1, Math.min(100, speed));
+    await libnut.setMouseDelay(clampedSpeed);
+    
+    return {
+      success: true,
+      message: `Mouse speed set to ${clampedSpeed}ms delay`
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `Failed to set mouse speed: ${error instanceof Error ? error.message : String(error)}`
+    };
+  }
+}

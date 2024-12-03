@@ -10,7 +10,9 @@ import {
   clickMouse, 
   doubleClick, 
   getCursorPosition,
-  scrollMouse
+  scrollMouse,
+  dragMouse,
+  setMouseSpeed
 } from "../tools/mouse.js";
 import { 
   typeText, 
@@ -64,6 +66,42 @@ export function setupTools(server: Server): void {
               description: "Mouse button to click" 
             }
           }
+        }
+      },
+      {
+        name: "drag_mouse",
+        description: "Drag the mouse from one position to another",
+        inputSchema: {
+          type: "object",
+          properties: {
+            fromX: { type: "number", description: "Starting X coordinate" },
+            fromY: { type: "number", description: "Starting Y coordinate" },
+            toX: { type: "number", description: "Ending X coordinate" },
+            toY: { type: "number", description: "Ending Y coordinate" },
+            button: { 
+              type: "string", 
+              enum: ["left", "right", "middle"],
+              default: "left",
+              description: "Mouse button to use for dragging" 
+            }
+          },
+          required: ["fromX", "fromY", "toX", "toY"]
+        }
+      },
+      {
+        name: "set_mouse_speed",
+        description: "Set the mouse movement speed (delay in milliseconds)",
+        inputSchema: {
+          type: "object",
+          properties: {
+            speed: { 
+              type: "number", 
+              description: "Mouse movement delay in milliseconds (1-100, lower = faster)",
+              minimum: 1,
+              maximum: 100
+            }
+          },
+          required: ["speed"]
         }
       },
       {
@@ -296,6 +334,27 @@ export function setupTools(server: Server): void {
           response = await clickMouse(
             typeof args?.button === 'string' ? args.button : 'left'
           );
+          break;
+
+        case "drag_mouse":
+          if (typeof args?.fromX !== 'number' || 
+              typeof args?.fromY !== 'number' ||
+              typeof args?.toX !== 'number' ||
+              typeof args?.toY !== 'number') {
+            throw new Error("Invalid drag mouse arguments");
+          }
+          response = await dragMouse(
+            { x: args.fromX, y: args.fromY },
+            { x: args.toX, y: args.toY },
+            typeof args?.button === 'string' ? args.button : 'left'
+          );
+          break;
+
+        case "set_mouse_speed":
+          if (typeof args?.speed !== 'number') {
+            throw new Error("Invalid mouse speed argument");
+          }
+          response = await setMouseSpeed(args.speed);
           break;
 
         case "scroll_mouse":

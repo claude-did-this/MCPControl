@@ -15,8 +15,8 @@
 ## Mouse Functions
 **Documentation**: https://nutjs.dev/modules/mouse
 - [x] Mouse scroll (up/down)
-- [ ] Mouse drag operations
-- [ ] Set mouse movement speed
+- [x] Mouse drag operations
+- [x] Set mouse movement speed
 
 ## Keyboard Functions
 **Documentation**: https://nutjs.dev/modules/keyboard
@@ -47,9 +47,9 @@
 - Window management functions (list, focus, resize, reposition)
 - Key combinations support
 - Clipboard operations (get, set, check, clear)
+- Advanced mouse operations (drag, speed control)
 
 ### Pending ❌
-- Advanced mouse operations
 - Advanced keyboard operations (key holding/releasing)
 - UI element finding
 - Window minimize/restore operations (unsupported in libnut-core)
