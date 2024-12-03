@@ -19,7 +19,13 @@ import {
 import { 
   getScreenSize, 
   getScreenshot, 
-  getActiveWindow 
+  getActiveWindow,
+  listAllWindows,
+  focusWindow,
+  resizeWindow,
+  repositionWindow,
+  minimizeWindow,
+  restoreWindow
 } from "../tools/screen.js";
 
 export function setupTools(server: Server): void {
@@ -144,6 +150,73 @@ export function setupTools(server: Server): void {
           type: "object",
           properties: {}
         }
+      },
+      {
+        name: "list_windows",
+        description: "Get a list of all visible windows with their information",
+        inputSchema: {
+          type: "object",
+          properties: {}
+        }
+      },
+      {
+        name: "focus_window",
+        description: "Focus a specific window by its title",
+        inputSchema: {
+          type: "object",
+          properties: {
+            title: { type: "string", description: "Title of the window to focus" }
+          },
+          required: ["title"]
+        }
+      },
+      {
+        name: "resize_window",
+        description: "Resize a specific window by its title",
+        inputSchema: {
+          type: "object",
+          properties: {
+            title: { type: "string", description: "Title of the window to resize" },
+            width: { type: "number", description: "New width of the window" },
+            height: { type: "number", description: "New height of the window" }
+          },
+          required: ["title", "width", "height"]
+        }
+      },
+      {
+        name: "reposition_window",
+        description: "Move a specific window to new coordinates",
+        inputSchema: {
+          type: "object",
+          properties: {
+            title: { type: "string", description: "Title of the window to move" },
+            x: { type: "number", description: "New X coordinate" },
+            y: { type: "number", description: "New Y coordinate" }
+          },
+          required: ["title", "x", "y"]
+        }
+      },
+      {
+        name: "minimize_window",
+        description: "Minimize a specific window by its title (currently unsupported)",
+        inputSchema: {
+          type: "object",
+          properties: {
+            title: { type: "string", description: "Title of the window to minimize" }
+          },
+          required: ["title"]
+        }
+      },
+      {
+        name: "restore_window",
+        description: "Restore a minimized window by its title (currently unsupported)",
+        inputSchema: {
+          type: "object",
+          properties: {
+            title: { type: "string", description: "Title of the window to restore" }
+          },
+          required: ["title"]
+        }
       }
     ]
   }));
@@ -212,6 +285,49 @@ export function setupTools(server: Server): void {
 
         case "get_active_window":
           response = await getActiveWindow();
+          break;
+
+        case "list_windows":
+          response = await listAllWindows();
+          break;
+
+        case "focus_window":
+          if (typeof args?.title !== 'string') {
+            throw new Error("Invalid window title argument");
+          }
+          response = await focusWindow(args.title);
+          break;
+
+        case "resize_window":
+          if (typeof args?.title !== 'string' || 
+              typeof args?.width !== 'number' || 
+              typeof args?.height !== 'number') {
+            throw new Error("Invalid window resize arguments");
+          }
+          response = await resizeWindow(args.title, args.width, args.height);
+          break;
+
+        case "reposition_window":
+          if (typeof args?.title !== 'string' || 
+              typeof args?.x !== 'number' || 
+              typeof args?.y !== 'number') {
+            throw new Error("Invalid window reposition arguments");
+          }
+          response = await repositionWindow(args.title, args.x, args.y);
+          break;
+
+        case "minimize_window":
+          if (typeof args?.title !== 'string') {
+            throw new Error("Invalid window title argument");
+          }
+          response = await minimizeWindow(args.title);
+          break;
+
+        case "restore_window":
+          if (typeof args?.title !== 'string') {
+            throw new Error("Invalid window title argument");
+          }
+          response = await restoreWindow(args.title);
           break;
 
         default:

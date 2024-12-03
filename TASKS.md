@@ -2,15 +2,15 @@
 
 ## Window Management Functions
 **Documentation**: https://nutjs.dev/modules/window
-- [ ] List all windows
-- [~] Get active window (partial - title and size implemented, position pending)
+- [x] List all windows
+- [x] Get active window
 - [x] Get window title
 - [x] Get window size and position
-- [ ] Focus window
-- [ ] Resize window
-- [ ] Reposition window
-- [ ] Minimize window
-- [ ] Restore window
+- [x] Focus window
+- [x] Resize window
+- [x] Reposition window
+- [-] Minimize window (unsupported in libnut-core)
+- [-] Restore window (unsupported in libnut-core)
 
 ## Mouse Functions
 **Documentation**: https://nutjs.dev/modules/mouse
@@ -47,13 +47,14 @@
 - Cursor position tracking
 - Basic active window detection (title, size, and position)
 - Mouse scrolling (up/down)
+- Window management functions (list, focus, resize, reposition)
 
 ### Pending ❌
-- Complete window management (manipulation)
 - Advanced mouse operations
 - Advanced keyboard operations
 - Clipboard operations
 - UI element finding
+- Window minimize/restore operations (unsupported in libnut-core)
 
 ## References
 - NutJS GitHub Repository: https://github.com/nut-tree/nut.js
