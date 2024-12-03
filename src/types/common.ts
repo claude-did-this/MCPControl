@@ -19,6 +19,10 @@ export interface WindowInfo {
   };
 }
 
+export interface ClipboardInput {
+  text: string;
+}
+
 // Type for mouse button mapping
 export type ButtonMap = {
   [key: string]: number;

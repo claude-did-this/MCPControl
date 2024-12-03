@@ -71,18 +71,18 @@ export async function getActiveWindow(): Promise<WindowsControlResponse> {
     // Get window title
     const title = await libnut.getWindowTitle(handle);
     
-    // Get window region (position and size)
-    const region = await libnut.screen.capture();
+    // Get window position and size using getWindowRect
+    const rect = await libnut.getWindowRect(handle);
     
     const windowInfo: WindowInfo = {
       title: title,
       position: {
-        x: 0, // Currently libnut doesn't provide a way to get window position
-        y: 0
+        x: rect.x,
+        y: rect.y
       },
       size: {
-        width: region.width,
-        height: region.height
+        width: rect.width,
+        height: rect.height
       }
     };
 

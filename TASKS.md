@@ -5,7 +5,7 @@
 - [ ] List all windows
 - [~] Get active window (partial - title and size implemented, position pending)
 - [x] Get window title
-- [ ] Get window size and position
+- [x] Get window size and position
 - [ ] Focus window
 - [ ] Resize window
 - [ ] Reposition window
@@ -30,6 +30,7 @@
 ## Integration Functions
 **Documentation**: https://nutjs.dev/modules/integration
 - [ ] Add clipboard support
+  - Note: Implementation requires proper nut.js clipboard plugin/integration. Current libnut-core does not include clipboard functionality. Hold off implementation until proper integration method is determined.
 - [ ] Add support for finding UI elements
 
 ## Implementation Steps for Each Task
@@ -44,11 +45,11 @@
 - Basic keyboard input
 - Screen capture and size
 - Cursor position tracking
-- Basic active window detection (title and size)
+- Basic active window detection (title, size, and position)
 - Mouse scrolling (up/down)
 
 ### Pending ❌
-- Complete window management (position, manipulation)
+- Complete window management (manipulation)
 - Advanced mouse operations
 - Advanced keyboard operations
 - Clipboard operations
