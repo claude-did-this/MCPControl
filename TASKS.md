@@ -3,8 +3,8 @@
 ## Window Management Functions
 **Documentation**: https://nutjs.dev/modules/window
 - [ ] List all windows
-- [~] Get active window (partial - size only, title and position pending)
-- [ ] Get window title
+- [~] Get active window (partial - title and size implemented, position pending)
+- [x] Get window title
 - [ ] Get window size and position
 - [ ] Focus window
 - [ ] Resize window
@@ -44,10 +44,10 @@
 - Basic keyboard input
 - Screen capture and size
 - Cursor position tracking
-- Basic active window detection (size only)
+- Basic active window detection (title and size)
 
 ### Pending ❌
-- Complete window management (title, position, manipulation)
+- Complete window management (position, manipulation)
 - Advanced mouse operations
 - Advanced keyboard operations
 - Clipboard operations
