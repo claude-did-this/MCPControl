@@ -18,10 +18,6 @@
 - [ ] Mouse drag operations
 - [ ] Set mouse movement speed
 
-## Screen Functions
-**Documentation**: https://nutjs.dev/modules/screen
-- [ ] Get screen info (beyond current screenshot/size functionality)
-
 ## Keyboard Functions
 **Documentation**: https://nutjs.dev/modules/keyboard
 - [x] Add support for key combinations
@@ -56,6 +52,15 @@
 - Clipboard operations
 - UI element finding
 - Window minimize/restore operations (unsupported in libnut-core)
+
+### Unsupported in libnut-core ⛔
+- Advanced screen information (multiple monitors, DPI settings, etc.)
+  - Only main display size and capture are supported
+  - No built-in support for secondary monitors
+  - Would require implementing new methods using platform-specific APIs:
+    - Windows: EnumDisplayMonitors()
+    - Linux: XRandR extension
+    - macOS: NSScreen API
 
 ## References
 - NutJS GitHub Repository: https://github.com/nut-tree/nut.js
