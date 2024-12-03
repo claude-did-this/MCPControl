@@ -50,10 +50,15 @@ export async function getScreenshot(region?: { x: number; y: number; width: numb
 
     const base64Data = pngBuffer.toString('base64');
 
+    // Return in MCP image content format
     return {
       success: true,
       message: "Screenshot captured successfully",
-      screenshot: base64Data
+      content: [{
+        type: "image",
+        data: base64Data,
+        mimeType: "image/png"
+      }]
     };
   } catch (error) {
     return {

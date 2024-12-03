@@ -50,7 +50,7 @@ export function setupResources(server: Server): void {
     switch (uri) {
       case "screen://current": {
         const response = await getScreenshot();
-        if (!response.success || !response.screenshot) {
+        if (!response.success || !response.content) {
           throw new Error(response.message);
         }
         
@@ -58,7 +58,7 @@ export function setupResources(server: Server): void {
           contents: [{
             uri,
             mimeType: "image/png",
-            blob: response.screenshot
+            blob: response.content[0].data
           }]
         };
       }
