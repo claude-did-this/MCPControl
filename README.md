@@ -4,6 +4,20 @@ A Windows control server built using [nut.js](https://nutjs.dev/) and Model Cont
 
 > **Note**: This project is specifically designed for and tested on Windows. Linux and macOS support is not currently implemented.
 
+## ⚠️ IMPORTANT DISCLAIMER
+
+**THIS SOFTWARE IS EXPERIMENTAL AND POTENTIALLY DANGEROUS**
+
+By using this software, you acknowledge and accept that:
+
+- Giving AI models direct control over your computer through this tool is inherently risky
+- This software can control your mouse, keyboard, and other system functions which could potentially cause unintended consequences
+- You are using this software entirely at your own risk
+- The creators and contributors of this project accept NO responsibility for any damage, data loss, or other consequences that may arise from using this software
+- This tool should only be used in controlled environments with appropriate safety measures in place
+
+**USE AT YOUR OWN RISK**
+
 ## Features
 
 - **Window Management**
