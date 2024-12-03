@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ master ]
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v1.1
+
+    - name: Setup Windows SDK
+      uses: microsoft/setup-windowsSDK@v1
+      with:
+        version: '10.0.19041.0'
+
+    - name: Setup Visual Studio Developer Command Prompt
+      uses: ilammy/msvc-dev-cmd@v1
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build nutjs-core
+      run: |
+        npm run build:native
+      env:
+        MSBUILDSINGLELOADCONTEXT: 1
+    
+    - name: Build project
+      run: npm run build
+    
+    - name: Run tests
+      run: npm test
