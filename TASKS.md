@@ -14,7 +14,7 @@
 
 ## Mouse Functions
 **Documentation**: https://nutjs.dev/modules/mouse
-- [ ] Mouse scroll (up/down)
+- [x] Mouse scroll (up/down)
 - [ ] Mouse drag operations
 - [ ] Set mouse movement speed
 
@@ -45,6 +45,7 @@
 - Screen capture and size
 - Cursor position tracking
 - Basic active window detection (title and size)
+- Mouse scrolling (up/down)
 
 ### Pending ❌
 - Complete window management (position, manipulation)

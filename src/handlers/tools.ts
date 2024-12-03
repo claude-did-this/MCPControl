@@ -9,7 +9,8 @@ import {
   moveMouse, 
   clickMouse, 
   doubleClick, 
-  getCursorPosition 
+  getCursorPosition,
+  scrollMouse
 } from "../tools/mouse.js";
 import { 
   typeText, 
@@ -50,6 +51,20 @@ export function setupTools(server: Server): void {
               description: "Mouse button to click" 
             }
           }
+        }
+      },
+      {
+        name: "scroll_mouse",
+        description: "Scroll the mouse wheel up or down",
+        inputSchema: {
+          type: "object",
+          properties: {
+            amount: { 
+              type: "number", 
+              description: "Amount to scroll (positive for down, negative for up)" 
+            }
+          },
+          required: ["amount"]
         }
       },
       {
@@ -151,6 +166,13 @@ export function setupTools(server: Server): void {
           response = await clickMouse(
             typeof args?.button === 'string' ? args.button : 'left'
           );
+          break;
+
+        case "scroll_mouse":
+          if (typeof args?.amount !== 'number') {
+            throw new Error("Invalid scroll amount argument");
+          }
+          response = await scrollMouse(args.amount);
           break;
 
         case "type_text":

@@ -78,3 +78,18 @@ export async function getCursorPosition(): Promise<WindowsControlResponse> {
     };
   }
 }
+
+export async function scrollMouse(amount: number): Promise<WindowsControlResponse> {
+  try {
+    await libnut.scrollMouse(0, amount); // x is 0 for vertical scrolling
+    return {
+      success: true,
+      message: `Scrolled mouse ${amount > 0 ? 'down' : 'up'} by ${Math.abs(amount)} units`
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `Failed to scroll mouse: ${error instanceof Error ? error.message : String(error)}`
+    };
+  }
+}
