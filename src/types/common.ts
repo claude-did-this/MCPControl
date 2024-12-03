@@ -7,6 +7,10 @@ export interface KeyboardInput {
   text: string;
 }
 
+export interface KeyCombination {
+  keys: string[];  // Array of keys to be pressed together, e.g. ["control", "c"]
+}
+
 export interface WindowInfo {
   title: string;
   position: {

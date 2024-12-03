@@ -4,7 +4,7 @@ import {
   CallToolRequestSchema,
   TextContent
 } from "@modelcontextprotocol/sdk/types.js";
-import { MousePosition, KeyboardInput } from "../types/common.js";
+import { MousePosition, KeyboardInput, KeyCombination } from "../types/common.js";
 import { 
   moveMouse, 
   clickMouse, 
@@ -14,7 +14,8 @@ import {
 } from "../tools/mouse.js";
 import { 
   typeText, 
-  pressKey 
+  pressKey,
+  pressKeyCombination
 } from "../tools/keyboard.js";
 import { 
   getScreenSize, 
@@ -96,6 +97,21 @@ export function setupTools(server: Server): void {
             }
           },
           required: ["key"]
+        }
+      },
+      {
+        name: "press_key_combination",
+        description: "Press multiple keys simultaneously (e.g., keyboard shortcuts)",
+        inputSchema: {
+          type: "object",
+          properties: {
+            keys: {
+              type: "array",
+              items: { type: "string" },
+              description: "Array of keys to press simultaneously (e.g., ['control', 'c'])"
+            }
+          },
+          required: ["keys"]
         }
       },
       {
@@ -262,6 +278,13 @@ export function setupTools(server: Server): void {
           response = await pressKey(args.key);
           break;
 
+        case "press_key_combination":
+          if (!isKeyCombination(args)) {
+            throw new Error("Invalid key combination arguments");
+          }
+          response = await pressKeyCombination(args);
+          break;
+
         case "get_screen_size":
           response = await getScreenSize();
           break;
@@ -269,6 +292,10 @@ export function setupTools(server: Server): void {
         case "get_screenshot":
           const region = args?.region as { x: number; y: number; width: number; height: number; } | undefined;
           response = await getScreenshot(region);
+          // If we have image content, return it directly
+          if (response.success && response.content) {
+            return { content: response.content };
+          }
           break;
 
         case "get_cursor_position":
@@ -334,6 +361,7 @@ export function setupTools(server: Server): void {
           throw new Error(`Unknown tool: ${name}`);
       }
 
+      // For non-image responses, return as text
       return {
         content: [{
           type: "text",
@@ -365,4 +393,11 @@ function isKeyboardInput(args: unknown): args is KeyboardInput {
   if (typeof args !== 'object' || args === null) return false;
   const input = args as Record<string, unknown>;
   return typeof input.text === 'string';
+}
+
+function isKeyCombination(args: unknown): args is KeyCombination {
+  if (typeof args !== 'object' || args === null) return false;
+  const combo = args as Record<string, unknown>;
+  if (!Array.isArray(combo.keys)) return false;
+  return combo.keys.every(key => typeof key === 'string');
 }

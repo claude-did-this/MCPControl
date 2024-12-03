@@ -24,7 +24,7 @@
 
 ## Keyboard Functions
 **Documentation**: https://nutjs.dev/modules/keyboard
-- [ ] Add support for key combinations
+- [x] Add support for key combinations
 - [ ] Add support for key holding/releasing
 
 ## Integration Functions
@@ -48,10 +48,11 @@
 - Basic active window detection (title, size, and position)
 - Mouse scrolling (up/down)
 - Window management functions (list, focus, resize, reposition)
+- Key combinations support
 
 ### Pending ❌
 - Advanced mouse operations
-- Advanced keyboard operations
+- Advanced keyboard operations (key holding/releasing)
 - Clipboard operations
 - UI element finding
 - Window minimize/restore operations (unsupported in libnut-core)
