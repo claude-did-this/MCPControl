@@ -4,7 +4,7 @@ import {
   CallToolRequestSchema,
   TextContent
 } from "@modelcontextprotocol/sdk/types.js";
-import { MousePosition, KeyboardInput, KeyCombination, ClipboardInput, KeyHoldOperation } from "../types/common.js";
+import { MousePosition, KeyboardInput, KeyCombination, ClipboardInput, KeyHoldOperation, ScreenshotOptions } from "../types/common.js";
 import { 
   moveMouse, 
   clickMouse, 
@@ -192,7 +192,7 @@ export function setupTools(server: Server): void {
       },
       {
         name: "get_screenshot",
-        description: "Take a screenshot of the current screen",
+        description: "Take a screenshot with optimized settings for Claude compatibility. Features several options to manage file size and quality:\n\n1. Region Capture: Minimize file size by capturing only relevant screen portions\n   Example: { region: { x: 100, y: 100, width: 800, height: 600 } }\n\n2. Format Selection:\n   - JPEG (recommended for text-heavy content): Provides better compression\n     Example: { format: 'jpeg', quality: 85 }\n   - PNG: Use when transparency is needed\n     Example: { format: 'png', compressionLevel: 6 }\n\n3. Grayscale: Reduces file size while maintaining text readability\n   Example: { grayscale: true }\n\n4. Resize: Essential for high-resolution screens to prevent Claude rejection\n   Example: { resize: { width: 1280, fit: 'contain' } }\n\nRecommended configuration for high-res, text-heavy screenshots:\n{ format: 'jpeg', quality: 85, grayscale: true, resize: { width: 1280, fit: 'contain' } }",
         inputSchema: {
           type: "object",
           properties: {
@@ -203,7 +203,37 @@ export function setupTools(server: Server): void {
                 y: { type: "number" },
                 width: { type: "number" },
                 height: { type: "number" }
-              }
+              },
+              description: "Capture specific region to minimize file size"
+            },
+            quality: {
+              type: "number",
+              description: "JPEG quality (1-100), only used if format is 'jpeg'. Recommended: 85 for balance"
+            },
+            format: {
+              type: "string",
+              enum: ["png", "jpeg"],
+              description: "Output format. Use 'jpeg' for text-heavy content, 'png' when transparency needed"
+            },
+            grayscale: {
+              type: "boolean",
+              description: "Convert to grayscale to reduce file size while maintaining readability"
+            },
+            resize: {
+              type: "object",
+              properties: {
+                width: { type: "number" },
+                height: { type: "number" },
+                fit: {
+                  type: "string",
+                  enum: ["contain", "cover", "fill", "inside", "outside"]
+                }
+              },
+              description: "Resize options for high-resolution screens. Recommended width: 1280"
+            },
+            compressionLevel: {
+              type: "number",
+              description: "PNG compression level (0-9), only used if format is 'png'. Recommended: 6"
             }
           }
         }
@@ -421,8 +451,26 @@ export function setupTools(server: Server): void {
           break;
 
         case "get_screenshot":
-          const region = args?.region as { x: number; y: number; width: number; height: number; } | undefined;
-          response = await getScreenshot(region);
+          const options: ScreenshotOptions = {};
+          if (args?.region) {
+            options.region = args.region as { x: number; y: number; width: number; height: number; };
+          }
+          if (args?.quality) {
+            options.quality = args.quality as number;
+          }
+          if (args?.format) {
+            options.format = args.format as 'png' | 'jpeg';
+          }
+          if (args?.grayscale) {
+            options.grayscale = args.grayscale as boolean;
+          }
+          if (args?.resize) {
+            options.resize = args.resize as { width?: number; height?: number; fit?: 'contain' | 'cover' | 'fill' | 'inside' | 'outside'; };
+          }
+          if (args?.compressionLevel) {
+            options.compressionLevel = args.compressionLevel as number;
+          }
+          response = await getScreenshot(options);
           // If we have image content, return it directly
           if (response.success && response.content) {
             return { content: response.content };

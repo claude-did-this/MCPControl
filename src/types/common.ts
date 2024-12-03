@@ -67,3 +67,22 @@ export interface HighlightOptions {
   duration?: number;   // Duration to show highlight in ms
   color?: string;     // Color of highlight (hex format)
 }
+
+// New interface for screenshot options
+export interface ScreenshotOptions {
+  region?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  quality?: number;       // JPEG quality (1-100), only used if format is 'jpeg'
+  format?: 'png' | 'jpeg'; // Output format
+  grayscale?: boolean;    // Convert to grayscale
+  resize?: {              // Resize options
+    width?: number;       // Target width (maintains aspect ratio if only one dimension provided)
+    height?: number;      // Target height
+    fit?: 'contain' | 'cover' | 'fill' | 'inside' | 'outside'; // Resize fit option
+  };
+  compressionLevel?: number; // PNG compression level (0-9), only used if format is 'png'
+}

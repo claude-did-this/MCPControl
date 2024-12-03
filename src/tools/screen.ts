@@ -1,6 +1,6 @@
 import libnut from '@nut-tree/libnut';
 import sharp from 'sharp';
-import { WindowInfo, ImageSearchOptions, ImageSearchResult, HighlightOptions } from '../types/common.js';
+import { WindowInfo, ScreenshotOptions } from '../types/common.js';
 import { WindowsControlResponse } from '../types/responses.js';
 
 export async function getScreenSize(): Promise<WindowsControlResponse> {
@@ -22,10 +22,11 @@ export async function getScreenSize(): Promise<WindowsControlResponse> {
   }
 }
 
-export async function getScreenshot(region?: { x: number; y: number; width: number; height: number; }): Promise<WindowsControlResponse> {
+export async function getScreenshot(options?: ScreenshotOptions): Promise<WindowsControlResponse> {
   try {
-    const screen = region ? 
-      libnut.screen.capture(region.x, region.y, region.width, region.height) :
+    // Capture screen or region
+    const screen = options?.region ? 
+      libnut.screen.capture(options.region.x, options.region.y, options.region.width, options.region.height) :
       libnut.screen.capture();
 
     // Convert BGRA to RGBA
@@ -37,18 +38,47 @@ export async function getScreenshot(region?: { x: number; y: number; width: numb
       rgbaBuffer[i + 3] = screen.image[i + 3]; // A (unchanged)
     }
 
-    // Convert to PNG and get base64
-    const pngBuffer = await sharp(rgbaBuffer, {
+    // Start building the Sharp pipeline
+    let pipeline = sharp(rgbaBuffer, {
       raw: {
         width: screen.width,
         height: screen.height,
         channels: 4
       }
-    })
-    .png()
-    .toBuffer();
+    });
 
-    const base64Data = pngBuffer.toString('base64');
+    // Apply grayscale if requested
+    if (options?.grayscale) {
+      pipeline = pipeline.grayscale();
+    }
+
+    // Apply resize if requested
+    if (options?.resize) {
+      pipeline = pipeline.resize({
+        width: options.resize.width,
+        height: options.resize.height,
+        fit: options.resize.fit || 'contain',
+        withoutEnlargement: true
+      });
+    }
+
+    // Convert to requested format with compression options
+    if (options?.format === 'jpeg') {
+      pipeline = pipeline.jpeg({
+        quality: options?.quality || 80,
+        mozjpeg: true // Use mozjpeg for better compression
+      });
+    } else {
+      // Default to PNG with optional compression
+      pipeline = pipeline.png({
+        compressionLevel: options?.compressionLevel || 6,
+        adaptiveFiltering: true
+      });
+    }
+
+    // Get the final buffer
+    const outputBuffer = await pipeline.toBuffer();
+    const base64Data = outputBuffer.toString('base64');
 
     // Return in MCP image content format
     return {
@@ -57,140 +87,13 @@ export async function getScreenshot(region?: { x: number; y: number; width: numb
       content: [{
         type: "image",
         data: base64Data,
-        mimeType: "image/png"
+        mimeType: options?.format === 'jpeg' ? "image/jpeg" : "image/png"
       }]
     };
   } catch (error) {
     return {
       success: false,
       message: `Failed to capture screenshot: ${error instanceof Error ? error.message : String(error)}`
-    };
-  }
-}
-
-export async function findImage(imagePath: string, options?: ImageSearchOptions): Promise<WindowsControlResponse> {
-  try {
-    const confidence = options?.confidence ?? 0.99;
-    const searchRegion = options?.searchRegion;
-
-    // Load the needle image
-    const needleImage = await sharp(imagePath).raw().toBuffer();
-    const needleMetadata = await sharp(imagePath).metadata();
-
-    if (!needleMetadata.width || !needleMetadata.height) {
-      throw new Error("Could not get needle image dimensions");
-    }
-
-    // Capture the screen or region
-    const screen = searchRegion ?
-      libnut.screen.capture(searchRegion.x, searchRegion.y, searchRegion.width, searchRegion.height) :
-      libnut.screen.capture();
-
-    // Convert screen BGRA to RGBA for matching
-    const rgbaBuffer = Buffer.alloc(screen.image.length);
-    for (let i = 0; i < screen.image.length; i += 4) {
-      rgbaBuffer[i] = screen.image[i + 2];
-      rgbaBuffer[i + 1] = screen.image[i + 1];
-      rgbaBuffer[i + 2] = screen.image[i];
-      rgbaBuffer[i + 3] = screen.image[i + 3];
-    }
-
-    // Perform template matching using libnut
-    const result = await libnut.findImage({
-      haystack: {
-        data: rgbaBuffer,
-        width: screen.width,
-        height: screen.height
-      },
-      needle: {
-        data: needleImage,
-        width: needleMetadata.width,
-        height: needleMetadata.height
-      },
-      confidence
-    });
-
-    if (!result) {
-      return {
-        success: false,
-        message: "Image not found on screen"
-      };
-    }
-
-    const searchResult: ImageSearchResult = {
-      location: {
-        x: result.x + (searchRegion?.x ?? 0),
-        y: result.y + (searchRegion?.y ?? 0)
-      },
-      confidence: result.confidence,
-      width: needleMetadata.width,
-      height: needleMetadata.height
-    };
-
-    return {
-      success: true,
-      message: "Image found successfully",
-      data: searchResult
-    };
-  } catch (error) {
-    return {
-      success: false,
-      message: `Failed to find image: ${error instanceof Error ? error.message : String(error)}`
-    };
-  }
-}
-
-export async function waitForImage(imagePath: string, options?: ImageSearchOptions): Promise<WindowsControlResponse> {
-  try {
-    const waitTime = options?.waitTime ?? 10000; // Default 10 seconds
-    const startTime = Date.now();
-
-    while (Date.now() - startTime < waitTime) {
-      const result = await findImage(imagePath, options);
-      if (result.success) {
-        return result;
-      }
-      // Wait a short time before next attempt
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-
-    return {
-      success: false,
-      message: `Image not found within ${waitTime}ms timeout`
-    };
-  } catch (error) {
-    return {
-      success: false,
-      message: `Failed while waiting for image: ${error instanceof Error ? error.message : String(error)}`
-    };
-  }
-}
-
-export async function highlightRegion(region: { x: number; y: number; width: number; height: number; }, options?: HighlightOptions): Promise<WindowsControlResponse> {
-  try {
-    const duration = options?.duration ?? 1000; // Default 1 second
-    const color = options?.color ?? "#ff0000"; // Default red
-
-    // Create a transparent overlay window
-    const overlayHandle = await libnut.createOverlayWindow(region.x, region.y, region.width, region.height);
-    
-    // Set the overlay color
-    await libnut.setOverlayColor(overlayHandle, color);
-
-    // Wait for specified duration
-    await new Promise(resolve => setTimeout(resolve, duration));
-
-    // Remove the overlay
-    await libnut.destroyOverlayWindow(overlayHandle);
-
-    return {
-      success: true,
-      message: "Region highlighted successfully"
-    };
-  } catch (error) {
-    return {
-      success: false,
-      message: `Failed to highlight region: ${error instanceof Error ? error.message : String(error)}`
     };
   }
 }
