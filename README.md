@@ -57,7 +57,7 @@ By using this software, you acknowledge and accept that:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/nutjs-windows-control.git
+git clone https://github.com/Cheffromspace/nutjs-windows-control.git
 cd nutjs-windows-control
 ```
 
