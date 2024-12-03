@@ -25,8 +25,9 @@
 
 ## Integration Functions
 **Documentation**: https://nutjs.dev/modules/integration
-- [ ] Add clipboard support
-  - Note: Implementation requires proper nut.js clipboard plugin/integration. Current libnut-core does not include clipboard functionality. Hold off implementation until proper integration method is determined.
+- [x] Add clipboard support
+  - Implemented using clipboardy package (same as nut.js)
+  - Supports text operations: get, set, check, clear
 - [ ] Add support for finding UI elements
 
 ## Implementation Steps for Each Task
@@ -45,11 +46,11 @@
 - Mouse scrolling (up/down)
 - Window management functions (list, focus, resize, reposition)
 - Key combinations support
+- Clipboard operations (get, set, check, clear)
 
 ### Pending ❌
 - Advanced mouse operations
 - Advanced keyboard operations (key holding/releasing)
-- Clipboard operations
 - UI element finding
 - Window minimize/restore operations (unsupported in libnut-core)
 

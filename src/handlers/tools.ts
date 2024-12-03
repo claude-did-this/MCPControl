@@ -4,7 +4,7 @@ import {
   CallToolRequestSchema,
   TextContent
 } from "@modelcontextprotocol/sdk/types.js";
-import { MousePosition, KeyboardInput, KeyCombination } from "../types/common.js";
+import { MousePosition, KeyboardInput, KeyCombination, ClipboardInput } from "../types/common.js";
 import { 
   moveMouse, 
   clickMouse, 
@@ -28,6 +28,12 @@ import {
   minimizeWindow,
   restoreWindow
 } from "../tools/screen.js";
+import {
+  getClipboardContent,
+  setClipboardContent,
+  hasClipboardText,
+  clearClipboard
+} from "../tools/clipboard.js";
 
 export function setupTools(server: Server): void {
   // List available tools
@@ -233,6 +239,41 @@ export function setupTools(server: Server): void {
           },
           required: ["title"]
         }
+      },
+      {
+        name: "get_clipboard_content",
+        description: "Get the current text content from the clipboard",
+        inputSchema: {
+          type: "object",
+          properties: {}
+        }
+      },
+      {
+        name: "set_clipboard_content",
+        description: "Set text content to the clipboard",
+        inputSchema: {
+          type: "object",
+          properties: {
+            text: { type: "string", description: "Text to copy to clipboard" }
+          },
+          required: ["text"]
+        }
+      },
+      {
+        name: "has_clipboard_text",
+        description: "Check if the clipboard contains text",
+        inputSchema: {
+          type: "object",
+          properties: {}
+        }
+      },
+      {
+        name: "clear_clipboard",
+        description: "Clear the clipboard content",
+        inputSchema: {
+          type: "object",
+          properties: {}
+        }
       }
     ]
   }));
@@ -357,6 +398,25 @@ export function setupTools(server: Server): void {
           response = await restoreWindow(args.title);
           break;
 
+        case "get_clipboard_content":
+          response = await getClipboardContent();
+          break;
+
+        case "set_clipboard_content":
+          if (!isClipboardInput(args)) {
+            throw new Error("Invalid clipboard input arguments");
+          }
+          response = await setClipboardContent(args);
+          break;
+
+        case "has_clipboard_text":
+          response = await hasClipboardText();
+          break;
+
+        case "clear_clipboard":
+          response = await clearClipboard();
+          break;
+
         default:
           throw new Error(`Unknown tool: ${name}`);
       }
@@ -400,4 +460,10 @@ function isKeyCombination(args: unknown): args is KeyCombination {
   const combo = args as Record<string, unknown>;
   if (!Array.isArray(combo.keys)) return false;
   return combo.keys.every(key => typeof key === 'string');
+}
+
+function isClipboardInput(args: unknown): args is ClipboardInput {
+  if (typeof args !== 'object' || args === null) return false;
+  const input = args as Record<string, unknown>;
+  return typeof input.text === 'string';
 }
