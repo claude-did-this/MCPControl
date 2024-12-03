@@ -47,12 +47,27 @@ git clone https://github.com/yourusername/nutjs-windows-control.git
 cd nutjs-windows-control
 ```
 
-2. Install dependencies:
+2. Build libnut-core from source (required if you don't have a paid NutJS license):
+```bash
+# Clone libnut repository in a parallel directory
+cd ..
+git clone https://github.com/nut-tree/libnut.git libnut-core
+cd libnut-core
+
+# Install dependencies and build
+npm install
+npm run build
+
+# Return to the main project
+cd ../nutjs-windows-control
+```
+
+3. Install dependencies:
 ```bash
 npm install
 ```
 
-3. Build the project:
+4. Build the project:
 ```bash
 npm run build
 ```
