@@ -43,7 +43,7 @@ A Windows control server built using [nut.js](https://nutjs.dev/) and Model Cont
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/nutjs-windows-control.git
+git clone https://github.com/Cheffromspace/nutjs-windows-control.git
 cd nutjs-windows-control
 ```
 
