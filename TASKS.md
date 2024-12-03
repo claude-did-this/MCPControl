@@ -1,0 +1,58 @@
+# NutJS Windows Control Implementation Tasks
+
+## Window Management Functions
+**Documentation**: https://nutjs.dev/modules/window
+- [ ] List all windows
+- [~] Get active window (partial - size only, title and position pending)
+- [ ] Get window title
+- [ ] Get window size and position
+- [ ] Focus window
+- [ ] Resize window
+- [ ] Reposition window
+- [ ] Minimize window
+- [ ] Restore window
+
+## Mouse Functions
+**Documentation**: https://nutjs.dev/modules/mouse
+- [ ] Mouse scroll (up/down)
+- [ ] Mouse drag operations
+- [ ] Set mouse movement speed
+
+## Screen Functions
+**Documentation**: https://nutjs.dev/modules/screen
+- [ ] Get screen info (beyond current screenshot/size functionality)
+
+## Keyboard Functions
+**Documentation**: https://nutjs.dev/modules/keyboard
+- [ ] Add support for key combinations
+- [ ] Add support for key holding/releasing
+
+## Integration Functions
+**Documentation**: https://nutjs.dev/modules/integration
+- [ ] Add clipboard support
+- [ ] Add support for finding UI elements
+
+## Implementation Steps for Each Task
+1. Add appropriate TypeScript interfaces in types.ts
+2. Add the tool definition in setupTools()
+3. Implement the tool handler function
+4. Add error handling and response formatting
+
+## Current Implementation Status
+### Completed ✅
+- Basic mouse movement and clicking
+- Basic keyboard input
+- Screen capture and size
+- Cursor position tracking
+- Basic active window detection (size only)
+
+### Pending ❌
+- Complete window management (title, position, manipulation)
+- Advanced mouse operations
+- Advanced keyboard operations
+- Clipboard operations
+- UI element finding
+
+## References
+- NutJS GitHub Repository: https://github.com/nut-tree/nut.js
+- API Documentation: https://nutjs.dev/
