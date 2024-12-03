@@ -3,7 +3,7 @@ import {
   ListResourcesRequestSchema,
   ReadResourceRequestSchema
 } from "@modelcontextprotocol/sdk/types.js";
-import { getScreenshot } from "../tools/screen.js";
+import { getScreenshot, getScreenSize, getActiveWindow, listAllWindows } from "../tools/screen.js";
 import { getCursorPosition } from "../tools/mouse.js";
 
 export function setupResources(server: Server): void {
@@ -17,9 +17,27 @@ export function setupResources(server: Server): void {
         mimeType: "image/png"
       },
       {
+        uri: "screen://size",
+        name: "Screen Size",
+        description: "The current screen dimensions",
+        mimeType: "application/json"
+      },
+      {
         uri: "cursor://position",
         name: "Cursor Position",
         description: "Current cursor coordinates",
+        mimeType: "application/json"
+      },
+      {
+        uri: "window://active",
+        name: "Active Window",
+        description: "Information about the currently active window",
+        mimeType: "application/json"
+      },
+      {
+        uri: "window://list",
+        name: "Window List",
+        description: "List of all visible windows",
         mimeType: "application/json"
       }
     ]
@@ -45,8 +63,53 @@ export function setupResources(server: Server): void {
         };
       }
 
+      case "screen://size": {
+        const response = await getScreenSize();
+        if (!response.success || !response.data) {
+          throw new Error(response.message);
+        }
+
+        return {
+          contents: [{
+            uri,
+            mimeType: "application/json",
+            text: JSON.stringify(response.data, null, 2)
+          }]
+        };
+      }
+
       case "cursor://position": {
         const response = await getCursorPosition();
+        if (!response.success || !response.data) {
+          throw new Error(response.message);
+        }
+
+        return {
+          contents: [{
+            uri,
+            mimeType: "application/json",
+            text: JSON.stringify(response.data, null, 2)
+          }]
+        };
+      }
+
+      case "window://active": {
+        const response = await getActiveWindow();
+        if (!response.success || !response.data) {
+          throw new Error(response.message);
+        }
+
+        return {
+          contents: [{
+            uri,
+            mimeType: "application/json",
+            text: JSON.stringify(response.data, null, 2)
+          }]
+        };
+      }
+
+      case "window://list": {
+        const response = await listAllWindows();
         if (!response.success || !response.data) {
           throw new Error(response.message);
         }
