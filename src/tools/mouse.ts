@@ -128,6 +128,38 @@ export async function dragMouse(from: MousePosition, to: MousePosition, button: 
   }
 }
 
+export async function clickAt(x: number, y: number, button: keyof ButtonMap = 'left'): Promise<WindowsControlResponse> {
+  if (typeof x !== 'number' || typeof y !== 'number' || isNaN(x) || isNaN(y)) {
+    return {
+      success: false,
+      message: 'Invalid coordinates provided'
+    };
+  }
+  try {
+    // Store original position
+    const originalPosition = await libnut.getMousePos();
+    
+    // Move to target position
+    await libnut.moveMouse(x, y);
+    
+    // Perform click
+    await libnut.mouseClick(buttonMap[button]);
+    
+    // Return to original position
+    await libnut.moveMouse(originalPosition.x, originalPosition.y);
+    
+    return {
+      success: true,
+      message: `Clicked ${button} button at position (${x}, ${y}) and returned to (${originalPosition.x}, ${originalPosition.y})`
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `Failed to click at position: ${error instanceof Error ? error.message : String(error)}`
+    };
+  }
+}
+
 export async function setMouseSpeed(speed: number): Promise<WindowsControlResponse> {
   try {
     // Speed is in milliseconds. Lower values = faster movement
