@@ -3,9 +3,9 @@ import { MousePosition, ButtonMap } from '../types/common.js';
 import { WindowsControlResponse } from '../types/responses.js';
 
 const buttonMap: ButtonMap = {
-  'left': 0,
-  'right': 1,
-  'middle': 2
+  'left': 'left',
+  'right': 'right',
+  'middle': 'middle'
 };
 
 export async function moveMouse(position: MousePosition): Promise<WindowsControlResponse> {
@@ -25,8 +25,8 @@ export async function moveMouse(position: MousePosition): Promise<WindowsControl
 
 export async function clickMouse(button: keyof ButtonMap = 'left'): Promise<WindowsControlResponse> {
   try {
-    const buttonCode = buttonMap[button];
-    await libnut.mouseClick(String(buttonCode));
+    const buttonName = buttonMap[button];
+    await libnut.mouseClick(buttonName);
     return {
       success: true,
       message: `Clicked ${button} mouse button`
@@ -44,7 +44,7 @@ export async function doubleClick(position?: MousePosition): Promise<WindowsCont
     if (position) {
       await libnut.moveMouse(position.x, position.y);
     }
-    await libnut.mouseClick("0", true); // Use the built-in double click parameter
+    await libnut.mouseClick("left", true); // Use the built-in double click parameter
     return {
       success: true,
       message: position ? 
@@ -95,19 +95,19 @@ export async function scrollMouse(amount: number): Promise<WindowsControlRespons
 
 export async function dragMouse(from: MousePosition, to: MousePosition, button: keyof ButtonMap = 'left'): Promise<WindowsControlResponse> {
   try {
-    const buttonCode = buttonMap[button];
+    const buttonName = buttonMap[button];
     
     // Move to start position
     await libnut.moveMouse(from.x, from.y);
     
     // Press mouse button
-    await libnut.mouseToggle("down", String(buttonCode));
+    await libnut.mouseToggle("down", buttonName);
     
     // Move to end position
     await libnut.moveMouse(to.x, to.y);
     
     // Release mouse button
-    await libnut.mouseToggle("up", String(buttonCode));
+    await libnut.mouseToggle("up", buttonName);
     
     return {
       success: true,
@@ -116,7 +116,7 @@ export async function dragMouse(from: MousePosition, to: MousePosition, button: 
   } catch (error) {
     // Ensure mouse button is released in case of error
     try {
-      await libnut.mouseToggle("up", String(buttonMap[button]));
+      await libnut.mouseToggle("up", buttonMap[button]);
     } catch {
       // Ignore cleanup errors
     }

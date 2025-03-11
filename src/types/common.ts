@@ -35,10 +35,10 @@ export interface ClipboardInput {
 
 // Type for mouse button mapping
 export type ButtonMap = {
-  [key: string]: number;
-  left: number;
-  right: number;
-  middle: number;
+  [key: string]: string;
+  left: string;
+  right: string;
+  middle: string;
 };
 
 // New types for screen search functionality
