@@ -471,9 +471,19 @@ export function setupTools(server: Server): void {
             options.compressionLevel = args.compressionLevel as number;
           }
           response = await getScreenshot(options);
-          // If we have image content, return it directly
-          if (response.success && response.content) {
-            return { content: response.content };
+          // Format screenshot response for VS Code
+          if (response.success && response.content && response.content[0]?.type === "image") {
+            return {
+              content: [{
+                type: "text",
+                text: JSON.stringify({
+                  success: true,
+                  message: "Screenshot captured successfully",
+                  screenshot: response.content[0].data,
+                  timestamp: new Date().toISOString()
+                })
+              }]
+            };
           }
           break;
 
