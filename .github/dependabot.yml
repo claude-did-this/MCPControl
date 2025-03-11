@@ -1,0 +1,23 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    versioning-strategy: increase
+    groups:
+      dev-dependencies:
+        patterns:
+          - "@types/*"
+          - "vitest"
+          - "@vitest/*"
+      production-dependencies:
+        patterns:
+          - "@modelcontextprotocol/*"
+          - "@nut-tree/*"
+          - "sharp"
+          - "jimp"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
