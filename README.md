@@ -89,29 +89,11 @@ npm install
 npm run build
 ```
 
-## Usage
-
-### Starting the Server
-
-```bash
-npm start
-```
-
-For development with auto-recompilation:
-```bash
-npm run dev
-```
-
 ### Running Tests
 
 Run all tests:
 ```bash
 npm test
-```
-
-Watch mode for development:
-```bash
-npm run test:watch
 ```
 
 Generate coverage report:
