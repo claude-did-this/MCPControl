@@ -12,7 +12,8 @@ import {
   getCursorPosition,
   scrollMouse,
   dragMouse,
-  setMouseSpeed
+  setMouseSpeed,
+  clickAt
 } from "../tools/mouse.js";
 import { 
   typeText, 
@@ -42,6 +43,24 @@ export function setupTools(server: Server): void {
   // List available tools
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: [
+      {
+        name: "click_at",
+        description: "Move mouse to coordinates, click, then return to original position",
+        inputSchema: {
+          type: "object",
+          properties: {
+            x: { type: "number", description: "X coordinate" },
+            y: { type: "number", description: "Y coordinate" },
+            button: { 
+              type: "string", 
+              enum: ["left", "right", "middle"],
+              default: "left",
+              description: "Mouse button to click" 
+            }
+          },
+          required: ["x", "y"]
+        }
+      },
       {
         name: "move_mouse",
         description: "Move the mouse cursor to specific coordinates",
@@ -377,6 +396,17 @@ export function setupTools(server: Server): void {
       let response;
 
       switch (name) {
+        case "click_at":
+          if (typeof args?.x !== 'number' || typeof args?.y !== 'number') {
+            throw new Error("Invalid click_at arguments");
+          }
+          response = await clickAt(
+            args.x,
+            args.y,
+            typeof args?.button === 'string' ? args.button : 'left'
+          );
+          break;
+
         case "move_mouse":
           if (!isMousePosition(args)) {
             throw new Error("Invalid mouse position arguments");
