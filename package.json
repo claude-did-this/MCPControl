@@ -2,6 +2,7 @@
   "name": "nutjs-windows-control",
   "version": "1.0.0",
   "description": "Windows control server using nut.js and MCP",
+  "license": "MIT",
   "type": "module",
   "main": "build/index.js",
   "scripts": {
