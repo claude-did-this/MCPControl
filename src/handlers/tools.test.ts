@@ -125,7 +125,7 @@ describe('Tools Handler', () => {
       });
     });
 
-    it('should handle screenshot tool with image content', async () => {
+    it('should handle screenshot tool with VS Code format', async () => {
       const mockImageContent: ImageContent[] = [{
         type: "image",
         data: 'base64-image-data',
@@ -145,7 +145,14 @@ describe('Tools Handler', () => {
         }
       });
 
-      expect(result.content).toEqual(mockImageContent);
+      const parsedContent = JSON.parse(result.content[0].text);
+      expect(parsedContent).toEqual({
+        success: true,
+        message: 'Screenshot captured successfully',
+        screenshot: 'base64-image-data',
+        timestamp: expect.any(String)
+      });
+      expect(new Date(parsedContent.timestamp).getTime()).not.toBeNaN();
     });
   });
 
