@@ -50,8 +50,8 @@ export function setupResources(server: Server): void {
     switch (uri) {
       case "screen://current": {
         const response = await getScreenshot();
-        if (!response.success || !response.content) {
-          throw new Error(response.message);
+        if (!response.success || !response.content || !response.content[0]?.data) {
+          throw new Error(response.message || "Failed to get screenshot data");
         }
         
         return {

@@ -280,14 +280,14 @@ export async function repositionWindow(title: string, x: number, y: number): Pro
 }
 
 // Note: minimize and restore operations are not currently supported by libnut-core
-export async function minimizeWindow(title: string): Promise<WindowsControlResponse> {
+export async function minimizeWindow(_title: string): Promise<WindowsControlResponse> {
   return {
     success: false,
     message: "Window minimizing is not currently supported by the underlying library"
   };
 }
 
-export async function restoreWindow(title: string): Promise<WindowsControlResponse> {
+export async function restoreWindow(_title: string): Promise<WindowsControlResponse> {
   return {
     success: false,
     message: "Window restoring is not currently supported by the underlying library"
