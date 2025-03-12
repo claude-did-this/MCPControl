@@ -501,7 +501,7 @@ export function setupTools(server: Server): void {
             options.compressionLevel = args.compressionLevel as number;
           }
           response = await getScreenshot(options);
-          // Format screenshot response for VS Code
+          // Format screenshot response for MCP protocol
           if (response.success && response.content && response.content[0]?.type === "image") {
             return {
               content: [{
