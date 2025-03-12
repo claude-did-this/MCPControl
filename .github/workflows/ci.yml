@@ -33,9 +33,25 @@ jobs:
         cmake-js rebuild
         cd ../nutjs-windows-control
     
+    - name: Cache libnut-core
+      uses: actions/cache@v3
+      with:
+        path: ../libnut-core
+        key: ${{ runner.os }}-libnut-core-${{ hashFiles('../libnut-core/**') }}
+        restore-keys: |
+          ${{ runner.os }}-libnut-core-
+
     - name: Install dependencies
       run: npm ci
       
+    - name: Type check
+      run: npx tsc --noEmit
+      
+    - name: Lint
+      run: |
+        npx eslint . --ext .ts
+        npx prettier --check "src/**/*.ts"
+        
     - name: Security audit
       run: npm audit --audit-level=high
       
@@ -45,8 +61,10 @@ jobs:
     - name: Build
       run: npm run build
     
-    - name: Run tests
-      run: npm test
+    - name: Run tests with coverage threshold
+      run: |
+        npx vitest run --coverage
+        npx vitest run --coverage.threshold.global.lines=80 --coverage.threshold.global.functions=80 --coverage.threshold.global.branches=70 --coverage.threshold.global.statements=80
       
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v4
