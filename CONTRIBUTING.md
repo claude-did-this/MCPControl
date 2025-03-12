@@ -38,8 +38,8 @@ Please be respectful and considerate of others when contributing to this project
 1. Fork the repository
 2. Clone your fork:
    ```bash
-   git clone https://github.com/YOUR-USERNAME/nutjs-windows-control.git
-   cd nutjs-windows-control
+   git clone https://github.com/YOUR-USERNAME/MCPControl.git
+   cd MCPControl
    ```
 
 3. Build libnut-core from source (required if you don't have a paid NutJS license):
@@ -57,7 +57,7 @@ Please be respectful and considerate of others when contributing to this project
    cmake-js rebuild
 
    # Return to the main project
-   cd ../nutjs-windows-control
+   cd ../MCPControl
    ```
 
 4. Install dependencies:
@@ -136,7 +136,7 @@ All new features should include appropriate test coverage. The project uses Vite
 
 ## Issue Tracking
 
-Check the [GitHub issues](https://github.com/Cheffromspace/nutjs-windows-control/issues) for existing issues you might want to contribute to. Current focus areas include:
+Check the [GitHub issues](https://github.com/Cheffromspace/MCPControl/issues) for existing issues you might want to contribute to. Current focus areas include:
 
 1. Creating an npm package for easy installation
 2. Adding remote computer control support

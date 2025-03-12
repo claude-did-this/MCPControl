@@ -1,8 +1,10 @@
-# NutJS Windows Control
+# MCPcontrol
 
-A Windows control server built using [nut.js](https://nutjs.dev/) and Model Context Protocol (MCP), providing programmatic control over Windows system operations including mouse, keyboard, window management, and screen capture functionality.
+A cross-platform control server for the Model Context Protocol (MCP), providing programmatic control over system operations including mouse, keyboard, window management, and screen capture functionality. Built on [nut.js](https://nutjs.dev/).
 
-> **Note**: While this project may work on Linux and macOS, it has only been tested on Windows. Community feedback on cross-platform compatibility is welcome.
+I developed this project as an experiment a few months ago, wanting to see if Claude could play some video games. After seeing it work, I was impressed but set it aside. Recently, it's gained attention from the community, prompting me to resume development. While currently in pre-release state, I'm actively working toward a stable version. If you encounter any issues, please submit them through the issue tracker.
+
+> **Note**: This project aims to support Windows, Linux, and macOS. While most testing has been performed on Windows, cross-platform compatibility contributions are welcome.
 
 ## ⚠️ IMPORTANT DISCLAIMER
 
@@ -57,8 +59,8 @@ By using this software, you acknowledge and accept that:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/Cheffromspace/nutjs-windows-control.git
-cd nutjs-windows-control
+git clone https://github.com/Cheffromspace/MCPcontrol.git
+cd MCPcontrol
 ```
 
 2. Build libnut-core from source (required if you don't have a paid NutJS license):
@@ -76,7 +78,7 @@ npm install
 cmake-js rebuild
 
 # Return to the main project
-cd ../nutjs-windows-control
+cd ../MCPControl
 ```
 
 3. Install dependencies:
@@ -108,17 +110,17 @@ To use this project with Claude, add the following configuration to your MCP ser
 ```json
 {
   "mcpServers": {
-    "windows-control": {
+    "MCPcontrol": {
       "command": "C:\\Program Files\\nodejs\\node.exe",
       "args": [
-        "[INSTALL LOCATION]\\nutjs-windows-control\\build\\index.js"
+        "[INSTALL LOCATION]\\MCPcontrol\\build\\index.js"
       ]
     }
   }
 }
 ```
 
-After configuring your MCP server, restart Claude to see the windows-control service in the menu.
+After configuring your MCP server, restart Claude to see the MCPcontrol service in the menu.
 
 ## Project Structure
 
@@ -152,11 +154,7 @@ The project currently includes unit tests for core functionality. The following 
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License
 
