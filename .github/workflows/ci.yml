@@ -37,7 +37,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ../libnut-core
-        key: ${{ runner.os }}-libnut-core-${{ hashFiles('../libnut-core/**') }}
+        key: ${{ runner.os }}-libnut-core-${{ hashFiles('libnut-core/**') }}
         restore-keys: |
           ${{ runner.os }}-libnut-core-
 
