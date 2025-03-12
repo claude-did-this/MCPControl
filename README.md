@@ -76,7 +76,7 @@ npm install
 cmake-js rebuild
 
 # Return to the main project
-cd ../nutjs-windows-control
+cd ../MCPControl
 ```
 
 3. Install dependencies:
