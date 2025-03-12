@@ -2,6 +2,8 @@
 
 A cross-platform control server for the Model Context Protocol (MCP), providing programmatic control over system operations including mouse, keyboard, window management, and screen capture functionality. Built on [nut.js](https://nutjs.dev/).
 
+I developed this project as an experiment a few months ago, wanting to see if Claude could play some video games. After seeing it work, I was impressed but set it aside. Recently, it's gained attention from the community, prompting me to resume development. While currently in pre-release state, I'm actively working toward a stable version. If you encounter any issues, please submit them through the issue tracker.
+
 > **Note**: This project aims to support Windows, Linux, and macOS. While most testing has been performed on Windows, cross-platform compatibility contributions are welcome.
 
 ## ⚠️ IMPORTANT DISCLAIMER
@@ -152,11 +154,7 @@ The project currently includes unit tests for core functionality. The following 
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License
 
