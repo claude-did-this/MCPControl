@@ -510,7 +510,6 @@ export function setupTools(server: Server): void {
                   success: true,
                   message: "Screenshot captured successfully",
                   screenshot: response.content[0].data,
-                  mimeType: response.content[0].mimeType,
                   timestamp: new Date().toISOString()
                 })
               }]
