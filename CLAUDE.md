@@ -1,4 +1,4 @@
-# MCPcontrol - Development Guide
+# MCPControl - Development Guide
 
 ## Build & Test Commands
 - Build: `npm run build` - Compiles TypeScript to JavaScript

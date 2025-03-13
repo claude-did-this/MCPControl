@@ -42,13 +42,21 @@ Please be respectful and considerate of others when contributing to this project
    cd MCPControl
    ```
 
-3. Build libnut-core from source (required if you don't have a paid NutJS license):
+3. Build the project (this will handle libnut-core and all dependencies):
+   ```bash
+   # Install dependencies
+   npm install
+
+   # Build everything including libnut-core
+   npm run build:all
+   ```
+
+   For manual building, you can follow these steps instead:
    ```bash
    # Install cmake-js globally (required for building)
    npm install -g cmake-js
 
-   # Clone libnut repository in a parallel directory
-   cd ..
+   # Clone libnut repository directly in the project directory
    git clone https://github.com/nut-tree/libnut.git libnut-core
    cd libnut-core
 
@@ -57,16 +65,9 @@ Please be respectful and considerate of others when contributing to this project
    cmake-js rebuild
 
    # Return to the main project
-   cd ../MCPControl
-   ```
+   cd ..
 
-4. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-5. Build the project:
-   ```bash
+   # Build MCPControl
    npm run build
    ```
 

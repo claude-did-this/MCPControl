@@ -1,9 +1,13 @@
 # Dependencies
 node_modules/
+libnut-core/
 
 # Build output
 build/
 dist/
+
+# Coverage
+coverage/
 
 # IDE
 .vscode/
