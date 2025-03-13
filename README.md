@@ -1,4 +1,4 @@
-# MCPcontrol
+# MCPControl
 
 A cross-platform control server for the Model Context Protocol (MCP), providing programmatic control over system operations including mouse, keyboard, window management, and screen capture functionality. Built on [nut.js](https://nutjs.dev/).
 
@@ -59,17 +59,25 @@ By using this software, you acknowledge and accept that:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/Cheffromspace/MCPcontrol.git
-cd MCPcontrol
+git clone https://github.com/Cheffromspace/MCPControl.git
+cd MCPControl
 ```
 
-2. Build libnut-core from source (required if you don't have a paid NutJS license):
+2. Build the project (this will handle libnut-core and all dependencies):
+```bash
+# Install dependencies
+npm install
+
+# Build everything including libnut-core
+npm run build:all
+```
+
+For manual building, you can still follow these steps:
 ```bash
 # Install cmake-js globally (required for building)
 npm install -g cmake-js
 
-# Clone libnut repository in a parallel directory
-cd ..
+# Clone libnut repository directly in the project directory
 git clone https://github.com/nut-tree/libnut.git libnut-core
 cd libnut-core
 
@@ -78,16 +86,9 @@ npm install
 cmake-js rebuild
 
 # Return to the main project
-cd ../MCPControl
-```
+cd ..
 
-3. Install dependencies:
-```bash
-npm install
-```
-
-4. Build the project:
-```bash
+# Build MCPControl
 npm run build
 ```
 
@@ -110,17 +111,17 @@ To use this project with Claude, add the following configuration to your MCP ser
 ```json
 {
   "mcpServers": {
-    "MCPcontrol": {
+    "MCPControl": {
       "command": "C:\\Program Files\\nodejs\\node.exe",
       "args": [
-        "[INSTALL LOCATION]\\MCPcontrol\\build\\index.js"
+        "[INSTALL LOCATION]\\MCPControl\\build\\index.js"
       ]
     }
   }
 }
 ```
 
-After configuring your MCP server, restart Claude to see the MCPcontrol service in the menu.
+After configuring your MCP server, restart Claude to see the MCPControl service in the menu.
 
 ## Project Structure
 
