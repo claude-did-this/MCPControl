@@ -1,4 +1,4 @@
-# MCPcontrol
+# MCPControl
 
 A cross-platform control server for the Model Context Protocol (MCP), providing programmatic control over system operations including mouse, keyboard, window management, and screen capture functionality. Built on [nut.js](https://nutjs.dev/).
 
@@ -71,20 +71,12 @@ Before installing, ensure you have the required build dependencies for your plat
   * A C/C++ compiler (GCC)
   * libxtst-dev and libpng++-dev (`sudo apt-get install libxtst-dev libpng++-dev`)
 
-### NPM Installation
-
-```bash
-npm install @modelcontextprotocol/control
-```
-
-The package will automatically compile the necessary native modules during installation.
-
 ### Building from Source
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/modelcontextprotocol/control.git
-cd control
+git clone https://github.com/Cheffromspace/MCPControl.git
+cd MCPControl
 ```
 
 2. Install dependencies and build:
@@ -127,7 +119,7 @@ To use this project with Claude, add the following configuration to your MCP ser
     "MCPcontrol": {
       "command": "C:\\Program Files\\nodejs\\node.exe",
       "args": [
-        "[INSTALL LOCATION]\\MCPcontrol\\build\\index.js"
+        "[INSTALL LOCATION]\\MCPControl\\build\\index.js"
       ]
     }
   }
