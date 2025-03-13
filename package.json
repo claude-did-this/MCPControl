@@ -1,12 +1,30 @@
 {
-  "name": "MCPcontrol",
+  "name": "@modelcontextprotocol/control",
   "version": "1.0.0",
   "description": "Cross-platform control server for the Model Context Protocol",
   "license": "MIT",
   "type": "module",
   "main": "build/index.js",
+  "files": [
+    "build",
+    "scripts"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/modelcontextprotocol/control.git"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "automation",
+    "control"
+  ],
   "scripts": {
-    "build": "tsc",
+    "build": "node scripts/build-all.js",
+    "build:ts": "tsc",
     "start": "node build/index.js",
     "dev": "tsc -w",
     "test": "vitest run",
@@ -15,7 +33,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.1",
-    "@nut-tree/libnut": "file:../libnut-core",
+    "@nut-tree/libnut": "^2.0.0",
     "clipboardy": "^4.0.0",
     "express": "^4.18.2",
     "jimp": "^1.6.0",

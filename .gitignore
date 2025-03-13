@@ -21,3 +21,6 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Local nut-core installation
+nut-core/

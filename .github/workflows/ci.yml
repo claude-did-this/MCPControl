@@ -1,54 +1,49 @@
 name: CI
 
 on:
-  pull_request:
-    branches: [ master ]
   push:
+    branches: [ master ]
+  pull_request:
     branches: [ master ]
 
 jobs:
-  build:
-    runs-on: windows-latest
+  # Test on different platforms
+  platform-tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [18.x, 20.x]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
       with:
-        fetch-depth: 0
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-        cache: 'npm'
-    
-    - name: Install cmake-js globally
-      run: npm install -g cmake-js
-    
-    - name: Clone and build libnut-core
+        node-version: ${{ matrix.node-version }}
+
+    - name: Install cmake-js and dependencies
       run: |
-        cd ..
-        git clone https://github.com/nut-tree/libnut.git libnut-core
-        cd libnut-core
-        npm install
-        cmake-js rebuild
-        cd ../MCPControl
-    
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Security audit
-      run: npm audit --audit-level=high
-      
-    - name: Check for known vulnerabilities
-      run: npx audit-ci --high
-      
-    - name: Build
-      run: npm run build
-    
-    - name: Run tests
-      run: npm test
-      
-    - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v4
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        npm install -g cmake-js
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
+        elif [ "${{ runner.os }}" = "Linux" ]; then
+          sudo apt-get update
+          sudo apt-get install -y libxtst-dev libpng++-dev
+        elif [ "${{ runner.os }}" = "macOS" ]; then
+          brew install cmake
+        fi
+
+    - name: Build and test
+      run: |
+        node scripts/build-all.js
+        npm test
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-${{ matrix.os }}-node-${{ matrix.node-version }}
+        path: |
+          build/
+          nut-core/build/

@@ -57,37 +57,39 @@ By using this software, you acknowledge and accept that:
 
 ## Installation
 
+### Prerequisites
+
+Before installing, ensure you have the required build dependencies for your platform:
+
+* **Windows**
+  * Visual Studio Build Tools 2022 or later (includes C++ build tools)
+  * OR windows-build-tools npm package (`npm install --global --production windows-build-tools` from an elevated PowerShell or CMD.exe)
+* **macOS**
+  * Xcode Command Line Tools
+* **Linux**
+  * cmake
+  * A C/C++ compiler (GCC)
+  * libxtst-dev and libpng++-dev (`sudo apt-get install libxtst-dev libpng++-dev`)
+
+### NPM Installation
+
+```bash
+npm install @modelcontextprotocol/control
+```
+
+The package will automatically compile the necessary native modules during installation.
+
+### Building from Source
+
 1. Clone the repository:
 ```bash
-git clone https://github.com/Cheffromspace/MCPcontrol.git
-cd MCPcontrol
+git clone https://github.com/modelcontextprotocol/control.git
+cd control
 ```
 
-2. Build libnut-core from source (required if you don't have a paid NutJS license):
-```bash
-# Install cmake-js globally (required for building)
-npm install -g cmake-js
-
-# Clone libnut repository in a parallel directory
-cd ..
-git clone https://github.com/nut-tree/libnut.git libnut-core
-cd libnut-core
-
-# Install dependencies and build
-npm install
-cmake-js rebuild
-
-# Return to the main project
-cd ../MCPControl
-```
-
-3. Install dependencies:
+2. Install dependencies and build:
 ```bash
 npm install
-```
-
-4. Build the project:
-```bash
 npm run build
 ```
 
@@ -102,6 +104,18 @@ Generate coverage report:
 ```bash
 npm run test:coverage
 ```
+
+### Troubleshooting
+
+If you encounter native module binding errors during installation:
+
+1. Ensure all platform prerequisites are installed (see above)
+2. Try cleaning the npm cache: `npm cache clean --force`
+3. Rebuild the native modules: `npm rebuild`
+
+### Note on Containerization
+
+This project intentionally does not support containerized deployment (e.g., Docker) as it requires direct access to the host system's UI components for mouse, keyboard, and screen control functionality. The server must run directly on the host machine to properly interact with system resources.
 
 ## MCP Server Configuration
 
