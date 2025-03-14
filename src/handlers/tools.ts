@@ -43,7 +43,7 @@ export function setupTools(server: Server): void {
     tools: [
       {
         name: "get_screenshot",
-        description: "Capture a screenshot of the entire screen or a specific region",
+        description: "Take a screenshot with options to optimize for AI compatibility. Supports region capture for specific areas, format selection (JPEG/PNG), quality settings, grayscale conversion, and resizing. For text-heavy content, recommended settings: { format: 'jpeg', quality: 85, grayscale: true, resize: { width: 1280, fit: 'contain' } }",
         inputSchema: {
           type: "object",
           properties: {
