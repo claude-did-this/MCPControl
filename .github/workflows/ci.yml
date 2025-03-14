@@ -36,6 +36,9 @@ jobs:
     - name: Build with libnut-core
       run: node scripts/build.js
     
+    - name: Run ESLint
+      run: npm run lint
+
     - name: Run tests
       run: npm test
       
