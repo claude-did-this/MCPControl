@@ -2,9 +2,9 @@ import libnut from '@nut-tree/libnut';
 import { KeyboardInput, KeyCombination, KeyHoldOperation } from '../types/common.js';
 import { WindowsControlResponse } from '../types/responses.js';
 
-export async function typeText(input: KeyboardInput): Promise<WindowsControlResponse> {
+export function typeText(input: KeyboardInput): WindowsControlResponse {
   try {
-    await libnut.typeString(input.text);
+    libnut.typeString(input.text);
     return {
       success: true,
       message: `Typed text successfully`
@@ -17,9 +17,9 @@ export async function typeText(input: KeyboardInput): Promise<WindowsControlResp
   }
 }
 
-export async function pressKey(key: string): Promise<WindowsControlResponse> {
+export function pressKey(key: string): WindowsControlResponse {
   try {
-    await libnut.keyTap(key);
+    libnut.keyTap(key);
     return {
       success: true,
       message: `Pressed key: ${key}`
@@ -39,7 +39,7 @@ export async function pressKeyCombination(combination: KeyCombination): Promise<
 
     // Press down all keys in sequence
     for (const key of combination.keys) {
-      await libnut.keyToggle(key, 'down');
+      libnut.keyToggle(key, 'down');
     }
 
     // Small delay to ensure all keys are pressed
@@ -47,7 +47,7 @@ export async function pressKeyCombination(combination: KeyCombination): Promise<
 
     // Release all keys in reverse order
     for (const key of [...combination.keys].reverse()) {
-      await libnut.keyToggle(key, 'up');
+      libnut.keyToggle(key, 'up');
     }
 
     return {
@@ -58,7 +58,7 @@ export async function pressKeyCombination(combination: KeyCombination): Promise<
     // Ensure all keys are released in case of error
     try {
       for (const key of combination.keys) {
-        await libnut.keyToggle(key, 'up');
+        libnut.keyToggle(key, 'up');
       }
     } catch {
       // Ignore errors during cleanup
@@ -74,12 +74,12 @@ export async function pressKeyCombination(combination: KeyCombination): Promise<
 export async function holdKey(operation: KeyHoldOperation): Promise<WindowsControlResponse> {
   try {
     // Toggle the key state (down/up)
-    await libnut.keyToggle(operation.key, operation.state);
+    libnut.keyToggle(operation.key, operation.state);
 
     // If it's a key press (down), wait for the specified duration then release
     if (operation.state === 'down') {
       await new Promise(resolve => setTimeout(resolve, operation.duration));
-      await libnut.keyToggle(operation.key, 'up');
+      libnut.keyToggle(operation.key, 'up');
     }
 
     return {
@@ -92,7 +92,7 @@ export async function holdKey(operation: KeyHoldOperation): Promise<WindowsContr
     // Ensure key is released in case of error during hold
     if (operation.state === 'down') {
       try {
-        await libnut.keyToggle(operation.key, 'up');
+        libnut.keyToggle(operation.key, 'up');
       } catch {
         // Ignore errors during cleanup
       }

@@ -31,8 +31,8 @@ class WindowsControlServer {
       console.error("[MCP Error]", error);
     };
 
-    process.on('SIGINT', async () => {
-      await this.server.close();
+    process.on('SIGINT', () => {
+      void this.server.close();
       process.exit(0);
     });
   }

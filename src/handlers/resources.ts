@@ -80,7 +80,7 @@ export function setupResources(server: Server): void {
       }
 
       case "cursor://position": {
-        const response = await getCursorPosition();
+        const response = getCursorPosition();
         if (!response.success || !response.data) {
           throw new Error(response.message);
         }

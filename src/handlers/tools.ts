@@ -349,7 +349,7 @@ export function setupTools(server: Server): void {
           if (typeof args?.x !== 'number' || typeof args?.y !== 'number') {
             throw new Error("Invalid click_at arguments");
           }
-          response = await clickAt(
+          response = clickAt(
             args.x,
             args.y,
             typeof args?.button === 'string' ? args.button : 'left'
@@ -360,11 +360,11 @@ export function setupTools(server: Server): void {
           if (!isMousePosition(args)) {
             throw new Error("Invalid mouse position arguments");
           }
-          response = await moveMouse(args);
+          response = moveMouse(args);
           break;
 
         case "click_mouse":
-          response = await clickMouse(
+          response = clickMouse(
             typeof args?.button === 'string' ? args.button : 'left'
           );
           break;
@@ -376,7 +376,7 @@ export function setupTools(server: Server): void {
               typeof args?.toY !== 'number') {
             throw new Error("Invalid drag mouse arguments");
           }
-          response = await dragMouse(
+          response = dragMouse(
             { x: args.fromX, y: args.fromY },
             { x: args.toX, y: args.toY },
             typeof args?.button === 'string' ? args.button : 'left'
@@ -387,28 +387,28 @@ export function setupTools(server: Server): void {
           if (typeof args?.speed !== 'number') {
             throw new Error("Invalid mouse speed argument");
           }
-          response = await setMouseSpeed(args.speed);
+          response = setMouseSpeed(args.speed);
           break;
 
         case "scroll_mouse":
           if (typeof args?.amount !== 'number') {
             throw new Error("Invalid scroll amount argument");
           }
-          response = await scrollMouse(args.amount);
+          response = scrollMouse(args.amount);
           break;
 
         case "type_text":
           if (!isKeyboardInput(args)) {
             throw new Error("Invalid keyboard input arguments");
           }
-          response = await typeText(args);
+          response = typeText(args);
           break;
 
         case "press_key":
           if (typeof args?.key !== 'string') {
             throw new Error("Invalid key press arguments");
           }
-          response = await pressKey(args.key);
+          response = pressKey(args.key);
           break;
 
         case "hold_key":
@@ -431,14 +431,14 @@ export function setupTools(server: Server): void {
 
 
         case "get_cursor_position":
-          response = await getCursorPosition();
+          response = getCursorPosition();
           break;
 
         case "double_click":
           if (args && typeof args.x === 'number' && typeof args.y === 'number') {
-            response = await doubleClick({ x: args.x, y: args.y });
+            response = doubleClick({ x: args.x, y: args.y });
           } else {
-            response = await doubleClick();
+            response = doubleClick();
           }
           break;
 
