@@ -4,7 +4,7 @@ import {
   CallToolRequestSchema,
   TextContent
 } from "@modelcontextprotocol/sdk/types.js";
-import { MousePosition, KeyboardInput, KeyCombination, ClipboardInput, KeyHoldOperation } from "../types/common.js";
+import { MousePosition, KeyboardInput, KeyCombination, ClipboardInput, KeyHoldOperation, ScreenshotOptions } from "../types/common.js";
 import { 
   moveMouse, 
   clickMouse, 
@@ -35,11 +35,71 @@ import {
   hasClipboardText,
   clearClipboard
 } from "../tools/clipboard.js";
+import { getScreenshot } from "../tools/screenshot.js";
 
 export function setupTools(server: Server): void {
   // List available tools
   server.setRequestHandler(ListToolsRequestSchema, () => ({
     tools: [
+      {
+        name: "get_screenshot",
+        description: "Capture a screenshot of the entire screen or a specific region",
+        inputSchema: {
+          type: "object",
+          properties: {
+            region: {
+              type: "object",
+              properties: {
+                x: { type: "number", description: "X coordinate of the region" },
+                y: { type: "number", description: "Y coordinate of the region" },
+                width: { type: "number", description: "Width of the region" },
+                height: { type: "number", description: "Height of the region" }
+              },
+              required: ["x", "y", "width", "height"],
+              description: "Specific region to capture (optional)"
+            },
+            format: {
+              type: "string",
+              enum: ["png", "jpeg"],
+              default: "png",
+              description: "Output format of the screenshot"
+            },
+            quality: {
+              type: "number",
+              minimum: 1,
+              maximum: 100,
+              default: 80,
+              description: "JPEG quality (1-100, higher = better quality), only used for JPEG format"
+            },
+            grayscale: {
+              type: "boolean",
+              default: false,
+              description: "Convert to grayscale"
+            },
+            compressionLevel: {
+              type: "number",
+              minimum: 0,
+              maximum: 9,
+              default: 6,
+              description: "PNG compression level (0-9, higher = better compression), only used for PNG format"
+            },
+            resize: {
+              type: "object",
+              properties: {
+                width: { type: "number", description: "Target width" },
+                height: { type: "number", description: "Target height" },
+                fit: { 
+                  type: "string", 
+                  enum: ["contain", "cover", "fill", "inside", "outside"],
+                  default: "contain",
+                  description: "Resize fit option"
+                }
+              },
+              description: "Resize options for the screenshot"
+            }
+          }
+        }
+      },
       {
         name: "click_at",
         description: "Move mouse to coordinates, click, then return to original position",
@@ -345,6 +405,65 @@ export function setupTools(server: Server): void {
       let response;
 
       switch (name) {
+        case "get_screenshot": {
+          // Validate and convert screenshot options
+          const screenshotOptions: ScreenshotOptions = {};
+          
+          if (args?.region && 
+              typeof args.region === 'object' && 
+              'x' in args.region && typeof args.region.x === 'number' && 
+              'y' in args.region && typeof args.region.y === 'number' &&
+              'width' in args.region && typeof args.region.width === 'number' &&
+              'height' in args.region && typeof args.region.height === 'number') {
+            screenshotOptions.region = {
+              x: args.region.x,
+              y: args.region.y,
+              width: args.region.width,
+              height: args.region.height
+            };
+          }
+          
+          if (args?.format === 'jpeg' || args?.format === 'png') {
+            screenshotOptions.format = args.format;
+          }
+          
+          if (typeof args?.quality === 'number') {
+            screenshotOptions.quality = args.quality;
+          }
+          
+          if (typeof args?.grayscale === 'boolean') {
+            screenshotOptions.grayscale = args.grayscale;
+          }
+          
+          if (typeof args?.compressionLevel === 'number') {
+            screenshotOptions.compressionLevel = args.compressionLevel;
+          }
+          
+          if (args?.resize && typeof args.resize === 'object') {
+            screenshotOptions.resize = {};
+            
+            if ('width' in args.resize && typeof args.resize.width === 'number') {
+              screenshotOptions.resize.width = args.resize.width;
+            }
+            
+            if ('height' in args.resize && typeof args.resize.height === 'number') {
+              screenshotOptions.resize.height = args.resize.height;
+            }
+            
+            if ('fit' in args.resize && typeof args.resize.fit === 'string') {
+              // Type-safe check for valid fit values
+              const fitValue = args.resize.fit;
+              if (fitValue === 'contain' || fitValue === 'cover' || 
+                  fitValue === 'fill' || fitValue === 'inside' || fitValue === 'outside') {
+                screenshotOptions.resize.fit = fitValue;
+              }
+            }
+          }
+          
+          response = await getScreenshot(screenshotOptions);
+          break;
+        }
+          
         case "click_at":
           if (typeof args?.x !== 'number' || typeof args?.y !== 'number') {
             throw new Error("Invalid click_at arguments");
@@ -512,7 +631,16 @@ export function setupTools(server: Server): void {
           throw new Error(`Unknown tool: ${name}`);
       }
 
-      // For non-image responses, return as text
+      // Handle special case for screenshot which returns content with image data
+      if ('content' in response && response.content && Array.isArray(response.content) && 
+          response.content.length > 0 && 'type' in response.content[0] && 
+          response.content[0].type === "image") {
+        return {
+          content: response.content
+        };
+      }
+      
+      // For all other responses, return as text
       return {
         content: [{
           type: "text",

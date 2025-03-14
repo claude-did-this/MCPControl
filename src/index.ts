@@ -1,7 +1,6 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { setupTools } from "./handlers/tools.js";
-import { setupResources } from "./handlers/resources.js";
 
 class WindowsControlServer {
   private server: Server;
@@ -12,8 +11,7 @@ class WindowsControlServer {
       version: "1.0.0"
     }, {
       capabilities: {
-        tools: {},
-        resources: {}
+        tools: {}
       }
     });
 
@@ -23,7 +21,6 @@ class WindowsControlServer {
 
   private setupHandlers(): void {
     setupTools(this.server);
-    setupResources(this.server);
   }
 
   private setupErrorHandling(): void {
@@ -32,8 +29,7 @@ class WindowsControlServer {
     };
 
     process.on('SIGINT', () => {
-      void this.server.close();
-      process.exit(0);
+      void this.server.close().then(() => process.exit(0));
     });
   }
 
