@@ -4,7 +4,7 @@ import {
   CallToolRequestSchema,
   TextContent
 } from "@modelcontextprotocol/sdk/types.js";
-import { MousePosition, KeyboardInput, KeyCombination, ClipboardInput, KeyHoldOperation, ScreenshotOptions } from "../types/common.js";
+import { MousePosition, KeyboardInput, KeyCombination, ClipboardInput, KeyHoldOperation } from "../types/common.js";
 import { 
   moveMouse, 
   clickMouse, 
@@ -23,14 +23,11 @@ import {
 } from "../tools/keyboard.js";
 import { 
   getScreenSize, 
-  getScreenshot, 
   getActiveWindow,
   listAllWindows,
   focusWindow,
   resizeWindow,
-  repositionWindow,
-  minimizeWindow,
-  restoreWindow
+  repositionWindow
 } from "../tools/screen.js";
 import {
   getClipboardContent,
@@ -41,7 +38,7 @@ import {
 
 export function setupTools(server: Server): void {
   // List available tools
-  server.setRequestHandler(ListToolsRequestSchema, async () => ({
+  server.setRequestHandler(ListToolsRequestSchema, () => ({
     tools: [
       {
         name: "click_at",
@@ -207,54 +204,6 @@ export function setupTools(server: Server): void {
         inputSchema: {
           type: "object",
           properties: {}
-        }
-      },
-      {
-        name: "get_screenshot",
-        description: "Take a screenshot with optimized settings for Claude compatibility. Features several options to manage file size and quality:\n\n1. Region Capture: Minimize file size by capturing only relevant screen portions\n   Example: { region: { x: 100, y: 100, width: 800, height: 600 } }\n\n2. Format Selection:\n   - JPEG (recommended for text-heavy content): Provides better compression\n     Example: { format: 'jpeg', quality: 85 }\n   - PNG: Use when transparency is needed\n     Example: { format: 'png', compressionLevel: 6 }\n\n3. Grayscale: Reduces file size while maintaining text readability\n   Example: { grayscale: true }\n\n4. Resize: Essential for high-resolution screens to prevent Claude rejection\n   Example: { resize: { width: 1280, fit: 'contain' } }\n\nRecommended configuration for high-res, text-heavy screenshots:\n{ format: 'jpeg', quality: 85, grayscale: true, resize: { width: 1280, fit: 'contain' } }",
-        inputSchema: {
-          type: "object",
-          properties: {
-            region: {
-              type: "object",
-              properties: {
-                x: { type: "number" },
-                y: { type: "number" },
-                width: { type: "number" },
-                height: { type: "number" }
-              },
-              description: "Capture specific region to minimize file size"
-            },
-            quality: {
-              type: "number",
-              description: "JPEG quality (1-100), only used if format is 'jpeg'. Recommended: 85 for balance"
-            },
-            format: {
-              type: "string",
-              enum: ["png", "jpeg"],
-              description: "Output format. Use 'jpeg' for text-heavy content, 'png' when transparency needed"
-            },
-            grayscale: {
-              type: "boolean",
-              description: "Convert to grayscale to reduce file size while maintaining readability"
-            },
-            resize: {
-              type: "object",
-              properties: {
-                width: { type: "number" },
-                height: { type: "number" },
-                fit: {
-                  type: "string",
-                  enum: ["contain", "cover", "fill", "inside", "outside"]
-                }
-              },
-              description: "Resize options for high-resolution screens. Recommended width: 1280"
-            },
-            compressionLevel: {
-              type: "number",
-              description: "PNG compression level (0-9), only used if format is 'png'. Recommended: 6"
-            }
-          }
         }
       },
       {
@@ -477,45 +426,9 @@ export function setupTools(server: Server): void {
           break;
 
         case "get_screen_size":
-          response = await getScreenSize();
+          response = getScreenSize();
           break;
 
-        case "get_screenshot":
-          const options: ScreenshotOptions = {};
-          if (args?.region) {
-            options.region = args.region as { x: number; y: number; width: number; height: number; };
-          }
-          if (args?.quality) {
-            options.quality = args.quality as number;
-          }
-          if (args?.format) {
-            options.format = args.format as 'png' | 'jpeg';
-          }
-          if (args?.grayscale) {
-            options.grayscale = args.grayscale as boolean;
-          }
-          if (args?.resize) {
-            options.resize = args.resize as { width?: number; height?: number; fit?: 'contain' | 'cover' | 'fill' | 'inside' | 'outside'; };
-          }
-          if (args?.compressionLevel) {
-            options.compressionLevel = args.compressionLevel as number;
-          }
-          response = await getScreenshot(options);
-          // Format screenshot response for MCP protocol
-          if (response.success && response.content && response.content[0]?.type === "image") {
-            return {
-              content: [{
-                type: "text",
-                text: JSON.stringify({
-                  success: true,
-                  message: "Screenshot captured successfully",
-                  screenshot: response.content[0].data,
-                  timestamp: new Date().toISOString()
-                })
-              }]
-            };
-          }
-          break;
 
         case "get_cursor_position":
           response = await getCursorPosition();
@@ -530,7 +443,7 @@ export function setupTools(server: Server): void {
           break;
 
         case "get_active_window":
-          response = await getActiveWindow();
+          response = getActiveWindow();
           break;
 
         case "list_windows":
@@ -541,7 +454,7 @@ export function setupTools(server: Server): void {
           if (typeof args?.title !== 'string') {
             throw new Error("Invalid window title argument");
           }
-          response = await focusWindow(args.title);
+          response = focusWindow(args.title);
           break;
 
         case "resize_window":
@@ -550,7 +463,7 @@ export function setupTools(server: Server): void {
               typeof args?.height !== 'number') {
             throw new Error("Invalid window resize arguments");
           }
-          response = await resizeWindow(args.title, args.width, args.height);
+          response = resizeWindow(args.title, args.width, args.height);
           break;
 
         case "reposition_window":
@@ -559,21 +472,21 @@ export function setupTools(server: Server): void {
               typeof args?.y !== 'number') {
             throw new Error("Invalid window reposition arguments");
           }
-          response = await repositionWindow(args.title, args.x, args.y);
+          response = repositionWindow(args.title, args.x, args.y);
           break;
 
         case "minimize_window":
           if (typeof args?.title !== 'string') {
             throw new Error("Invalid window title argument");
           }
-          response = await minimizeWindow(args.title);
+          response = { success: false, message: "Minimize window operation is not supported" };
           break;
 
         case "restore_window":
           if (typeof args?.title !== 'string') {
             throw new Error("Invalid window title argument");
           }
-          response = await restoreWindow(args.title);
+          response = { success: false, message: "Restore window operation is not supported" };
           break;
 
         case "get_clipboard_content":

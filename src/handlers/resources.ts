@@ -3,12 +3,13 @@ import {
   ListResourcesRequestSchema,
   ReadResourceRequestSchema
 } from "@modelcontextprotocol/sdk/types.js";
-import { getScreenshot, getScreenSize, getActiveWindow, listAllWindows } from "../tools/screen.js";
+import { getScreenSize, getActiveWindow, listAllWindows } from "../tools/screen.js";
+import { getScreenshot } from "../resources/screenshot.js";
 import { getCursorPosition } from "../tools/mouse.js";
 
 export function setupResources(server: Server): void {
   // Handle resources/list request
-  server.setRequestHandler(ListResourcesRequestSchema, async () => ({
+  server.setRequestHandler(ListResourcesRequestSchema, () => ({
     resources: [
       {
         uri: "screen://current",
@@ -64,7 +65,7 @@ export function setupResources(server: Server): void {
       }
 
       case "screen://size": {
-        const response = await getScreenSize();
+        const response = getScreenSize();
         if (!response.success || !response.data) {
           throw new Error(response.message);
         }
@@ -94,7 +95,7 @@ export function setupResources(server: Server): void {
       }
 
       case "window://active": {
-        const response = await getActiveWindow();
+        const response = getActiveWindow();
         if (!response.success || !response.data) {
           throw new Error(response.message);
         }

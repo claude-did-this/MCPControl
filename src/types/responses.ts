@@ -14,7 +14,7 @@ export interface ScreenshotResponse {
 export interface WindowsControlResponse {
   success: boolean;
   message: string;
-  data?: any;
+  data?: unknown;
   screenshot?: Buffer | string;  // Buffer for binary data, string for base64
   content?: ImageContent[];  // MCP image content for screenshots
   encoding?: "binary" | "base64";  // Specify the encoding type

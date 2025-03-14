@@ -1,32 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-  getScreenSize,
-  getScreenshot,
-  getActiveWindow,
-  listAllWindows,
-  focusWindow,
-  resizeWindow,
-  repositionWindow,
-  minimizeWindow,
-  restoreWindow
-} from './screen.js';
-import type { ScreenshotOptions } from '../types/common.js';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// Mock sharp
-vi.mock('sharp', () => {
-  const mockPipeline = {
-    grayscale: vi.fn().mockReturnThis(),
-    resize: vi.fn().mockReturnThis(),
-    jpeg: vi.fn().mockReturnThis(),
-    png: vi.fn().mockReturnThis(),
-    toBuffer: vi.fn().mockResolvedValue(Buffer.from('mock-image-data'))
-  };
-  return {
-    default: vi.fn(() => mockPipeline)
-  };
-});
-
-// Mock libnut
+// Mock Declarations must be at the top level - before imports
 vi.mock('@nut-tree/libnut', () => ({
   default: {
     screen: {
@@ -42,30 +16,41 @@ vi.mock('@nut-tree/libnut', () => ({
   }
 }));
 
-import libnut from '@nut-tree/libnut';
-import sharp from 'sharp';
 
-describe('Screen Tools', () => {
+// Import mocked modules after vi.mock declarations
+import libnut from '@nut-tree/libnut';
+import { 
+  getScreenSize, 
+  getActiveWindow, 
+  listAllWindows, 
+  focusWindow,
+  resizeWindow,
+  repositionWindow
+} from './screen';
+
+describe('Screen Functions', () => {
   beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  afterEach(() => {
     vi.clearAllMocks();
   });
 
   describe('getScreenSize', () => {
-    it('should return screen dimensions', async () => {
-      vi.mocked(libnut.screen.capture).mockReturnValue({
-        width: 1920,
-        height: 1080,
-        image: Buffer.alloc(0),
-        byteWidth: 7680,  // width * 4 (BGRA)
-        bitsPerPixel: 32,
-        bytesPerPixel: 4
-      });
+    it('should return screen dimensions on success', () => {
+      // Setup
+      const mockScreen = { width: 1920, height: 1080, image: Buffer.from('test') };
+      (libnut.screen.capture as any).mockReturnValue(mockScreen);
 
-      const result = await getScreenSize();
+      // Execute
+      const result = getScreenSize();
 
+      // Verify
+      expect(libnut.screen.capture).toHaveBeenCalledTimes(1);
       expect(result).toEqual({
         success: true,
-        message: 'Screen size retrieved successfully',
+        message: "Screen size retrieved successfully",
         data: {
           width: 1920,
           height: 1080
@@ -73,211 +58,312 @@ describe('Screen Tools', () => {
       });
     });
 
-    it('should handle errors', async () => {
-      vi.mocked(libnut.screen.capture).mockImplementation(() => {
-        throw new Error('Screen capture failed');
+    it('should return error response when capture fails', () => {
+      // Setup
+      (libnut.screen.capture as any).mockImplementation(() => {
+        throw new Error('Capture failed');
       });
 
-      const result = await getScreenSize();
+      // Execute
+      const result = getScreenSize();
 
+      // Verify
       expect(result).toEqual({
         success: false,
-        message: 'Failed to get screen size: Screen capture failed'
+        message: "Failed to get screen size: Capture failed"
       });
     });
   });
 
-  describe('getScreenshot', () => {
-    const mockScreenCapture = {
-      width: 1920,
-      height: 1080,
-      image: Buffer.from([
-        0, 0, 255, 255,  // BGRA pixel
-        0, 255, 0, 255,  // BGRA pixel
-        255, 0, 0, 255   // BGRA pixel
-      ]),
-      byteWidth: 7680,  // width * 4 (BGRA)
-      bitsPerPixel: 32,
-      bytesPerPixel: 4
-    };
 
-    beforeEach(() => {
-      vi.mocked(libnut.screen.capture).mockReturnValue(mockScreenCapture);
+  describe('getActiveWindow', () => {
+    it('should return active window information on success', () => {
+      // Setup
+      (libnut.getActiveWindow as any).mockReturnValue(123);
+      (libnut.getWindowTitle as any).mockReturnValue('Test Window');
+      (libnut.getWindowRect as any).mockReturnValue({ x: 10, y: 20, width: 800, height: 600 });
+
+      // Execute
+      const result = getActiveWindow();
+
+      // Verify
+      expect(libnut.getActiveWindow).toHaveBeenCalledTimes(1);
+      expect(libnut.getWindowTitle).toHaveBeenCalledWith(123);
+      expect(libnut.getWindowRect).toHaveBeenCalledWith(123);
+      expect(result).toEqual({
+        success: true,
+        message: "Active window information retrieved successfully",
+        data: {
+          title: 'Test Window',
+          position: { x: 10, y: 20 },
+          size: { width: 800, height: 600 }
+        }
+      });
     });
 
-    it('should capture full screen with default options', async () => {
-      const result = await getScreenshot();
+    it('should return error response when active window retrieval fails', () => {
+      // Setup
+      (libnut.getActiveWindow as any).mockImplementation(() => {
+        throw new Error('Cannot get active window');
+      });
 
+      // Execute
+      const result = getActiveWindow();
+
+      // Verify
+      expect(result).toEqual({
+        success: false,
+        message: "Failed to get active window information: Cannot get active window"
+      });
+    });
+  });
+
+  describe('listAllWindows', () => {
+    it('should return list of windows on success', async () => {
+      // Setup
+      (libnut.getWindows as any).mockReturnValue([1, 2, 3]);
+      (libnut.getWindowTitle as any).mockImplementation((handle: number) => `Window ${handle}`);
+      (libnut.getWindowRect as any).mockImplementation((handle: number) => ({ 
+        x: handle * 10, 
+        y: handle * 20, 
+        width: 800, 
+        height: 600 
+      }));
+
+      // Execute
+      const result = await listAllWindows();
+
+      // Verify
+      expect(libnut.getWindows).toHaveBeenCalledTimes(1);
+      expect(libnut.getWindowTitle).toHaveBeenCalledTimes(3);
+      expect(libnut.getWindowRect).toHaveBeenCalledTimes(3);
+      expect(result).toEqual({
+        success: true,
+        message: "Window list retrieved successfully",
+        data: [
+          {
+            title: 'Window 1',
+            position: { x: 10, y: 20 },
+            size: { width: 800, height: 600 }
+          },
+          {
+            title: 'Window 2',
+            position: { x: 20, y: 40 },
+            size: { width: 800, height: 600 }
+          },
+          {
+            title: 'Window 3',
+            position: { x: 30, y: 60 },
+            size: { width: 800, height: 600 }
+          }
+        ]
+      });
+    });
+
+    it('should skip windows that cannot be accessed', async () => {
+      // Setup
+      (libnut.getWindows as any).mockReturnValue([1, 2, 3]);
+      (libnut.getWindowTitle as any).mockImplementation((handle: number) => {
+        if (handle === 2) throw new Error('Cannot access window');
+        return `Window ${handle}`;
+      });
+      (libnut.getWindowRect as any).mockImplementation((handle: number) => ({ 
+        x: handle * 10, 
+        y: handle * 20, 
+        width: 800, 
+        height: 600 
+      }));
+
+      // Execute
+      const result = await listAllWindows();
+
+      // Verify
       expect(result.success).toBe(true);
-      expect(result.message).toBe('Screenshot captured successfully');
-      expect(result.content?.[0].type).toBe('image');
-      expect(result.content?.[0].mimeType).toBe('image/png');
-      expect(libnut.screen.capture).toHaveBeenCalledWith();
+      if (result.data && Array.isArray(result.data)) {
+        expect(result.data).toHaveLength(2);
+        expect(result.data[0].title).toBe('Window 1');
+        expect(result.data[1].title).toBe('Window 3');
+      }
     });
 
-    it('should capture specific region when provided', async () => {
-      const options: ScreenshotOptions = {
-        region: { x: 0, y: 0, width: 800, height: 600 }
-      };
-
-      await getScreenshot(options);
-
-      expect(libnut.screen.capture).toHaveBeenCalledWith(0, 0, 800, 600);
-    });
-
-    it('should apply grayscale when requested', async () => {
-      const options: ScreenshotOptions = { grayscale: true };
-      
-      await getScreenshot(options);
-
-      expect(vi.mocked(sharp().grayscale)).toHaveBeenCalled();
-    });
-
-    it('should handle JPEG format with quality', async () => {
-      const options: ScreenshotOptions = {
-        format: 'jpeg',
-        quality: 90
-      };
-
-      const result = await getScreenshot(options);
-
-      expect(vi.mocked(sharp().jpeg)).toHaveBeenCalledWith({
-        quality: 90,
-        mozjpeg: true
+    it('should return error response when window list fails', async () => {
+      // Setup
+      (libnut.getWindows as any).mockImplementation(() => {
+        throw new Error('Cannot list windows');
       });
-      expect(result.content?.[0].mimeType).toBe('image/jpeg');
+
+      // Execute
+      const result = await listAllWindows();
+
+      // Verify
+      expect(result).toEqual({
+        success: false,
+        message: "Failed to list windows: Cannot list windows"
+      });
     });
   });
 
-  describe('Window Management', () => {
-    const mockWindowHandle = 12345;  // Changed to number
-    const mockWindowInfo = {
-      title: 'Test Window',
-      position: { x: 0, y: 0 },
-      size: { width: 800, height: 600 }
-    };
-
-    beforeEach(() => {
-      vi.mocked(libnut.getActiveWindow).mockResolvedValue(mockWindowHandle);
-      vi.mocked(libnut.getWindowTitle).mockResolvedValue(mockWindowInfo.title);
-      vi.mocked(libnut.getWindowRect).mockResolvedValue({
-        x: 0,
-        y: 0,
-        width: 800,
-        height: 600
-      });
-      vi.mocked(libnut.getWindows).mockResolvedValue([mockWindowHandle]);
-    });
-
-    describe('getActiveWindow', () => {
-      it('should return active window information', async () => {
-        const result = await getActiveWindow();
-
-        expect(result).toEqual({
-          success: true,
-          message: 'Active window information retrieved successfully',
-          data: mockWindowInfo
-        });
+  describe('focusWindow', () => {
+    it('should focus window with matching title', () => {
+      // Setup
+      (libnut.getWindows as any).mockReturnValue([1, 2, 3]);
+      (libnut.getWindowTitle as any).mockImplementation((handle: number) => {
+        return handle === 2 ? 'Target Window' : `Window ${handle}`;
       });
 
-      it('should handle errors', async () => {
-        vi.mocked(libnut.getActiveWindow).mockRejectedValue(new Error('Failed to get active window'));
+      // Execute
+      const result = focusWindow('Target');
 
-        const result = await getActiveWindow();
-
-        expect(result.success).toBe(false);
-        expect(result.message).toContain('Failed to get active window');
+      // Verify
+      expect(libnut.getWindows).toHaveBeenCalledTimes(1);
+      expect(libnut.getWindowTitle).toHaveBeenCalledTimes(2); // Should stop after finding match
+      expect(libnut.focusWindow).toHaveBeenCalledWith(2);
+      expect(result).toEqual({
+        success: true,
+        message: "Successfully focused window: Target"
       });
     });
 
-    describe('listAllWindows', () => {
-      it('should return list of all windows', async () => {
-        const result = await listAllWindows();
+    it('should return error when window with title is not found', () => {
+      // Setup
+      (libnut.getWindows as any).mockReturnValue([1, 2, 3]);
+      (libnut.getWindowTitle as any).mockImplementation((handle: number) => `Window ${handle}`);
 
-        expect(result).toEqual({
-          success: true,
-          message: 'Window list retrieved successfully',
-          data: [mockWindowInfo]
-        });
-      });
+      // Execute
+      const result = focusWindow('Nonexistent');
 
-      it('should filter out inaccessible windows', async () => {
-        vi.mocked(libnut.getWindows).mockResolvedValue([12345, 67890]);
-        vi.mocked(libnut.getWindowTitle)
-          .mockResolvedValueOnce('Window 1')
-          .mockRejectedValueOnce(new Error('Access denied'));
-
-        const result = await listAllWindows();
-
-        expect(result.success).toBe(true);
-        expect(result.data).toHaveLength(1);
+      // Verify
+      expect(libnut.getWindowTitle).toHaveBeenCalledTimes(3);
+      expect(libnut.focusWindow).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        success: false,
+        message: "Could not find window with title: Nonexistent"
       });
     });
 
-    describe('focusWindow', () => {
-      it('should focus window by title', async () => {
-        const result = await focusWindow('Test Window');
-
-        expect(result).toEqual({
-          success: true,
-          message: 'Successfully focused window: Test Window'
-        });
-        expect(libnut.focusWindow).toHaveBeenCalledWith(mockWindowHandle);
+    it('should return error response when focus operation fails', () => {
+      // Setup
+      (libnut.getWindows as any).mockImplementation(() => {
+        throw new Error('Cannot list windows');
       });
 
-      it('should handle window not found', async () => {
-        vi.mocked(libnut.getWindowTitle).mockResolvedValue('Different Window');
+      // Execute
+      const result = focusWindow('Any');
 
-        const result = await focusWindow('Test Window');
+      // Verify
+      expect(result).toEqual({
+        success: false,
+        message: "Failed to focus window: Cannot list windows"
+      });
+    });
+  });
 
-        expect(result).toEqual({
-          success: false,
-          message: 'Could not find window with title: Test Window'
-        });
+  describe('resizeWindow', () => {
+    it('should resize window with matching title', () => {
+      // Setup
+      (libnut.getWindows as any).mockReturnValue([1, 2, 3]);
+      (libnut.getWindowTitle as any).mockImplementation((handle: number) => {
+        return handle === 2 ? 'Target Window' : `Window ${handle}`;
+      });
+
+      // Execute
+      const result = resizeWindow('Target', 1024, 768);
+
+      // Verify
+      expect(libnut.getWindows).toHaveBeenCalledTimes(1);
+      expect(libnut.getWindowTitle).toHaveBeenCalledTimes(2); // Should stop after finding match
+      expect(libnut.resizeWindow).toHaveBeenCalledWith(2, { width: 1024, height: 768 });
+      expect(result).toEqual({
+        success: true,
+        message: "Successfully resized window: Target to 1024x768"
       });
     });
 
-    describe('resizeWindow', () => {
-      it('should resize window by title', async () => {
-        const result = await resizeWindow('Test Window', 1024, 768);
+    it('should return error when window with title is not found', () => {
+      // Setup
+      (libnut.getWindows as any).mockReturnValue([1, 2, 3]);
+      (libnut.getWindowTitle as any).mockImplementation((handle: number) => `Window ${handle}`);
 
-        expect(result).toEqual({
-          success: true,
-          message: 'Successfully resized window: Test Window'
-        });
-        expect(libnut.resizeWindow).toHaveBeenCalledWith(mockWindowHandle, {
-          width: 1024,
-          height: 768
-        });
+      // Execute
+      const result = resizeWindow('Nonexistent', 1024, 768);
+
+      // Verify
+      expect(libnut.getWindowTitle).toHaveBeenCalledTimes(3);
+      expect(libnut.resizeWindow).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        success: false,
+        message: "Could not find window with title: Nonexistent"
       });
     });
 
-    describe('repositionWindow', () => {
-      it('should reposition window by title', async () => {
-        const result = await repositionWindow('Test Window', 100, 100);
+    it('should return error response when resize operation fails', () => {
+      // Setup
+      (libnut.getWindows as any).mockImplementation(() => {
+        throw new Error('Cannot list windows');
+      });
 
-        expect(result).toEqual({
-          success: true,
-          message: 'Successfully repositioned window: Test Window'
-        });
-        expect(libnut.moveWindow).toHaveBeenCalledWith(mockWindowHandle, {
-          x: 100,
-          y: 100
-        });
+      // Execute
+      const result = resizeWindow('Any', 1024, 768);
+
+      // Verify
+      expect(result).toEqual({
+        success: false,
+        message: "Failed to resize window: Cannot list windows"
+      });
+    });
+  });
+
+  describe('repositionWindow', () => {
+    it('should reposition window with matching title', () => {
+      // Setup
+      (libnut.getWindows as any).mockReturnValue([1, 2, 3]);
+      (libnut.getWindowTitle as any).mockImplementation((handle: number) => {
+        return handle === 2 ? 'Target Window' : `Window ${handle}`;
+      });
+
+      // Execute
+      const result = repositionWindow('Target', 100, 200);
+
+      // Verify
+      expect(libnut.getWindows).toHaveBeenCalledTimes(1);
+      expect(libnut.getWindowTitle).toHaveBeenCalledTimes(2); // Should stop after finding match
+      expect(libnut.moveWindow).toHaveBeenCalledWith(2, { x: 100, y: 200 });
+      expect(result).toEqual({
+        success: true,
+        message: "Successfully repositioned window: Target to (100,200)"
       });
     });
 
-    describe('Unsupported Operations', () => {
-      it('should return appropriate message for minimize', async () => {
-        const result = await minimizeWindow('Test Window');
-        expect(result.success).toBe(false);
-        expect(result.message).toContain('not currently supported');
+    it('should return error when window with title is not found', () => {
+      // Setup
+      (libnut.getWindows as any).mockReturnValue([1, 2, 3]);
+      (libnut.getWindowTitle as any).mockImplementation((handle: number) => `Window ${handle}`);
+
+      // Execute
+      const result = repositionWindow('Nonexistent', 100, 200);
+
+      // Verify
+      expect(libnut.getWindowTitle).toHaveBeenCalledTimes(3);
+      expect(libnut.moveWindow).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        success: false,
+        message: "Could not find window with title: Nonexistent"
+      });
+    });
+
+    it('should return error response when reposition operation fails', () => {
+      // Setup
+      (libnut.getWindows as any).mockImplementation(() => {
+        throw new Error('Cannot list windows');
       });
 
-      it('should return appropriate message for restore', async () => {
-        const result = await restoreWindow('Test Window');
-        expect(result.success).toBe(false);
-        expect(result.message).toContain('not currently supported');
+      // Execute
+      const result = repositionWindow('Any', 100, 200);
+
+      // Verify
+      expect(result).toEqual({
+        success: false,
+        message: "Failed to reposition window: Cannot list windows"
       });
     });
   });
