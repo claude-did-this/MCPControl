@@ -8,9 +8,9 @@ const buttonMap: ButtonMap = {
   'middle': 'middle'
 };
 
-export async function moveMouse(position: MousePosition): Promise<WindowsControlResponse> {
+export function moveMouse(position: MousePosition): WindowsControlResponse {
   try {
-    await libnut.moveMouse(position.x, position.y);
+    libnut.moveMouse(position.x, position.y);
     return {
       success: true,
       message: `Mouse moved to position (${position.x}, ${position.y})`
@@ -23,10 +23,10 @@ export async function moveMouse(position: MousePosition): Promise<WindowsControl
   }
 }
 
-export async function clickMouse(button: keyof ButtonMap = 'left'): Promise<WindowsControlResponse> {
+export function clickMouse(button: keyof ButtonMap = 'left'): WindowsControlResponse {
   try {
     const buttonName = buttonMap[button];
-    await libnut.mouseClick(buttonName);
+    libnut.mouseClick(buttonName);
     return {
       success: true,
       message: `Clicked ${button} mouse button`
@@ -39,12 +39,12 @@ export async function clickMouse(button: keyof ButtonMap = 'left'): Promise<Wind
   }
 }
 
-export async function doubleClick(position?: MousePosition): Promise<WindowsControlResponse> {
+export function doubleClick(position?: MousePosition): WindowsControlResponse {
   try {
     if (position) {
-      await libnut.moveMouse(position.x, position.y);
+      libnut.moveMouse(position.x, position.y);
     }
-    await libnut.mouseClick("left", true); // Use the built-in double click parameter
+    libnut.mouseClick("left", true); // Use the built-in double click parameter
     return {
       success: true,
       message: position ? 
@@ -59,7 +59,7 @@ export async function doubleClick(position?: MousePosition): Promise<WindowsCont
   }
 }
 
-export async function getCursorPosition(): Promise<WindowsControlResponse> {
+export function getCursorPosition(): WindowsControlResponse {
   try {
     const position = libnut.getMousePos();
     return {
@@ -78,9 +78,9 @@ export async function getCursorPosition(): Promise<WindowsControlResponse> {
   }
 }
 
-export async function scrollMouse(amount: number): Promise<WindowsControlResponse> {
+export function scrollMouse(amount: number): WindowsControlResponse {
   try {
-    await libnut.scrollMouse(0, amount); // x is 0 for vertical scrolling
+    libnut.scrollMouse(0, amount); // x is 0 for vertical scrolling
     return {
       success: true,
       message: `Scrolled mouse ${amount > 0 ? 'down' : 'up'} by ${Math.abs(amount)} units`
@@ -93,21 +93,21 @@ export async function scrollMouse(amount: number): Promise<WindowsControlRespons
   }
 }
 
-export async function dragMouse(from: MousePosition, to: MousePosition, button: keyof ButtonMap = 'left'): Promise<WindowsControlResponse> {
+export function dragMouse(from: MousePosition, to: MousePosition, button: keyof ButtonMap = 'left'): WindowsControlResponse {
   try {
     const buttonName = buttonMap[button];
     
     // Move to start position
-    await libnut.moveMouse(from.x, from.y);
+    libnut.moveMouse(from.x, from.y);
     
     // Press mouse button
-    await libnut.mouseToggle("down", buttonName);
+    libnut.mouseToggle("down", buttonName);
     
     // Move to end position
-    await libnut.moveMouse(to.x, to.y);
+    libnut.moveMouse(to.x, to.y);
     
     // Release mouse button
-    await libnut.mouseToggle("up", buttonName);
+    libnut.mouseToggle("up", buttonName);
     
     return {
       success: true,
@@ -116,7 +116,7 @@ export async function dragMouse(from: MousePosition, to: MousePosition, button: 
   } catch (error) {
     // Ensure mouse button is released in case of error
     try {
-      await libnut.mouseToggle("up", buttonMap[button]);
+      libnut.mouseToggle("up", buttonMap[button]);
     } catch {
       // Ignore cleanup errors
     }
@@ -128,7 +128,7 @@ export async function dragMouse(from: MousePosition, to: MousePosition, button: 
   }
 }
 
-export async function clickAt(x: number, y: number, button: keyof ButtonMap = 'left'): Promise<WindowsControlResponse> {
+export function clickAt(x: number, y: number, button: keyof ButtonMap = 'left'): WindowsControlResponse {
   if (typeof x !== 'number' || typeof y !== 'number' || isNaN(x) || isNaN(y)) {
     return {
       success: false,
@@ -137,16 +137,16 @@ export async function clickAt(x: number, y: number, button: keyof ButtonMap = 'l
   }
   try {
     // Store original position
-    const originalPosition = await libnut.getMousePos();
+    const originalPosition = libnut.getMousePos();
     
     // Move to target position
-    await libnut.moveMouse(x, y);
+    libnut.moveMouse(x, y);
     
     // Perform click
-    await libnut.mouseClick(buttonMap[button]);
+    libnut.mouseClick(buttonMap[button]);
     
     // Return to original position
-    await libnut.moveMouse(originalPosition.x, originalPosition.y);
+    libnut.moveMouse(originalPosition.x, originalPosition.y);
     
     return {
       success: true,
@@ -160,12 +160,12 @@ export async function clickAt(x: number, y: number, button: keyof ButtonMap = 'l
   }
 }
 
-export async function setMouseSpeed(speed: number): Promise<WindowsControlResponse> {
+export function setMouseSpeed(speed: number): WindowsControlResponse {
   try {
     // Speed is in milliseconds. Lower values = faster movement
     // Clamp between 1 and 100 for safety
     const clampedSpeed = Math.max(1, Math.min(100, speed));
-    await libnut.setMouseDelay(clampedSpeed);
+    libnut.setMouseDelay(clampedSpeed);
     
     return {
       success: true,

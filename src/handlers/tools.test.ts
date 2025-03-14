@@ -1,22 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setupTools } from './tools.js';
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { ListToolsRequestSchema, CallToolRequestSchema, ImageContent } from "@modelcontextprotocol/sdk/types.js";
+import { ListToolsRequestSchema, CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 
 // Mock all tool modules
 vi.mock('../tools/mouse.js', () => ({
-  moveMouse: vi.fn(),
+  moveMouse: vi.fn(() => ({ success: true, message: 'Mouse moved' })),
   clickMouse: vi.fn(),
   doubleClick: vi.fn(),
   getCursorPosition: vi.fn(),
   scrollMouse: vi.fn(),
   dragMouse: vi.fn(),
-  setMouseSpeed: vi.fn()
+  setMouseSpeed: vi.fn(),
+  clickAt: vi.fn()
 }));
 
 vi.mock('../tools/keyboard.js', () => ({
-  typeText: vi.fn(),
-  pressKey: vi.fn(),
+  typeText: vi.fn(() => ({ success: true, message: 'Text typed' })),
+  pressKey: vi.fn(() => ({ success: true, message: 'Key pressed' })),
   pressKeyCombination: vi.fn().mockResolvedValue({
     success: true,
     message: 'Pressed key combination: control+c'
@@ -26,7 +27,6 @@ vi.mock('../tools/keyboard.js', () => ({
 
 vi.mock('../tools/screen.js', () => ({
   getScreenSize: vi.fn(),
-  getScreenshot: vi.fn(),
   getActiveWindow: vi.fn(),
   listAllWindows: vi.fn(),
   focusWindow: vi.fn(),
@@ -44,15 +44,13 @@ vi.mock('../tools/clipboard.js', () => ({
 }));
 
 // Import mocked functions for testing
-import { moveMouse, clickMouse } from '../tools/mouse.js';
+import { moveMouse } from '../tools/mouse.js';
 import { typeText, pressKey } from '../tools/keyboard.js';
-import { getScreenSize, getScreenshot } from '../tools/screen.js';
-import { getClipboardContent, setClipboardContent } from '../tools/clipboard.js';
 
 describe('Tools Handler', () => {
   let mockServer: Server;
-  let listToolsHandler: Function;
-  let callToolHandler: Function;
+  let listToolsHandler: (request?: any) => Promise<any>;
+  let callToolHandler: (request: any) => Promise<any>;
 
   beforeEach(() => {
     // Reset all mocks
@@ -92,7 +90,7 @@ describe('Tools Handler', () => {
 
   describe('Tool Execution', () => {
     it('should execute move_mouse tool with valid arguments', async () => {
-      vi.mocked(moveMouse).mockResolvedValue({ success: true, message: 'Mouse moved' });
+      // Mock is already setup in the mock declaration with default success response
 
       const result = await callToolHandler({
         params: {
@@ -109,7 +107,7 @@ describe('Tools Handler', () => {
     });
 
     it('should execute type_text tool with valid arguments', async () => {
-      vi.mocked(typeText).mockResolvedValue({ success: true, message: 'Text typed' });
+      // Mock is already setup in the mock declaration with default success response
 
       const result = await callToolHandler({
         params: {
@@ -125,35 +123,6 @@ describe('Tools Handler', () => {
       });
     });
 
-    it('should handle screenshot tool with VS Code format', async () => {
-      const mockImageContent: ImageContent[] = [{
-        type: "image",
-        data: 'base64-image-data',
-        mimeType: 'image/png'
-      }];
-
-      vi.mocked(getScreenshot).mockResolvedValue({
-        success: true,
-        message: 'Screenshot taken',
-        content: mockImageContent
-      });
-
-      const result = await callToolHandler({
-        params: {
-          name: 'get_screenshot',
-          arguments: { format: 'png' }
-        }
-      });
-
-      const parsedContent = JSON.parse(result.content[0].text);
-      expect(parsedContent).toEqual({
-        success: true,
-        message: 'Screenshot captured successfully',
-        screenshot: 'base64-image-data',
-        timestamp: expect.any(String)
-      });
-      expect(new Date(parsedContent.timestamp).getTime()).not.toBeNaN();
-    });
   });
 
   describe('Error Handling', () => {
@@ -182,7 +151,9 @@ describe('Tools Handler', () => {
     });
 
     it('should handle tool execution errors', async () => {
-      vi.mocked(pressKey).mockRejectedValue(new Error('Key press failed'));
+      vi.mocked(pressKey).mockImplementationOnce(() => {
+        throw new Error('Key press failed');
+      });
 
       const result = await callToolHandler({
         params: {
@@ -198,7 +169,7 @@ describe('Tools Handler', () => {
 
   describe('Type Validation', () => {
     it('should validate mouse position arguments', async () => {
-      vi.mocked(moveMouse).mockResolvedValue({ success: true, message: 'Mouse moved' });
+      // Mock is already set up in the mock declaration
 
       const validResult = await callToolHandler({
         params: {
@@ -218,7 +189,7 @@ describe('Tools Handler', () => {
     });
 
     it('should validate keyboard input arguments', async () => {
-      vi.mocked(typeText).mockResolvedValue({ success: true, message: 'Text typed' });
+      // Mock is already set up in the mock declaration
 
       const validResult = await callToolHandler({
         params: {

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import libnut from '@nut-tree/libnut';
-import { clickAt, moveMouse, clickMouse } from './mouse.js';
+import { clickAt } from './mouse.js';
 
 // Mock libnut
 vi.mock('@nut-tree/libnut', () => ({
@@ -19,11 +19,11 @@ describe('Mouse Tools', () => {
   });
 
   describe('clickAt', () => {
-    it('should move to position, click, and return to original position', async () => {
+    it('should move to position, click, and return to original position', () => {
       // Mock original position
       (libnut.getMousePos as any).mockReturnValue({ x: 10, y: 20 });
 
-      const result = await clickAt(100, 200);
+      const result = clickAt(100, 200);
 
       // Verify the sequence of operations
       expect(libnut.getMousePos).toHaveBeenCalledTimes(1);
@@ -40,16 +40,16 @@ describe('Mouse Tools', () => {
       expect(result.message).toContain('Clicked left button at position (100, 200)');
     });
 
-    it('should support different mouse buttons', async () => {
-      const result = await clickAt(100, 200, 'right');
+    it('should support different mouse buttons', () => {
+      const result = clickAt(100, 200, 'right');
 
       expect(libnut.mouseClick).toHaveBeenCalledWith('right');
       expect(result.success).toBe(true);
       expect(result.message).toContain('Clicked right button');
     });
 
-    it('should handle invalid coordinates', async () => {
-      const result = await clickAt(NaN, 200);
+    it('should handle invalid coordinates', () => {
+      const result = clickAt(NaN, 200);
 
       expect(libnut.moveMouse).not.toHaveBeenCalled();
       expect(libnut.mouseClick).not.toHaveBeenCalled();
@@ -57,10 +57,10 @@ describe('Mouse Tools', () => {
       expect(result.message).toBe('Invalid coordinates provided');
     });
 
-    it('should handle errors during mouse operations', async () => {
-      (libnut.moveMouse as any).mockRejectedValue(new Error('Mouse movement failed'));
+    it('should handle errors during mouse operations', () => {
+      (libnut.moveMouse as any).mockImplementationOnce(() => { throw new Error('Mouse movement failed'); });
 
-      const result = await clickAt(100, 200);
+      const result = clickAt(100, 200);
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('Failed to click at position');
