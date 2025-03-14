@@ -58,7 +58,7 @@ describe('Mouse Tools', () => {
     });
 
     it('should handle errors during mouse operations', () => {
-      (libnut.moveMouse as any).mockRejectedValue(new Error('Mouse movement failed'));
+      (libnut.moveMouse as any).mockImplementationOnce(() => { throw new Error('Mouse movement failed'); });
 
       const result = clickAt(100, 200);
 

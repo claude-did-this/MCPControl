@@ -33,7 +33,7 @@ describe('Keyboard Tools', () => {
 
     it('should handle errors when typing text fails', () => {
       const error = new Error('Typing failed');
-      vi.mocked(libnut.typeString).mockRejectedValueOnce(error);
+      vi.mocked(libnut.typeString).mockImplementationOnce(() => { throw error; });
 
       const input: KeyboardInput = { text: 'Hello World' };
       const result = typeText(input);
@@ -58,7 +58,7 @@ describe('Keyboard Tools', () => {
 
     it('should handle errors when pressing key fails', () => {
       const error = new Error('Key press failed');
-      vi.mocked(libnut.keyTap).mockRejectedValueOnce(error);
+      vi.mocked(libnut.keyTap).mockImplementationOnce(() => { throw error; });
 
       const result = pressKey('a');
 
@@ -87,7 +87,7 @@ describe('Keyboard Tools', () => {
 
     it('should attempt cleanup when key combination fails', async () => {
       const error = new Error('Key combination failed');
-      vi.mocked(libnut.keyToggle).mockRejectedValueOnce(error);
+      vi.mocked(libnut.keyToggle).mockImplementationOnce(() => { throw error; });
 
       const combination: KeyCombination = { keys: ['control', 'c'] };
       const result = await pressKeyCombination(combination);
@@ -145,7 +145,7 @@ describe('Keyboard Tools', () => {
 
     it('should attempt cleanup when hold operation fails', async () => {
       const error = new Error('Hold operation failed');
-      vi.mocked(libnut.keyToggle).mockRejectedValueOnce(error);
+      vi.mocked(libnut.keyToggle).mockImplementationOnce(() => { throw error; });
 
       const operation: KeyHoldOperation = {
         key: 'shift',

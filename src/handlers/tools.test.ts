@@ -5,18 +5,19 @@ import { ListToolsRequestSchema, CallToolRequestSchema } from "@modelcontextprot
 
 // Mock all tool modules
 vi.mock('../tools/mouse.js', () => ({
-  moveMouse: vi.fn(),
+  moveMouse: vi.fn(() => ({ success: true, message: 'Mouse moved' })),
   clickMouse: vi.fn(),
   doubleClick: vi.fn(),
   getCursorPosition: vi.fn(),
   scrollMouse: vi.fn(),
   dragMouse: vi.fn(),
-  setMouseSpeed: vi.fn()
+  setMouseSpeed: vi.fn(),
+  clickAt: vi.fn()
 }));
 
 vi.mock('../tools/keyboard.js', () => ({
-  typeText: vi.fn(),
-  pressKey: vi.fn(),
+  typeText: vi.fn(() => ({ success: true, message: 'Text typed' })),
+  pressKey: vi.fn(() => ({ success: true, message: 'Key pressed' })),
   pressKeyCombination: vi.fn().mockResolvedValue({
     success: true,
     message: 'Pressed key combination: control+c'
@@ -89,7 +90,7 @@ describe('Tools Handler', () => {
 
   describe('Tool Execution', () => {
     it('should execute move_mouse tool with valid arguments', async () => {
-      vi.mocked(moveMouse).mockResolvedValue({ success: true, message: 'Mouse moved' });
+      // Mock is already setup in the mock declaration with default success response
 
       const result = await callToolHandler({
         params: {
@@ -106,7 +107,7 @@ describe('Tools Handler', () => {
     });
 
     it('should execute type_text tool with valid arguments', async () => {
-      vi.mocked(typeText).mockResolvedValue({ success: true, message: 'Text typed' });
+      // Mock is already setup in the mock declaration with default success response
 
       const result = await callToolHandler({
         params: {
@@ -150,7 +151,9 @@ describe('Tools Handler', () => {
     });
 
     it('should handle tool execution errors', async () => {
-      vi.mocked(pressKey).mockRejectedValue(new Error('Key press failed'));
+      vi.mocked(pressKey).mockImplementationOnce(() => {
+        throw new Error('Key press failed');
+      });
 
       const result = await callToolHandler({
         params: {
@@ -166,7 +169,7 @@ describe('Tools Handler', () => {
 
   describe('Type Validation', () => {
     it('should validate mouse position arguments', async () => {
-      vi.mocked(moveMouse).mockResolvedValue({ success: true, message: 'Mouse moved' });
+      // Mock is already set up in the mock declaration
 
       const validResult = await callToolHandler({
         params: {
@@ -186,7 +189,7 @@ describe('Tools Handler', () => {
     });
 
     it('should validate keyboard input arguments', async () => {
-      vi.mocked(typeText).mockResolvedValue({ success: true, message: 'Text typed' });
+      // Mock is already set up in the mock declaration
 
       const validResult = await callToolHandler({
         params: {
