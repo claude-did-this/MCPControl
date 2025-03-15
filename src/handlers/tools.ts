@@ -24,7 +24,6 @@ import {
 import { 
   getScreenSize, 
   getActiveWindow,
-  listAllWindows,
   focusWindow,
   resizeWindow,
   repositionWindow
@@ -294,14 +293,6 @@ export function setupTools(server: Server): void {
         }
       },
       {
-        name: "list_windows",
-        description: "Get a list of all visible windows with their information",
-        inputSchema: {
-          type: "object",
-          properties: {}
-        }
-      },
-      {
         name: "focus_window",
         description: "Focus a specific window by its title",
         inputSchema: {
@@ -565,9 +556,6 @@ export function setupTools(server: Server): void {
           response = getActiveWindow();
           break;
 
-        case "list_windows":
-          response = await listAllWindows();
-          break;
 
         case "focus_window":
           if (typeof args?.title !== 'string') {
