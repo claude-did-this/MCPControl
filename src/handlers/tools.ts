@@ -43,7 +43,7 @@ export function setupTools(server: Server): void {
     tools: [
       {
         name: "get_screenshot",
-        description: "Take a screenshot with options to optimize for AI compatibility. Supports region capture for specific areas, format selection (JPEG/PNG), quality settings, grayscale conversion, and resizing. For text-heavy content, recommended settings: { format: 'jpeg', quality: 85, grayscale: true, resize: { width: 1280, fit: 'contain' } }",
+        description: "Take a screenshot optimized for AI readability, especially for text-heavy content. Uses default settings: JPEG format, 85% quality, grayscale enabled, and 1280px width (preserving aspect ratio). Supports region capture, format options, quality adjustment, and custom resize settings.",
         inputSchema: {
           type: "object",
           properties: {
@@ -61,19 +61,19 @@ export function setupTools(server: Server): void {
             format: {
               type: "string",
               enum: ["png", "jpeg"],
-              default: "png",
+              default: "jpeg",
               description: "Output format of the screenshot"
             },
             quality: {
               type: "number",
               minimum: 1,
               maximum: 100,
-              default: 80,
+              default: 85,
               description: "JPEG quality (1-100, higher = better quality), only used for JPEG format"
             },
             grayscale: {
               type: "boolean",
-              default: false,
+              default: true,
               description: "Convert to grayscale"
             },
             compressionLevel: {
@@ -86,7 +86,11 @@ export function setupTools(server: Server): void {
             resize: {
               type: "object",
               properties: {
-                width: { type: "number", description: "Target width" },
+                width: { 
+                  type: "number", 
+                  default: 1280,
+                  description: "Target width" 
+                },
                 height: { type: "number", description: "Target height" },
                 fit: { 
                   type: "string", 
@@ -95,6 +99,7 @@ export function setupTools(server: Server): void {
                   description: "Resize fit option"
                 }
               },
+              default: { width: 1280, fit: "contain" },
               description: "Resize options for the screenshot"
             }
           }
@@ -406,8 +411,17 @@ export function setupTools(server: Server): void {
 
       switch (name) {
         case "get_screenshot": {
-          // Validate and convert screenshot options
-          const screenshotOptions: ScreenshotOptions = {};
+          // Validate and convert screenshot options with AI-optimized defaults
+          const screenshotOptions: ScreenshotOptions = {
+            // Default values for text-heavy content readability
+            format: 'jpeg',
+            quality: 85,
+            grayscale: true,
+            resize: {
+              width: 1280,
+              fit: 'contain'
+            }
+          };
           
           if (args?.region && 
               typeof args.region === 'object' && 
@@ -440,7 +454,10 @@ export function setupTools(server: Server): void {
           }
           
           if (args?.resize && typeof args.resize === 'object') {
-            screenshotOptions.resize = {};
+            // Preserve the default resize settings that weren't explicitly overridden
+            if (!screenshotOptions.resize) {
+              screenshotOptions.resize = { width: 1280, fit: 'contain' };
+            }
             
             if ('width' in args.resize && typeof args.resize.width === 'number') {
               screenshotOptions.resize.width = args.resize.width;
