@@ -47,48 +47,6 @@ export function getActiveWindow(): WindowsControlResponse {
   }
 }
 
-export async function listAllWindows(): Promise<WindowsControlResponse> {
-  try {
-    const handles = libnut.getWindows();
-    
-    const windowsWithNull = await Promise.all(
-      handles.map((handle) => {
-        try {
-          const title = libnut.getWindowTitle(handle);
-          const rect = libnut.getWindowRect(handle);
-          
-          // Skip windows at (0,0) or with zero dimensions
-          if ((rect.x === 0 && rect.y === 0) || (rect.width === 0 || rect.height === 0)) {
-            return null;
-          }
-          
-          return {
-            title: title,
-            position: { x: rect.x, y: rect.y },
-            size: { width: rect.width, height: rect.height }
-          } as WindowInfo;
-        } catch {
-          return null;
-        }
-      })
-    );
-
-    const windows = windowsWithNull.filter((window: WindowInfo | null): window is WindowInfo => 
-      window !== null && window.title.trim() !== ''
-    );
-
-    return {
-      success: true,
-      message: "Window list retrieved successfully",
-      data: windows
-    };
-  } catch (error) {
-    return {
-      success: false,
-      message: `Failed to list windows: ${error instanceof Error ? error.message : String(error)}`
-    };
-  }
-}
 
 export function focusWindow(title: string): WindowsControlResponse {
   try {

@@ -28,7 +28,6 @@ vi.mock('../tools/keyboard.js', () => ({
 vi.mock('../tools/screen.js', () => ({
   getScreenSize: vi.fn(),
   getActiveWindow: vi.fn(),
-  listAllWindows: vi.fn(),
   focusWindow: vi.fn(),
   resizeWindow: vi.fn(),
   repositionWindow: vi.fn(),

@@ -22,7 +22,6 @@ import libnut from '@nut-tree/libnut';
 import { 
   getScreenSize, 
   getActiveWindow, 
-  listAllWindows, 
   focusWindow,
   resizeWindow,
   repositionWindow
@@ -118,90 +117,6 @@ describe('Screen Functions', () => {
     });
   });
 
-  describe('listAllWindows', () => {
-    it('should return list of windows on success', async () => {
-      // Setup
-      (libnut.getWindows as any).mockReturnValue([1, 2, 3]);
-      (libnut.getWindowTitle as any).mockImplementation((handle: number) => `Window ${handle}`);
-      (libnut.getWindowRect as any).mockImplementation((handle: number) => ({ 
-        x: handle * 10, 
-        y: handle * 20, 
-        width: 800, 
-        height: 600 
-      }));
-
-      // Execute
-      const result = await listAllWindows();
-
-      // Verify
-      expect(libnut.getWindows).toHaveBeenCalledTimes(1);
-      expect(libnut.getWindowTitle).toHaveBeenCalledTimes(3);
-      expect(libnut.getWindowRect).toHaveBeenCalledTimes(3);
-      expect(result).toEqual({
-        success: true,
-        message: "Window list retrieved successfully",
-        data: [
-          {
-            title: 'Window 1',
-            position: { x: 10, y: 20 },
-            size: { width: 800, height: 600 }
-          },
-          {
-            title: 'Window 2',
-            position: { x: 20, y: 40 },
-            size: { width: 800, height: 600 }
-          },
-          {
-            title: 'Window 3',
-            position: { x: 30, y: 60 },
-            size: { width: 800, height: 600 }
-          }
-        ]
-      });
-    });
-
-    it('should skip windows that cannot be accessed', async () => {
-      // Setup
-      (libnut.getWindows as any).mockReturnValue([1, 2, 3]);
-      (libnut.getWindowTitle as any).mockImplementation((handle: number) => {
-        if (handle === 2) throw new Error('Cannot access window');
-        return `Window ${handle}`;
-      });
-      (libnut.getWindowRect as any).mockImplementation((handle: number) => ({ 
-        x: handle * 10, 
-        y: handle * 20, 
-        width: 800, 
-        height: 600 
-      }));
-
-      // Execute
-      const result = await listAllWindows();
-
-      // Verify
-      expect(result.success).toBe(true);
-      if (result.data && Array.isArray(result.data)) {
-        expect(result.data).toHaveLength(2);
-        expect(result.data[0].title).toBe('Window 1');
-        expect(result.data[1].title).toBe('Window 3');
-      }
-    });
-
-    it('should return error response when window list fails', async () => {
-      // Setup
-      (libnut.getWindows as any).mockImplementation(() => {
-        throw new Error('Cannot list windows');
-      });
-
-      // Execute
-      const result = await listAllWindows();
-
-      // Verify
-      expect(result).toEqual({
-        success: false,
-        message: "Failed to list windows: Cannot list windows"
-      });
-    });
-  });
 
   describe('focusWindow', () => {
     it('should focus window with matching title', () => {
