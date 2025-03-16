@@ -11,7 +11,6 @@ vi.mock('../tools/mouse.js', () => ({
   getCursorPosition: vi.fn(),
   scrollMouse: vi.fn(),
   dragMouse: vi.fn(),
-  setMouseSpeed: vi.fn(),
   clickAt: vi.fn()
 }));
 
@@ -84,9 +83,7 @@ vi.mock('../providers/factory.js', () => {
   };
 });
 
-// Import mocked functions for testing
-import { moveMouse } from '../tools/mouse.js';
-import { typeText, pressKey } from '../tools/keyboard.js';
+// Import for mocking
 import { createAutomationProvider } from '../providers/factory.js';
 
 describe('Tools Handler', () => {
@@ -134,6 +131,7 @@ describe('Tools Handler', () => {
   describe('Tool Execution', () => {
     it('should execute move_mouse tool with valid arguments', async () => {
       // Mock is already setup in the mock declaration with default success response
+      const mockProvider = vi.mocked(createAutomationProvider)();
 
       const result = await callToolHandler({
         params: {
@@ -142,7 +140,7 @@ describe('Tools Handler', () => {
         }
       });
 
-      expect(moveMouse).toHaveBeenCalledWith({ x: 100, y: 200 });
+      expect(mockProvider.mouse.moveMouse).toHaveBeenCalledWith({ x: 100, y: 200 });
       expect(JSON.parse(result.content[0].text)).toEqual({
         success: true,
         message: 'Mouse moved'
@@ -151,6 +149,7 @@ describe('Tools Handler', () => {
 
     it('should execute type_text tool with valid arguments', async () => {
       // Mock is already setup in the mock declaration with default success response
+      const mockProvider = vi.mocked(createAutomationProvider)();
 
       const result = await callToolHandler({
         params: {
@@ -159,7 +158,7 @@ describe('Tools Handler', () => {
         }
       });
 
-      expect(typeText).toHaveBeenCalledWith({ text: 'Hello World' });
+      expect(mockProvider.keyboard.typeText).toHaveBeenCalledWith({ text: 'Hello World' });
       expect(JSON.parse(result.content[0].text)).toEqual({
         success: true,
         message: 'Text typed'
@@ -194,7 +193,8 @@ describe('Tools Handler', () => {
     });
 
     it('should handle tool execution errors', async () => {
-      vi.mocked(pressKey).mockImplementationOnce(() => {
+      const mockProvider = vi.mocked(createAutomationProvider)();
+      vi.mocked(mockProvider.keyboard.pressKey).mockImplementationOnce(() => {
         throw new Error('Key press failed');
       });
 

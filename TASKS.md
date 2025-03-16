@@ -62,7 +62,6 @@
 - [x] Basic mouse movement and clicking
 - [x] Mouse scroll (up/down)
 - [x] Mouse drag operations
-- [x] Set mouse movement speed
 - [x] Cursor position tracking
 
 ### Keyboard Control

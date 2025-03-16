@@ -5,22 +5,7 @@ import {
   TextContent
 } from "@modelcontextprotocol/sdk/types.js";
 import { MousePosition, KeyboardInput, KeyCombination, ClipboardInput, KeyHoldOperation, ScreenshotOptions } from "../types/common.js";
-import { 
-  moveMouse, 
-  clickMouse, 
-  doubleClick, 
-  getCursorPosition,
-  scrollMouse,
-  dragMouse,
-  setMouseSpeed,
-  clickAt
-} from "../tools/mouse.js";
-import { 
-  typeText, 
-  pressKey,
-  pressKeyCombination,
-  holdKey
-} from "../tools/keyboard.js";
+// All tool functions now come from the provider
 // Provider is now passed from the main server instance
 import { AutomationProvider } from "../interfaces/provider.js";
 
@@ -160,22 +145,6 @@ export function setupTools(server: Server, provider: AutomationProvider): void {
             }
           },
           required: ["fromX", "fromY", "toX", "toY"]
-        }
-      },
-      {
-        name: "set_mouse_speed",
-        description: "Set the mouse movement speed (delay in milliseconds)",
-        inputSchema: {
-          type: "object",
-          properties: {
-            speed: { 
-              type: "number", 
-              description: "Mouse movement delay in milliseconds (1-100, lower = faster)",
-              minimum: 1,
-              maximum: 100
-            }
-          },
-          required: ["speed"]
         }
       },
       {
@@ -471,10 +440,12 @@ export function setupTools(server: Server, provider: AutomationProvider): void {
           if (typeof args?.x !== 'number' || typeof args?.y !== 'number') {
             throw new Error("Invalid click_at arguments");
           }
-          response = clickAt(
+          response = provider.mouse.clickAt(
             args.x,
             args.y,
-            typeof args?.button === 'string' ? args.button : 'left'
+            (typeof args?.button === 'string' && 
+              (args.button === 'left' || args.button === 'right' || args.button === 'middle')) ? 
+              args.button : 'left'
           );
           break;
 
@@ -482,12 +453,14 @@ export function setupTools(server: Server, provider: AutomationProvider): void {
           if (!isMousePosition(args)) {
             throw new Error("Invalid mouse position arguments");
           }
-          response = moveMouse(args);
+          response = provider.mouse.moveMouse(args);
           break;
 
         case "click_mouse":
-          response = clickMouse(
-            typeof args?.button === 'string' ? args.button : 'left'
+          response = provider.mouse.clickMouse(
+            (typeof args?.button === 'string' && 
+              (args.button === 'left' || args.button === 'right' || args.button === 'middle')) ? 
+              args.button : 'left'
           );
           break;
 
@@ -498,53 +471,49 @@ export function setupTools(server: Server, provider: AutomationProvider): void {
               typeof args?.toY !== 'number') {
             throw new Error("Invalid drag mouse arguments");
           }
-          response = dragMouse(
+          response = provider.mouse.dragMouse(
             { x: args.fromX, y: args.fromY },
             { x: args.toX, y: args.toY },
-            typeof args?.button === 'string' ? args.button : 'left'
+            (typeof args?.button === 'string' && 
+              (args.button === 'left' || args.button === 'right' || args.button === 'middle')) ? 
+              args.button : 'left'
           );
           break;
 
-        case "set_mouse_speed":
-          if (typeof args?.speed !== 'number') {
-            throw new Error("Invalid mouse speed argument");
-          }
-          response = setMouseSpeed(args.speed);
-          break;
 
         case "scroll_mouse":
           if (typeof args?.amount !== 'number') {
             throw new Error("Invalid scroll amount argument");
           }
-          response = scrollMouse(args.amount);
+          response = provider.mouse.scrollMouse(args.amount);
           break;
 
         case "type_text":
           if (!isKeyboardInput(args)) {
             throw new Error("Invalid keyboard input arguments");
           }
-          response = typeText(args);
+          response = provider.keyboard.typeText(args);
           break;
 
         case "press_key":
           if (typeof args?.key !== 'string') {
             throw new Error("Invalid key press arguments");
           }
-          response = pressKey(args.key);
+          response = provider.keyboard.pressKey(args.key);
           break;
 
         case "hold_key":
           if (!isKeyHoldOperation(args)) {
             throw new Error("Invalid key hold arguments");
           }
-          response = await holdKey(args);
+          response = await provider.keyboard.holdKey(args);
           break;
 
         case "press_key_combination":
           if (!isKeyCombination(args)) {
             throw new Error("Invalid key combination arguments");
           }
-          response = await pressKeyCombination(args);
+          response = await provider.keyboard.pressKeyCombination(args);
           break;
 
         case "get_screen_size":
@@ -552,14 +521,14 @@ export function setupTools(server: Server, provider: AutomationProvider): void {
           break;
 
         case "get_cursor_position":
-          response = getCursorPosition();
+          response = provider.mouse.getCursorPosition();
           break;
 
         case "double_click":
           if (args && typeof args.x === 'number' && typeof args.y === 'number') {
-            response = doubleClick({ x: args.x, y: args.y });
+            response = provider.mouse.doubleClick({ x: args.x, y: args.y });
           } else {
-            response = doubleClick();
+            response = provider.mouse.doubleClick();
           }
           break;
 

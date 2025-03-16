@@ -32,7 +32,7 @@ By using this software, you acknowledge and accept that:
   - Reposition windows
 
 - **Mouse Control**
-  - Mouse movement with configurable speed
+  - Mouse movement
   - Click operations
   - Scroll functionality
   - Drag operations
