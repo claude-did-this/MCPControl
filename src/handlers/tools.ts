@@ -21,20 +21,13 @@ import {
   pressKeyCombination,
   holdKey
 } from "../tools/keyboard.js";
-import { 
-  getScreenSize, 
-  getActiveWindow,
-  focusWindow,
-  resizeWindow,
-  repositionWindow
-} from "../tools/screen.js";
 import {
   getClipboardContent,
   setClipboardContent,
   hasClipboardText,
   clearClipboard
 } from "../tools/clipboard.js";
-import { getScreenshot } from "../tools/screenshot.js";
+import { createAutomationProvider } from "../providers/factory.js";
 
 export function setupTools(server: Server): void {
   // List available tools
@@ -402,6 +395,9 @@ export function setupTools(server: Server): void {
 
       switch (name) {
         case "get_screenshot": {
+          // Get screen provider
+          const provider = createAutomationProvider();
+          
           // Validate and convert screenshot options with AI-optimized defaults
           const screenshotOptions: ScreenshotOptions = {
             // Default values for text-heavy content readability
@@ -468,7 +464,7 @@ export function setupTools(server: Server): void {
             }
           }
           
-          response = await getScreenshot(screenshotOptions);
+          response = await provider.screen.getScreenshot(screenshotOptions);
           break;
         }
           
@@ -552,10 +548,11 @@ export function setupTools(server: Server): void {
           response = await pressKeyCombination(args);
           break;
 
-        case "get_screen_size":
-          response = getScreenSize();
+        case "get_screen_size": {
+          const provider = createAutomationProvider();
+          response = provider.screen.getScreenSize();
           break;
-
+        }
 
         case "get_cursor_position":
           response = getCursorPosition();
@@ -569,35 +566,42 @@ export function setupTools(server: Server): void {
           }
           break;
 
-        case "get_active_window":
-          response = getActiveWindow();
+        case "get_active_window": {
+          const provider = createAutomationProvider();
+          response = provider.screen.getActiveWindow();
           break;
+        }
 
-
-        case "focus_window":
+        case "focus_window": {
           if (typeof args?.title !== 'string') {
             throw new Error("Invalid window title argument");
           }
-          response = focusWindow(args.title);
+          const provider = createAutomationProvider();
+          response = provider.screen.focusWindow(args.title);
           break;
+        }
 
-        case "resize_window":
+        case "resize_window": {
           if (typeof args?.title !== 'string' || 
               typeof args?.width !== 'number' || 
               typeof args?.height !== 'number') {
             throw new Error("Invalid window resize arguments");
           }
-          response = resizeWindow(args.title, args.width, args.height);
+          const provider = createAutomationProvider();
+          response = provider.screen.resizeWindow(args.title, args.width, args.height);
           break;
+        }
 
-        case "reposition_window":
+        case "reposition_window": {
           if (typeof args?.title !== 'string' || 
               typeof args?.x !== 'number' || 
               typeof args?.y !== 'number') {
             throw new Error("Invalid window reposition arguments");
           }
-          response = repositionWindow(args.title, args.x, args.y);
+          const provider = createAutomationProvider();
+          response = provider.screen.repositionWindow(args.title, args.x, args.y);
           break;
+        }
 
         case "minimize_window":
           if (typeof args?.title !== 'string') {

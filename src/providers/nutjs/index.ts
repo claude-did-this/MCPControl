@@ -2,45 +2,14 @@ import { AutomationProvider } from '../../interfaces/provider.js';
 import { KeyboardAutomation, MouseAutomation, ScreenAutomation, ClipboardAutomation } from '../../interfaces/automation.js';
 import { NutJSKeyboardAutomation } from './keyboard.js';
 import { NutJSMouseAutomation } from './mouse.js';
-// We'll implement these later in subsequent PRs
-// import { NutJSScreenAutomation } from './screen.js';
+import { NutJSScreenAutomation } from './screen.js';
+// We'll implement this later in subsequent PRs
 // import { NutJSClipboardAutomation } from './clipboard.js';
 
-// For now, we'll just import the existing implementations
-import * as screenOriginal from '../../tools/screen.js';
-import * as screenshotOriginal from '../../tools/screenshot.js';
+// For now, we'll just import the existing clipboard implementation
 import * as clipboardOriginal from '../../tools/clipboard.js';
-import { ScreenshotOptions, ClipboardInput } from '../../types/common.js';
+import { ClipboardInput } from '../../types/common.js';
 import { WindowsControlResponse } from '../../types/responses.js';
-
-/**
- * Bridge adapter for screen functionality until full implementation is ready
- */
-class NutJSScreenAdapter implements ScreenAutomation {
-  getScreenSize(): WindowsControlResponse {
-    return screenOriginal.getScreenSize();
-  }
-
-  getActiveWindow(): WindowsControlResponse {
-    return screenOriginal.getActiveWindow();
-  }
-
-  focusWindow(title: string): WindowsControlResponse {
-    return screenOriginal.focusWindow(title);
-  }
-
-  resizeWindow(title: string, width: number, height: number): WindowsControlResponse {
-    return screenOriginal.resizeWindow(title, width, height);
-  }
-
-  repositionWindow(title: string, x: number, y: number): WindowsControlResponse {
-    return screenOriginal.repositionWindow(title, x, y);
-  }
-
-  async getScreenshot(options?: ScreenshotOptions): Promise<WindowsControlResponse> {
-    return screenshotOriginal.getScreenshot(options);
-  }
-}
 
 /**
  * Bridge adapter for clipboard functionality until full implementation is ready
@@ -94,9 +63,9 @@ export class NutJSProvider implements AutomationProvider {
     // Fully refactored implementations
     this.keyboard = new NutJSKeyboardAutomation();
     this.mouse = new NutJSMouseAutomation();
+    this.screen = new NutJSScreenAutomation();
     
-    // Adapter implementations until we refactor these in subsequent PRs
-    this.screen = new NutJSScreenAdapter();
+    // Adapter implementation until we refactor in a subsequent PR
     this.clipboard = new NutJSClipboardAdapter();
   }
 }
