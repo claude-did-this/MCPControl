@@ -160,21 +160,3 @@ export function clickAt(x: number, y: number, button: keyof ButtonMap = 'left'):
   }
 }
 
-export function setMouseSpeed(speed: number): WindowsControlResponse {
-  try {
-    // Speed is in milliseconds. Lower values = faster movement
-    // Clamp between 1 and 100 for safety
-    const clampedSpeed = Math.max(1, Math.min(100, speed));
-    libnut.setMouseDelay(clampedSpeed);
-    
-    return {
-      success: true,
-      message: `Mouse speed set to ${clampedSpeed}ms delay`
-    };
-  } catch (error) {
-    return {
-      success: false,
-      message: `Failed to set mouse speed: ${error instanceof Error ? error.message : String(error)}`
-    };
-  }
-}

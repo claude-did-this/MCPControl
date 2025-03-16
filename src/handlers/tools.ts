@@ -5,27 +5,32 @@ import {
   TextContent
 } from "@modelcontextprotocol/sdk/types.js";
 import { MousePosition, KeyboardInput, KeyCombination, ClipboardInput, KeyHoldOperation, ScreenshotOptions } from "../types/common.js";
-import { 
-  moveMouse, 
-  clickMouse, 
-  doubleClick, 
-  getCursorPosition,
-  scrollMouse,
-  dragMouse,
-  setMouseSpeed,
-  clickAt
-} from "../tools/mouse.js";
-import { 
-  typeText, 
-  pressKey,
-  pressKeyCombination,
-  holdKey
-} from "../tools/keyboard.js";
+// All tool functions now come from the provider
 // Provider is now passed from the main server instance
 import { AutomationProvider } from "../interfaces/provider.js";
 
 /**
- * Set up automation tools on the MCP server using the provided automation provider
+ * Validates the mouse button parameter and returns a valid button value
+ * @param button The button parameter to validate
+ * @returns A validated mouse button value: 'left', 'right', or 'middle'
+ */
+function validateButton(button?: unknown): 'left' | 'right' | 'middle' {
+  return (typeof button === 'string' && 
+    ['left', 'right', 'middle'].includes(button)) ? 
+    button as 'left' | 'right' | 'middle' : 'left';
+}
+
+/**
+ * Set up automation tools on the MCP server using the provided automation provider.
+ * This function implements the provider pattern for all tool handlers, allowing
+ * for dependency injection of automation implementations.
+ * 
+ * The provider pattern offers several benefits:
+ * - Testability: Makes unit testing easier by allowing mock providers
+ * - Flexibility: Allows changing provider implementations without changing tool handlers
+ * - Consistency: Ensures all automation is handled through a single provider interface
+ * - Maintainability: Reduces direct dependencies on specific implementation details
+ * 
  * @param server The Model Context Protocol server instance
  * @param provider The automation provider implementation that will handle system interactions
  */
@@ -160,22 +165,6 @@ export function setupTools(server: Server, provider: AutomationProvider): void {
             }
           },
           required: ["fromX", "fromY", "toX", "toY"]
-        }
-      },
-      {
-        name: "set_mouse_speed",
-        description: "Set the mouse movement speed (delay in milliseconds)",
-        inputSchema: {
-          type: "object",
-          properties: {
-            speed: { 
-              type: "number", 
-              description: "Mouse movement delay in milliseconds (1-100, lower = faster)",
-              minimum: 1,
-              maximum: 100
-            }
-          },
-          required: ["speed"]
         }
       },
       {
@@ -471,10 +460,10 @@ export function setupTools(server: Server, provider: AutomationProvider): void {
           if (typeof args?.x !== 'number' || typeof args?.y !== 'number') {
             throw new Error("Invalid click_at arguments");
           }
-          response = clickAt(
+          response = provider.mouse.clickAt(
             args.x,
             args.y,
-            typeof args?.button === 'string' ? args.button : 'left'
+            validateButton(args?.button)
           );
           break;
 
@@ -482,12 +471,12 @@ export function setupTools(server: Server, provider: AutomationProvider): void {
           if (!isMousePosition(args)) {
             throw new Error("Invalid mouse position arguments");
           }
-          response = moveMouse(args);
+          response = provider.mouse.moveMouse(args);
           break;
 
         case "click_mouse":
-          response = clickMouse(
-            typeof args?.button === 'string' ? args.button : 'left'
+          response = provider.mouse.clickMouse(
+            validateButton(args?.button)
           );
           break;
 
@@ -498,53 +487,47 @@ export function setupTools(server: Server, provider: AutomationProvider): void {
               typeof args?.toY !== 'number') {
             throw new Error("Invalid drag mouse arguments");
           }
-          response = dragMouse(
+          response = provider.mouse.dragMouse(
             { x: args.fromX, y: args.fromY },
             { x: args.toX, y: args.toY },
-            typeof args?.button === 'string' ? args.button : 'left'
+            validateButton(args?.button)
           );
           break;
 
-        case "set_mouse_speed":
-          if (typeof args?.speed !== 'number') {
-            throw new Error("Invalid mouse speed argument");
-          }
-          response = setMouseSpeed(args.speed);
-          break;
 
         case "scroll_mouse":
           if (typeof args?.amount !== 'number') {
             throw new Error("Invalid scroll amount argument");
           }
-          response = scrollMouse(args.amount);
+          response = provider.mouse.scrollMouse(args.amount);
           break;
 
         case "type_text":
           if (!isKeyboardInput(args)) {
             throw new Error("Invalid keyboard input arguments");
           }
-          response = typeText(args);
+          response = provider.keyboard.typeText(args);
           break;
 
         case "press_key":
           if (typeof args?.key !== 'string') {
             throw new Error("Invalid key press arguments");
           }
-          response = pressKey(args.key);
+          response = provider.keyboard.pressKey(args.key);
           break;
 
         case "hold_key":
           if (!isKeyHoldOperation(args)) {
             throw new Error("Invalid key hold arguments");
           }
-          response = await holdKey(args);
+          response = await provider.keyboard.holdKey(args);
           break;
 
         case "press_key_combination":
           if (!isKeyCombination(args)) {
             throw new Error("Invalid key combination arguments");
           }
-          response = await pressKeyCombination(args);
+          response = await provider.keyboard.pressKeyCombination(args);
           break;
 
         case "get_screen_size":
@@ -552,14 +535,14 @@ export function setupTools(server: Server, provider: AutomationProvider): void {
           break;
 
         case "get_cursor_position":
-          response = getCursorPosition();
+          response = provider.mouse.getCursorPosition();
           break;
 
         case "double_click":
           if (args && typeof args.x === 'number' && typeof args.y === 'number') {
-            response = doubleClick({ x: args.x, y: args.y });
+            response = provider.mouse.doubleClick({ x: args.x, y: args.y });
           } else {
-            response = doubleClick();
+            response = provider.mouse.doubleClick();
           }
           break;
 
@@ -660,18 +643,33 @@ export function setupTools(server: Server, provider: AutomationProvider): void {
   });
 }
 
+/**
+ * Type guard to validate if an object matches the MousePosition interface
+ * @param args The object to validate
+ * @returns True if the object is a valid MousePosition
+ */
 function isMousePosition(args: unknown): args is MousePosition {
   if (typeof args !== 'object' || args === null) return false;
   const pos = args as Record<string, unknown>;
   return typeof pos.x === 'number' && typeof pos.y === 'number';
 }
 
+/**
+ * Type guard to validate if an object matches the KeyboardInput interface
+ * @param args The object to validate
+ * @returns True if the object is a valid KeyboardInput
+ */
 function isKeyboardInput(args: unknown): args is KeyboardInput {
   if (typeof args !== 'object' || args === null) return false;
   const input = args as Record<string, unknown>;
   return typeof input.text === 'string';
 }
 
+/**
+ * Type guard to validate if an object matches the KeyCombination interface
+ * @param args The object to validate
+ * @returns True if the object is a valid KeyCombination
+ */
 function isKeyCombination(args: unknown): args is KeyCombination {
   if (typeof args !== 'object' || args === null) return false;
   const combo = args as Record<string, unknown>;
@@ -679,6 +677,11 @@ function isKeyCombination(args: unknown): args is KeyCombination {
   return combo.keys.every(key => typeof key === 'string');
 }
 
+/**
+ * Type guard to validate if an object matches the KeyHoldOperation interface
+ * @param args The object to validate
+ * @returns True if the object is a valid KeyHoldOperation
+ */
 function isKeyHoldOperation(args: unknown): args is KeyHoldOperation {
   if (typeof args !== 'object' || args === null) return false;
   const op = args as Record<string, unknown>;
@@ -689,6 +692,11 @@ function isKeyHoldOperation(args: unknown): args is KeyHoldOperation {
   );
 }
 
+/**
+ * Type guard to validate if an object matches the ClipboardInput interface
+ * @param args The object to validate
+ * @returns True if the object is a valid ClipboardInput
+ */
 function isClipboardInput(args: unknown): args is ClipboardInput {
   if (typeof args !== 'object' || args === null) return false;
   const input = args as Record<string, unknown>;
