@@ -7,31 +7,43 @@ import { AutomationProvider } from "./interfaces/provider.js";
 
 class WindowsControlServer {
   private server: Server;
+  
+  /** Automation provider instance used for system interaction */
   private provider: AutomationProvider;
 
   constructor() {
-    // Load configuration
-    const config = loadConfig();
-    
-    // Create automation provider based on configuration
-    this.provider = createAutomationProvider(config.provider);
-    
-    this.server = new Server({
-      name: "windows-control",
-      version: "1.0.0"
-    }, {
-      capabilities: {
-        tools: {}
+    try {
+      // Load configuration
+      const config = loadConfig();
+      
+      // Validate configuration
+      if (!config || typeof config.provider !== 'string') {
+        throw new Error('Invalid configuration: provider property is missing or invalid');
       }
-    });
+      
+      // Create automation provider based on configuration
+      this.provider = createAutomationProvider(config.provider);
+      
+      this.server = new Server({
+        name: "windows-control",
+        version: "1.0.0"
+      }, {
+        capabilities: {
+          tools: {}
+        }
+      });
 
-    this.setupHandlers();
-    this.setupErrorHandling();
+      this.setupHandlers();
+      this.setupErrorHandling();
+    } catch (error) {
+      console.error(`Failed to initialize Windows Control Server: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
   }
 
   private setupHandlers(): void {
     // Pass the provider to setupTools
-    setupTools(this.server);
+    setupTools(this.server, this.provider);
   }
 
   private setupErrorHandling(): void {

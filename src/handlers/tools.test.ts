@@ -87,6 +87,7 @@ vi.mock('../providers/factory.js', () => {
 // Import mocked functions for testing
 import { moveMouse } from '../tools/mouse.js';
 import { typeText, pressKey } from '../tools/keyboard.js';
+import { createAutomationProvider } from '../providers/factory.js';
 
 describe('Tools Handler', () => {
   let mockServer: Server;
@@ -108,8 +109,9 @@ describe('Tools Handler', () => {
       })
     } as unknown as Server;
 
-    // Setup tools with mock server
-    setupTools(mockServer);
+    // Setup tools with mock server and mock provider
+    const mockProvider = vi.mocked(createAutomationProvider)();
+    setupTools(mockServer, mockProvider);
   });
 
   describe('Tool Registration', () => {
