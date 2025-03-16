@@ -85,6 +85,11 @@ jobs:
             const password = '${{ secrets.WEBHOOK_AUTH_TOKEN }}';
             const webhookUrl = '${{ vars.WEBHOOK_URL }}';
             
+            // Validate auth credentials
+            if (!username || !password) {
+              throw new Error('Webhook authentication credentials not properly configured');
+            }
+            
             // Validate webhook URL
             if (!webhookUrl || !webhookUrl.trim()) {
               throw new Error('WEBHOOK_URL is not configured');
@@ -96,6 +101,8 @@ jobs:
               throw new Error('WEBHOOK_URL must use HTTPS protocol for security');
             }
             
+            // TEMPORARY: Using Basic Auth until token-based auth is implemented (see issue #37)
+            // Note: This is only base64 encoded, not encrypted, but is protected by HTTPS
             const auth = Buffer.from(`${username}:${password}`).toString('base64');
             
             // Get PR comments
@@ -221,10 +228,8 @@ jobs:
               console.log('JSON data prepared successfully');
             }
             
-            // Debug output of the JSON payload
-            console.log('--- START OF JSON PAYLOAD ---');
-            console.log(stringifyResult.data);
-            console.log('--- END OF JSON PAYLOAD ---');
+            // Log payload size instead of full content for security
+            console.log(`Payload prepared successfully: ${(stringifyResult.data.length / 1024).toFixed(2)} KB`);
             
             const options = {
               hostname: url.hostname,

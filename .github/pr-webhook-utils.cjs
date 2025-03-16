@@ -25,7 +25,7 @@ function sanitizeText(text) {
       .replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
   } catch (error) {
     console.warn(`Error sanitizing text: ${error.message}`);
-    return ''; // Return empty string on error rather than breaking
+    return '[Content omitted due to sanitization error]';
   }
 }
 
@@ -92,9 +92,10 @@ function safeStringify(data) {
 
 /**
  * Creates a simplified version of PR data that's less likely to cause parsing issues
+ * Used as a fallback when the full PR data cannot be stringified
  * @param {Object} pr - Full PR data
  * @param {Object} context - GitHub context object
- * @returns {Object} Simplified PR data
+ * @returns {Object} Simplified PR data with essential information only
  */
 function createSimplifiedPrData(pr, context) {
   return {
