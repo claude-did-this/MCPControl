@@ -14,6 +14,14 @@ const buttonMap: ButtonMap = {
  */
 export class NutJSMouseAutomation implements MouseAutomation {
   moveMouse(position: MousePosition): WindowsControlResponse {
+    if (typeof position.x !== 'number' || typeof position.y !== 'number' || 
+        isNaN(position.x) || isNaN(position.y)) {
+      return {
+        success: false,
+        message: 'Invalid coordinates provided'
+      };
+    }
+    
     try {
       libnut.moveMouse(position.x, position.y);
       return {
@@ -99,6 +107,16 @@ export class NutJSMouseAutomation implements MouseAutomation {
   }
 
   dragMouse(from: MousePosition, to: MousePosition, button: keyof ButtonMap = 'left'): WindowsControlResponse {
+    if (typeof from.x !== 'number' || typeof from.y !== 'number' || 
+        isNaN(from.x) || isNaN(from.y) || 
+        typeof to.x !== 'number' || typeof to.y !== 'number' || 
+        isNaN(to.x) || isNaN(to.y)) {
+      return {
+        success: false,
+        message: 'Invalid coordinates provided'
+      };
+    }
+    
     try {
       const buttonName = buttonMap[button];
       
@@ -122,8 +140,10 @@ export class NutJSMouseAutomation implements MouseAutomation {
       // Ensure mouse button is released in case of error
       try {
         libnut.mouseToggle("up", buttonMap[button]);
-      } catch {
-        // Ignore cleanup errors
+      } catch (cleanupError) {
+        // Log cleanup errors - in a real implementation, you would use your logging system
+        console.error('Failed to release mouse button after drag error:', 
+          cleanupError instanceof Error ? cleanupError.message : String(cleanupError));
       }
       
       return {
