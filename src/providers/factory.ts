@@ -1,0 +1,38 @@
+import { AutomationProvider } from '../interfaces/provider.js';
+import { NutJSProvider } from './nutjs/index.js';
+
+// Cache to store provider instances
+const providerCache: Record<string, AutomationProvider> = {};
+
+/**
+ * Create an automation provider instance based on the specified type
+ * Uses a caching mechanism to avoid creating multiple instances of the same provider
+ */
+export function createAutomationProvider(type: string = 'nutjs'): AutomationProvider {
+  const providerType = type.toLowerCase();
+  
+  // Return cached instance if available
+  if (providerCache[providerType]) {
+    console.log(`Using cached provider instance: ${providerType}`);
+    return providerCache[providerType];
+  }
+  
+  console.log(`Creating new provider instance: ${providerType}`);
+  
+  let provider: AutomationProvider;
+  switch (providerType) {
+    case 'nutjs':
+      provider = new NutJSProvider();
+      break;
+    // We'll add more providers in subsequent PRs
+    // case 'keysender':
+    //   provider = new KeysenderProvider();
+    //   break;
+    default:
+      throw new Error(`Unknown provider type: ${providerType}`);
+  }
+  
+  // Cache the instance
+  providerCache[providerType] = provider;
+  return provider;
+}

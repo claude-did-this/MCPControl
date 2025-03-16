@@ -13,7 +13,7 @@ export interface KeyCombination {
 
 export interface KeyHoldOperation {
   key: string;     // The key to hold
-  duration: number; // Duration in milliseconds
+  duration?: number; // Duration in milliseconds (optional when state is 'up')
   state: 'down' | 'up'; // Whether to press down or release the key
 }
 
