@@ -88,8 +88,9 @@ class NutJSClipboardAdapter implements ClipboardAutomation {
     const result = await clipboardOriginal.getClipboardContent();
     return {
       success: result.success,
-      message: result.content ? `Clipboard content retrieved` : `Failed to get clipboard content: ${result.error || 'Unknown error'}`,
+      message: result.success ? `Clipboard content retrieved` : `Failed to get clipboard content: ${result.error || 'Unknown error'}`,
       data: result.content // Store clipboard content in data field instead of content
+      // Error information is already included in the message
     };
   }
 
