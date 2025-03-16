@@ -1,26 +1,62 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { setupTools } from "./handlers/tools.js";
+import { loadConfig } from "./config.js";
+import { createAutomationProvider } from "./providers/factory.js";
+import { AutomationProvider } from "./interfaces/provider.js";
 
 class WindowsControlServer {
   private server: Server;
+  
+  /** 
+   * Automation provider instance used for system interaction
+   * The provider implements keyboard, mouse, screen, and clipboard functionality
+   * through a consistent interface allowing for different backend implementations
+   */
+  private provider: AutomationProvider;
 
   constructor() {
-    this.server = new Server({
-      name: "windows-control",
-      version: "1.0.0"
-    }, {
-      capabilities: {
-        tools: {}
+    try {
+      // Load configuration
+      const config = loadConfig();
+      
+      // Validate configuration
+      if (!config || typeof config.provider !== 'string') {
+        throw new Error('Invalid configuration: provider property is missing or invalid');
       }
-    });
+      
+      // Validate that the provider is supported
+      const supportedProviders = ['nutjs']; // add others as they become available
+      if (!supportedProviders.includes(config.provider.toLowerCase())) {
+        throw new Error(`Unsupported provider: ${config.provider}. Supported providers: ${supportedProviders.join(', ')}`);
+      }
+      
+      // Create automation provider based on configuration
+      this.provider = createAutomationProvider(config.provider);
+      
+      this.server = new Server({
+        name: "windows-control",
+        version: "1.0.0"
+      }, {
+        capabilities: {
+          tools: {}
+        }
+      });
 
-    this.setupHandlers();
-    this.setupErrorHandling();
+      this.setupHandlers();
+      this.setupErrorHandling();
+    } catch (error) {
+      console.error(`Failed to initialize Windows Control Server: ${error instanceof Error ? error.message : String(error)}`);
+      // Log additional shutdown information
+      console.error('Server initialization failed. Application will now exit.');
+      // Exit with non-zero status to indicate error
+      process.exit(1);
+    }
   }
 
   private setupHandlers(): void {
-    setupTools(this.server);
+    // Pass the provider to setupTools
+    setupTools(this.server, this.provider);
   }
 
   private setupErrorHandling(): void {
@@ -36,7 +72,7 @@ class WindowsControlServer {
   async run(): Promise<void> {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    console.error("Windows Control MCP server running on stdio");
+    console.error(`Windows Control MCP server running on stdio (using ${this.provider.constructor.name})`);
   }
 }
 

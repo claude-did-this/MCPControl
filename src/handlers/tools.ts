@@ -21,10 +21,15 @@ import {
   pressKeyCombination,
   holdKey
 } from "../tools/keyboard.js";
-// Clipboard functionality now accessed through provider pattern
-import { createAutomationProvider } from "../providers/factory.js";
+// Provider is now passed from the main server instance
+import { AutomationProvider } from "../interfaces/provider.js";
 
-export function setupTools(server: Server): void {
+/**
+ * Set up automation tools on the MCP server using the provided automation provider
+ * @param server The Model Context Protocol server instance
+ * @param provider The automation provider implementation that will handle system interactions
+ */
+export function setupTools(server: Server, provider: AutomationProvider): void {
   // List available tools
   server.setRequestHandler(ListToolsRequestSchema, () => ({
     tools: [
@@ -388,8 +393,7 @@ export function setupTools(server: Server): void {
       const { name, arguments: args } = request.params;
       let response;
       
-      // Create provider once per request - ensures consistent error handling across operations
-      const provider = createAutomationProvider();
+      // Use the provider passed from the server instance
 
       switch (name) {
         case "get_screenshot": {
