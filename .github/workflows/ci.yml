@@ -46,3 +46,147 @@ jobs:
       uses: codecov/codecov-action@v4
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        
+  pr-review:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    - name: Send PR data to webhook for code review
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          console.log('Processing PR #' + context.issue.number + ' in ' + context.repo.owner + '/' + context.repo.repo);
+          
+          try {
+            // Get PR details
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            
+            // Get PR files
+            const files = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            console.log('Files changed:', files.data.length);
+            
+            // Setup auth
+            const username = '${{ secrets.WEBHOOK_USERNAME }}';
+            const password = '${{ secrets.WEBHOOK_AUTH_TOKEN }}';
+            const webhookUrl = '${{ vars.WEBHOOK_URL }}';
+            const auth = Buffer.from(`${username}:${password}`).toString('base64');
+            
+            // Get PR comments
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            
+            // Get PR review comments
+            const reviewComments = await github.rest.pulls.listReviewComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            
+            // Build PR data payload
+            const prData = {
+              id: pr.data.id,
+              number: pr.data.number,
+              title: pr.data.title,
+              body: pr.data.body,
+              state: pr.data.state,
+              created_at: pr.data.created_at,
+              updated_at: pr.data.updated_at,
+              repository: {
+                name: context.repo.repo,
+                owner: context.repo.owner
+              },
+              head: {
+                ref: pr.data.head.ref,
+                sha: pr.data.head.sha
+              },
+              base: {
+                ref: pr.data.base.ref,
+                sha: pr.data.base.sha
+              },
+              user: {
+                login: pr.data.user.login,
+                id: pr.data.user.id
+              },
+              changed_files: files.data.map(file => ({
+                filename: file.filename,
+                status: file.status,
+                additions: file.additions,
+                deletions: file.deletions,
+                changes: file.changes,
+                patch: file.patch
+              })),
+              comments: comments.data.map(comment => ({
+                id: comment.id,
+                body: comment.body,
+                user: comment.user.login,
+                created_at: comment.created_at
+              })),
+              review_comments: reviewComments.data.map(comment => ({
+                id: comment.id,
+                body: comment.body,
+                user: comment.user.login,
+                path: comment.path,
+                position: comment.position,
+                created_at: comment.created_at
+              }))
+            };
+            
+            console.log('Sending PR data to webhook...');
+            
+            // Use https request
+            const https = require('https');
+            const url = new URL(webhookUrl);
+            
+            const options = {
+              hostname: url.hostname,
+              port: url.port || 443,
+              path: url.pathname,
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${auth}`
+              }
+            };
+            
+            // Make the request
+            const req = https.request(options, (res) => {
+              let data = '';
+              res.on('data', (chunk) => { data += chunk; });
+              
+              res.on('end', () => {
+                if (res.statusCode >= 200 && res.statusCode < 300) {
+                  console.log('Successfully sent PR data to webhook');
+                } else {
+                  console.error('Failed to send PR data to webhook: ' + res.statusCode);
+                }
+              });
+            });
+            
+            req.on('error', (error) => {
+              console.error('Network error when sending to webhook: ' + error.message);
+            });
+            
+            req.write(JSON.stringify(prData));
+            req.end();
+            
+          } catch (error) {
+            console.error('Failed to process PR data: ' + error.message);
+          }
