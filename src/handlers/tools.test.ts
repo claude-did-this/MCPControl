@@ -35,12 +35,54 @@ vi.mock('../tools/screen.js', () => ({
   restoreWindow: vi.fn()
 }));
 
-vi.mock('../tools/clipboard.js', () => ({
-  getClipboardContent: vi.fn(),
-  setClipboardContent: vi.fn(),
-  hasClipboardText: vi.fn(),
-  clearClipboard: vi.fn()
-}));
+// Mock the automation provider factory
+vi.mock('../providers/factory.js', () => {
+  // Create mock provider with all required automation interfaces
+  const mockKeyboardAutomation = {
+    typeText: vi.fn(() => ({ success: true, message: 'Text typed' })),
+    pressKey: vi.fn(() => ({ success: true, message: 'Key pressed' })),
+    pressKeyCombination: vi.fn().mockResolvedValue({
+      success: true,
+      message: 'Pressed key combination: control+c'
+    }),
+    holdKey: vi.fn()
+  };
+  
+  const mockMouseAutomation = {
+    moveMouse: vi.fn(() => ({ success: true, message: 'Mouse moved' })),
+    clickMouse: vi.fn(),
+    doubleClick: vi.fn(),
+    getCursorPosition: vi.fn(),
+    scrollMouse: vi.fn(),
+    dragMouse: vi.fn(),
+    clickAt: vi.fn()
+  };
+  
+  const mockScreenAutomation = {
+    getScreenSize: vi.fn(),
+    getActiveWindow: vi.fn(),
+    focusWindow: vi.fn(),
+    resizeWindow: vi.fn(),
+    repositionWindow: vi.fn(),
+    getScreenshot: vi.fn()
+  };
+  
+  const mockClipboardAutomation = {
+    getClipboardContent: vi.fn(),
+    setClipboardContent: vi.fn(),
+    hasClipboardText: vi.fn(),
+    clearClipboard: vi.fn()
+  };
+  
+  return {
+    createAutomationProvider: vi.fn(() => ({
+      keyboard: mockKeyboardAutomation,
+      mouse: mockMouseAutomation,
+      screen: mockScreenAutomation,
+      clipboard: mockClipboardAutomation
+    }))
+  };
+});
 
 // Import mocked functions for testing
 import { moveMouse } from '../tools/mouse.js';
