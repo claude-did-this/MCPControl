@@ -1,11 +1,21 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { setupTools } from "./handlers/tools.js";
+import { loadConfig } from "./config.js";
+import { createAutomationProvider } from "./providers/factory.js";
+import { AutomationProvider } from "./interfaces/provider.js";
 
 class WindowsControlServer {
   private server: Server;
+  private provider: AutomationProvider;
 
   constructor() {
+    // Load configuration
+    const config = loadConfig();
+    
+    // Create automation provider based on configuration
+    this.provider = createAutomationProvider(config.provider);
+    
     this.server = new Server({
       name: "windows-control",
       version: "1.0.0"
@@ -20,6 +30,7 @@ class WindowsControlServer {
   }
 
   private setupHandlers(): void {
+    // Pass the provider to setupTools
     setupTools(this.server);
   }
 
@@ -36,7 +47,7 @@ class WindowsControlServer {
   async run(): Promise<void> {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    console.error("Windows Control MCP server running on stdio");
+    console.error(`Windows Control MCP server running on stdio (using ${this.provider.constructor.name})`);
   }
 }
 
