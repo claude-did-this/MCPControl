@@ -21,20 +21,13 @@ import {
   pressKeyCombination,
   holdKey
 } from "../tools/keyboard.js";
-import { 
-  getScreenSize, 
-  getActiveWindow,
-  focusWindow,
-  resizeWindow,
-  repositionWindow
-} from "../tools/screen.js";
 import {
   getClipboardContent,
   setClipboardContent,
   hasClipboardText,
   clearClipboard
 } from "../tools/clipboard.js";
-import { getScreenshot } from "../tools/screenshot.js";
+import { createAutomationProvider } from "../providers/factory.js";
 
 export function setupTools(server: Server): void {
   // List available tools
@@ -399,6 +392,9 @@ export function setupTools(server: Server): void {
     try {
       const { name, arguments: args } = request.params;
       let response;
+      
+      // Create provider once per request - ensures consistent error handling across operations
+      const provider = createAutomationProvider();
 
       switch (name) {
         case "get_screenshot": {
@@ -468,7 +464,7 @@ export function setupTools(server: Server): void {
             }
           }
           
-          response = await getScreenshot(screenshotOptions);
+          response = await provider.screen.getScreenshot(screenshotOptions);
           break;
         }
           
@@ -553,9 +549,8 @@ export function setupTools(server: Server): void {
           break;
 
         case "get_screen_size":
-          response = getScreenSize();
+          response = provider.screen.getScreenSize();
           break;
-
 
         case "get_cursor_position":
           response = getCursorPosition();
@@ -570,15 +565,14 @@ export function setupTools(server: Server): void {
           break;
 
         case "get_active_window":
-          response = getActiveWindow();
+          response = provider.screen.getActiveWindow();
           break;
-
 
         case "focus_window":
           if (typeof args?.title !== 'string') {
             throw new Error("Invalid window title argument");
           }
-          response = focusWindow(args.title);
+          response = provider.screen.focusWindow(args.title);
           break;
 
         case "resize_window":
@@ -587,7 +581,7 @@ export function setupTools(server: Server): void {
               typeof args?.height !== 'number') {
             throw new Error("Invalid window resize arguments");
           }
-          response = resizeWindow(args.title, args.width, args.height);
+          response = provider.screen.resizeWindow(args.title, args.width, args.height);
           break;
 
         case "reposition_window":
@@ -596,9 +590,9 @@ export function setupTools(server: Server): void {
               typeof args?.y !== 'number') {
             throw new Error("Invalid window reposition arguments");
           }
-          response = repositionWindow(args.title, args.x, args.y);
+          response = provider.screen.repositionWindow(args.title, args.x, args.y);
           break;
-
+          
         case "minimize_window":
           if (typeof args?.title !== 'string') {
             throw new Error("Invalid window title argument");

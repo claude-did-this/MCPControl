@@ -16,24 +16,39 @@ vi.mock('@nut-tree/libnut', () => ({
   }
 }));
 
+vi.mock('sharp', () => {
+  const mockSharp = vi.fn().mockReturnValue({
+    grayscale: vi.fn().mockReturnThis(),
+    resize: vi.fn().mockReturnThis(),
+    jpeg: vi.fn().mockReturnThis(),
+    png: vi.fn().mockReturnThis(),
+    toBuffer: vi.fn().mockResolvedValue(Buffer.from('test-image-data'))
+  });
+  return { default: mockSharp };
+});
+
+// Mock Buffer.toString to return a predictable base64 string
+const originalToString = Buffer.prototype.toString;
+Buffer.prototype.toString = function(encoding?: BufferEncoding): string {
+  if (encoding === 'base64') {
+    return 'mockBase64String';
+  }
+  return originalToString.call(this, encoding);
+};
 
 // Import mocked modules after vi.mock declarations
 import libnut from '@nut-tree/libnut';
-import { 
-  getScreenSize, 
-  getActiveWindow, 
-  focusWindow,
-  resizeWindow,
-  repositionWindow
-} from './screen';
+import { NutJSScreenAutomation } from './screen';
 
-describe('Screen Functions', () => {
+describe('NutJSScreenAutomation', () => {
+  let screen: NutJSScreenAutomation;
+
   beforeEach(() => {
     vi.resetAllMocks();
+    screen = new NutJSScreenAutomation();
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
     vi.clearAllMocks();
   });
 
@@ -44,7 +59,7 @@ describe('Screen Functions', () => {
       (libnut.screen.capture as any).mockReturnValue(mockScreen);
 
       // Execute
-      const result = getScreenSize();
+      const result = screen.getScreenSize();
 
       // Verify
       expect(libnut.screen.capture).toHaveBeenCalledTimes(1);
@@ -65,7 +80,7 @@ describe('Screen Functions', () => {
       });
 
       // Execute
-      const result = getScreenSize();
+      const result = screen.getScreenSize();
 
       // Verify
       expect(result).toEqual({
@@ -84,7 +99,7 @@ describe('Screen Functions', () => {
       (libnut.getWindowRect as any).mockReturnValue({ x: 10, y: 20, width: 800, height: 600 });
 
       // Execute
-      const result = getActiveWindow();
+      const result = screen.getActiveWindow();
 
       // Verify
       expect(libnut.getActiveWindow).toHaveBeenCalledTimes(1);
@@ -108,7 +123,7 @@ describe('Screen Functions', () => {
       });
 
       // Execute
-      const result = getActiveWindow();
+      const result = screen.getActiveWindow();
 
       // Verify
       expect(result).toEqual({
@@ -128,7 +143,7 @@ describe('Screen Functions', () => {
       });
 
       // Execute
-      const result = focusWindow('Target');
+      const result = screen.focusWindow('Target');
 
       // Verify
       expect(libnut.getWindows).toHaveBeenCalledTimes(1);
@@ -146,7 +161,7 @@ describe('Screen Functions', () => {
       (libnut.getWindowTitle as any).mockImplementation((handle: number) => `Window ${handle}`);
 
       // Execute
-      const result = focusWindow('Nonexistent');
+      const result = screen.focusWindow('Nonexistent');
 
       // Verify
       expect(libnut.getWindowTitle).toHaveBeenCalledTimes(3);
@@ -164,7 +179,7 @@ describe('Screen Functions', () => {
       });
 
       // Execute
-      const result = focusWindow('Any');
+      const result = screen.focusWindow('Any');
 
       // Verify
       expect(result).toEqual({
@@ -183,7 +198,7 @@ describe('Screen Functions', () => {
       });
 
       // Execute
-      const result = resizeWindow('Target', 1024, 768);
+      const result = screen.resizeWindow('Target', 1024, 768);
 
       // Verify
       expect(libnut.getWindows).toHaveBeenCalledTimes(1);
@@ -201,7 +216,7 @@ describe('Screen Functions', () => {
       (libnut.getWindowTitle as any).mockImplementation((handle: number) => `Window ${handle}`);
 
       // Execute
-      const result = resizeWindow('Nonexistent', 1024, 768);
+      const result = screen.resizeWindow('Nonexistent', 1024, 768);
 
       // Verify
       expect(libnut.getWindowTitle).toHaveBeenCalledTimes(3);
@@ -219,7 +234,7 @@ describe('Screen Functions', () => {
       });
 
       // Execute
-      const result = resizeWindow('Any', 1024, 768);
+      const result = screen.resizeWindow('Any', 1024, 768);
 
       // Verify
       expect(result).toEqual({
@@ -238,7 +253,7 @@ describe('Screen Functions', () => {
       });
 
       // Execute
-      const result = repositionWindow('Target', 100, 200);
+      const result = screen.repositionWindow('Target', 100, 200);
 
       // Verify
       expect(libnut.getWindows).toHaveBeenCalledTimes(1);
@@ -256,7 +271,7 @@ describe('Screen Functions', () => {
       (libnut.getWindowTitle as any).mockImplementation((handle: number) => `Window ${handle}`);
 
       // Execute
-      const result = repositionWindow('Nonexistent', 100, 200);
+      const result = screen.repositionWindow('Nonexistent', 100, 200);
 
       // Verify
       expect(libnut.getWindowTitle).toHaveBeenCalledTimes(3);
@@ -274,12 +289,32 @@ describe('Screen Functions', () => {
       });
 
       // Execute
-      const result = repositionWindow('Any', 100, 200);
+      const result = screen.repositionWindow('Any', 100, 200);
 
       // Verify
       expect(result).toEqual({
         success: false,
         message: "Failed to reposition window: Cannot list windows"
+      });
+    });
+  });
+
+  describe('getScreenshot', () => {
+    // Instead of testing the entire pipeline which is complex to mock,
+    // test the success path at a higher level and error handling
+    it('should handle screen capture error gracefully', async () => {
+      // Setup
+      (libnut.screen.capture as any).mockImplementation(() => {
+        throw new Error('Screenshot capture failed');
+      });
+
+      // Execute
+      const result = await screen.getScreenshot();
+
+      // Verify
+      expect(result).toEqual({
+        success: false,
+        message: "Failed to capture screenshot: Screenshot capture failed"
       });
     });
   });
