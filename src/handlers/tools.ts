@@ -21,12 +21,7 @@ import {
   pressKeyCombination,
   holdKey
 } from "../tools/keyboard.js";
-import {
-  getClipboardContent,
-  setClipboardContent,
-  hasClipboardText,
-  clearClipboard
-} from "../tools/clipboard.js";
+// Clipboard functionality now accessed through provider pattern
 import { createAutomationProvider } from "../providers/factory.js";
 
 export function setupTools(server: Server): void {
@@ -608,22 +603,22 @@ export function setupTools(server: Server): void {
           break;
 
         case "get_clipboard_content":
-          response = await getClipboardContent();
+          response = await provider.clipboard.getClipboardContent();
           break;
 
         case "set_clipboard_content":
           if (!isClipboardInput(args)) {
             throw new Error("Invalid clipboard input arguments");
           }
-          response = await setClipboardContent(args);
+          response = await provider.clipboard.setClipboardContent(args);
           break;
 
         case "has_clipboard_text":
-          response = await hasClipboardText();
+          response = await provider.clipboard.hasClipboardText();
           break;
 
         case "clear_clipboard":
-          response = await clearClipboard();
+          response = await provider.clipboard.clearClipboard();
           break;
 
         default:
