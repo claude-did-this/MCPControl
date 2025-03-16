@@ -165,6 +165,58 @@ describe('Tools Handler', () => {
       });
     });
 
+    it('should execute click_mouse tool with default button', async () => {
+      const mockProvider = vi.mocked(createAutomationProvider)();
+      vi.mocked(mockProvider.mouse.clickMouse).mockReturnValueOnce({ success: true, message: 'Mouse clicked' });
+
+      const result = await callToolHandler({
+        params: {
+          name: 'click_mouse',
+          arguments: {}
+        }
+      });
+
+      expect(mockProvider.mouse.clickMouse).toHaveBeenCalledWith('left');
+      expect(JSON.parse(result.content[0].text)).toEqual({
+        success: true,
+        message: 'Mouse clicked'
+      });
+    });
+
+    it('should execute click_mouse tool with specified button', async () => {
+      const mockProvider = vi.mocked(createAutomationProvider)();
+      vi.mocked(mockProvider.mouse.clickMouse).mockReturnValueOnce({ success: true, message: 'Right mouse clicked' });
+
+      const result = await callToolHandler({
+        params: {
+          name: 'click_mouse',
+          arguments: { button: 'right' }
+        }
+      });
+
+      expect(mockProvider.mouse.clickMouse).toHaveBeenCalledWith('right');
+      expect(JSON.parse(result.content[0].text)).toEqual({
+        success: true,
+        message: 'Right mouse clicked'
+      });
+    });
+
+    it('should execute press_key tool with valid arguments', async () => {
+      const mockProvider = vi.mocked(createAutomationProvider)();
+      
+      const result = await callToolHandler({
+        params: {
+          name: 'press_key',
+          arguments: { key: 'enter' }
+        }
+      });
+
+      expect(mockProvider.keyboard.pressKey).toHaveBeenCalledWith('enter');
+      expect(JSON.parse(result.content[0].text)).toEqual({
+        success: true,
+        message: 'Key pressed'
+      });
+    });
   });
 
   describe('Error Handling', () => {
