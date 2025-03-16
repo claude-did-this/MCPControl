@@ -26,7 +26,7 @@ class WindowsControlServer {
       }
       
       // Validate that the provider is supported
-      const supportedProviders = ['nutjs']; // add others as they become available
+      const supportedProviders = ['nutjs', 'keysender']; // add others as they become available
       if (!supportedProviders.includes(config.provider.toLowerCase())) {
         throw new Error(`Unsupported provider: ${config.provider}. Supported providers: ${supportedProviders.join(', ')}`);
       }

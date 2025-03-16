@@ -1,5 +1,6 @@
 import { AutomationProvider } from '../interfaces/provider.js';
 import { NutJSProvider } from './nutjs/index.js';
+import { KeysenderProvider } from './keysender/index.js';
 
 // Cache to store provider instances
 const providerCache: Record<string, AutomationProvider> = {};
@@ -24,10 +25,9 @@ export function createAutomationProvider(type: string = 'nutjs'): AutomationProv
     case 'nutjs':
       provider = new NutJSProvider();
       break;
-    // We'll add more providers in subsequent PRs
-    // case 'keysender':
-    //   provider = new KeysenderProvider();
-    //   break;
+    case 'keysender':
+      provider = new KeysenderProvider();
+      break;
     default:
       throw new Error(`Unknown provider type: ${providerType}`);
   }
