@@ -24,7 +24,7 @@ import {
 // Clipboard functionality now accessed through provider pattern
 import { createAutomationProvider } from "../providers/factory.js";
 
-export function setupTools(server: Server): void {
+export function setupTools(server: Server, provider = createAutomationProvider()): void {
   // List available tools
   server.setRequestHandler(ListToolsRequestSchema, () => ({
     tools: [
@@ -387,9 +387,6 @@ export function setupTools(server: Server): void {
     try {
       const { name, arguments: args } = request.params;
       let response;
-      
-      // Create provider once per request - ensures consistent error handling across operations
-      const provider = createAutomationProvider();
 
       switch (name) {
         case "get_screenshot": {

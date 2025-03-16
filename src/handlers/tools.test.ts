@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setupTools } from './tools.js';
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { ListToolsRequestSchema, CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import { AutomationProvider } from '../interfaces/provider.js';
 
 // Mock all tool modules
 vi.mock('../tools/mouse.js', () => ({
@@ -87,11 +88,13 @@ vi.mock('../providers/factory.js', () => {
 // Import mocked functions for testing
 import { moveMouse } from '../tools/mouse.js';
 import { typeText, pressKey } from '../tools/keyboard.js';
+import { createAutomationProvider } from '../providers/factory.js';
 
 describe('Tools Handler', () => {
   let mockServer: Server;
   let listToolsHandler: (request?: any) => Promise<any>;
   let callToolHandler: (request: any) => Promise<any>;
+  let mockProvider: AutomationProvider;
 
   beforeEach(() => {
     // Reset all mocks
@@ -108,8 +111,11 @@ describe('Tools Handler', () => {
       })
     } as unknown as Server;
 
-    // Setup tools with mock server
-    setupTools(mockServer);
+    // Get the mock provider from the factory
+    mockProvider = createAutomationProvider();
+
+    // Setup tools with mock server and provider
+    setupTools(mockServer, mockProvider);
   });
 
   describe('Tool Registration', () => {
@@ -268,6 +274,32 @@ describe('Tools Handler', () => {
         }
       });
       expect(invalidResult.isError).toBe(true);
+    });
+  });
+  
+  describe('Provider injection', () => {
+    it('should use the provided automation provider', async () => {
+      // Test screen-related function that uses the provider
+      await callToolHandler({
+        params: {
+          name: 'get_screen_size',
+          arguments: {}
+        }
+      });
+      
+      // Verify the provider's screen function was called
+      expect(mockProvider.screen.getScreenSize).toHaveBeenCalled();
+      
+      // Test clipboard-related function that uses the provider
+      await callToolHandler({
+        params: {
+          name: 'get_clipboard_content',
+          arguments: {}
+        }
+      });
+      
+      // Verify the provider's clipboard function was called
+      expect(mockProvider.clipboard.getClipboardContent).toHaveBeenCalled();
     });
   });
 });
