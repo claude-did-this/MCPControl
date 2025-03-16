@@ -24,6 +24,11 @@ import {
 // Provider is now passed from the main server instance
 import { AutomationProvider } from "../interfaces/provider.js";
 
+/**
+ * Set up automation tools on the MCP server using the provided automation provider
+ * @param server The Model Context Protocol server instance
+ * @param provider The automation provider implementation that will handle system interactions
+ */
 export function setupTools(server: Server, provider: AutomationProvider): void {
   // List available tools
   server.setRequestHandler(ListToolsRequestSchema, () => ({

@@ -8,7 +8,11 @@ import { AutomationProvider } from "./interfaces/provider.js";
 class WindowsControlServer {
   private server: Server;
   
-  /** Automation provider instance used for system interaction */
+  /** 
+   * Automation provider instance used for system interaction
+   * The provider implements keyboard, mouse, screen, and clipboard functionality
+   * through a consistent interface allowing for different backend implementations
+   */
   private provider: AutomationProvider;
 
   constructor() {
@@ -19,6 +23,12 @@ class WindowsControlServer {
       // Validate configuration
       if (!config || typeof config.provider !== 'string') {
         throw new Error('Invalid configuration: provider property is missing or invalid');
+      }
+      
+      // Validate that the provider is supported
+      const supportedProviders = ['nutjs']; // add others as they become available
+      if (!supportedProviders.includes(config.provider.toLowerCase())) {
+        throw new Error(`Unsupported provider: ${config.provider}. Supported providers: ${supportedProviders.join(', ')}`);
       }
       
       // Create automation provider based on configuration
@@ -37,7 +47,10 @@ class WindowsControlServer {
       this.setupErrorHandling();
     } catch (error) {
       console.error(`Failed to initialize Windows Control Server: ${error instanceof Error ? error.message : String(error)}`);
-      throw error;
+      // Log additional shutdown information
+      console.error('Server initialization failed. Application will now exit.');
+      // Exit with non-zero status to indicate error
+      process.exit(1);
     }
   }
 
