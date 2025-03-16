@@ -1,55 +1,17 @@
 import { AutomationProvider } from '../../interfaces/provider.js';
 import { KeyboardAutomation, MouseAutomation, ScreenAutomation, ClipboardAutomation } from '../../interfaces/automation.js';
 import { NutJSKeyboardAutomation } from './keyboard.js';
+import { NutJSMouseAutomation } from './mouse.js';
 // We'll implement these later in subsequent PRs
-// import { NutJSMouseAutomation } from './mouse.js';
 // import { NutJSScreenAutomation } from './screen.js';
 // import { NutJSClipboardAutomation } from './clipboard.js';
 
 // For now, we'll just import the existing implementations
-import * as mouseOriginal from '../../tools/mouse.js';
 import * as screenOriginal from '../../tools/screen.js';
 import * as screenshotOriginal from '../../tools/screenshot.js';
 import * as clipboardOriginal from '../../tools/clipboard.js';
-import { MousePosition, ScreenshotOptions, ClipboardInput } from '../../types/common.js';
+import { ScreenshotOptions, ClipboardInput } from '../../types/common.js';
 import { WindowsControlResponse } from '../../types/responses.js';
-
-/**
- * Bridge adapter for mouse functionality until full implementation is ready
- */
-class NutJSMouseAdapter implements MouseAutomation {
-  moveMouse(position: MousePosition): WindowsControlResponse {
-    return mouseOriginal.moveMouse(position);
-  }
-
-  clickMouse(button?: 'left' | 'right' | 'middle'): WindowsControlResponse {
-    return mouseOriginal.clickMouse(button);
-  }
-
-  doubleClick(position?: MousePosition): WindowsControlResponse {
-    return mouseOriginal.doubleClick(position);
-  }
-
-  getCursorPosition(): WindowsControlResponse {
-    return mouseOriginal.getCursorPosition();
-  }
-
-  scrollMouse(amount: number): WindowsControlResponse {
-    return mouseOriginal.scrollMouse(amount);
-  }
-
-  dragMouse(from: MousePosition, to: MousePosition, button?: 'left' | 'right' | 'middle'): WindowsControlResponse {
-    return mouseOriginal.dragMouse(from, to, button);
-  }
-
-  clickAt(x: number, y: number, button?: 'left' | 'right' | 'middle'): WindowsControlResponse {
-    return mouseOriginal.clickAt(x, y, button);
-  }
-
-  setMouseSpeed(speed: number): WindowsControlResponse {
-    return mouseOriginal.setMouseSpeed(speed);
-  }
-}
 
 /**
  * Bridge adapter for screen functionality until full implementation is ready
@@ -129,11 +91,11 @@ export class NutJSProvider implements AutomationProvider {
   clipboard: ClipboardAutomation;
 
   constructor() {
-    // Fully refactored implementation
+    // Fully refactored implementations
     this.keyboard = new NutJSKeyboardAutomation();
+    this.mouse = new NutJSMouseAutomation();
     
     // Adapter implementations until we refactor these in subsequent PRs
-    this.mouse = new NutJSMouseAdapter();
     this.screen = new NutJSScreenAdapter();
     this.clipboard = new NutJSClipboardAdapter();
   }

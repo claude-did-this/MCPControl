@@ -16,7 +16,6 @@ export interface MouseAutomation {
   scrollMouse(amount: number): WindowsControlResponse;
   dragMouse(from: MousePosition, to: MousePosition, button?: 'left' | 'right' | 'middle'): WindowsControlResponse;
   clickAt(x: number, y: number, button?: 'left' | 'right' | 'middle'): WindowsControlResponse;
-  setMouseSpeed(speed: number): WindowsControlResponse;
 }
 
 export interface ScreenAutomation {
