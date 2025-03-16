@@ -8,6 +8,10 @@ import { ScreenAutomation } from '../../interfaces/automation.js';
  * NutJS implementation of the ScreenAutomation interface
  */
 export class NutJSScreenAutomation implements ScreenAutomation {
+  /**
+   * Gets the current screen dimensions
+   * @returns WindowsControlResponse with width and height of the screen
+   */
   getScreenSize(): WindowsControlResponse {
     try {
       const screen = libnut.screen.capture();
@@ -28,6 +32,10 @@ export class NutJSScreenAutomation implements ScreenAutomation {
     }
   }
 
+  /**
+   * Gets information about the currently active window
+   * @returns WindowsControlResponse with title, position, and size of the active window
+   */
   getActiveWindow(): WindowsControlResponse {
     try {
       const handle = libnut.getActiveWindow();
@@ -53,6 +61,11 @@ export class NutJSScreenAutomation implements ScreenAutomation {
     }
   }
 
+  /**
+   * Brings a window to the foreground by searching for a window with the given title
+   * @param title - The title or partial title of the window to focus
+   * @returns WindowsControlResponse indicating success or failure
+   */
   focusWindow(title: string): WindowsControlResponse {
     try {
       const handles = libnut.getWindows();
@@ -84,6 +97,13 @@ export class NutJSScreenAutomation implements ScreenAutomation {
     }
   }
 
+  /**
+   * Resizes a window to the specified dimensions
+   * @param title - The title or partial title of the window to resize
+   * @param width - The new width of the window in pixels
+   * @param height - The new height of the window in pixels
+   * @returns WindowsControlResponse indicating success or failure
+   */
   resizeWindow(title: string, width: number, height: number): WindowsControlResponse {
     try {
       const handles = libnut.getWindows();
@@ -115,6 +135,13 @@ export class NutJSScreenAutomation implements ScreenAutomation {
     }
   }
 
+  /**
+   * Moves a window to the specified screen coordinates
+   * @param title - The title or partial title of the window to reposition
+   * @param x - The new x-coordinate of the window in pixels
+   * @param y - The new y-coordinate of the window in pixels
+   * @returns WindowsControlResponse indicating success or failure
+   */
   repositionWindow(title: string, x: number, y: number): WindowsControlResponse {
     try {
       const handles = libnut.getWindows();
@@ -146,6 +173,17 @@ export class NutJSScreenAutomation implements ScreenAutomation {
     }
   }
 
+  /**
+   * Captures a screenshot of the entire screen or a specific region
+   * @param options - Optional configuration for the screenshot:
+   *                  - region: Area to capture (x, y, width, height)
+   *                  - format: Output format ('png' or 'jpeg')
+   *                  - quality: JPEG quality (1-100)
+   *                  - compressionLevel: PNG compression level (0-9)
+   *                  - grayscale: Convert to grayscale
+   *                  - resize: Resize options (width, height, fit)
+   * @returns Promise<WindowsControlResponse> with base64-encoded image data
+   */
   async getScreenshot(options?: ScreenshotOptions): Promise<WindowsControlResponse> {
     try {
       // Capture screen or region

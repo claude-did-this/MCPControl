@@ -2,6 +2,25 @@ import libnut from '@nut-tree/libnut';
 import { WindowInfo } from '../types/common.js';
 import { WindowsControlResponse } from '../types/responses.js';
 
+/**
+ * Helper function to find a window handle by title
+ */
+function findWindowHandle(title: string): number | null {
+  const handles = libnut.getWindows();
+  
+  for (const handle of handles) {
+    try {
+      const windowTitle = libnut.getWindowTitle(handle);
+      if (windowTitle.includes(title)) {
+        return handle;
+      }
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
 export function getScreenSize(): WindowsControlResponse {
   try {
     const screen = libnut.screen.capture();
@@ -50,21 +69,14 @@ export function getActiveWindow(): WindowsControlResponse {
 
 export function focusWindow(title: string): WindowsControlResponse {
   try {
-    const handles = libnut.getWindows();
+    const handle = findWindowHandle(title);
     
-    for (const handle of handles) {
-      try {
-        const windowTitle = libnut.getWindowTitle(handle);
-        if (windowTitle.includes(title)) {
-          libnut.focusWindow(handle);
-          return {
-            success: true,
-            message: `Successfully focused window: ${title}`
-          };
-        }
-      } catch {
-        continue;
-      }
+    if (handle) {
+      libnut.focusWindow(handle);
+      return {
+        success: true,
+        message: `Successfully focused window: ${title}`
+      };
     }
 
     return {
@@ -81,21 +93,14 @@ export function focusWindow(title: string): WindowsControlResponse {
 
 export function resizeWindow(title: string, width: number, height: number): WindowsControlResponse {
   try {
-    const handles = libnut.getWindows();
+    const handle = findWindowHandle(title);
     
-    for (const handle of handles) {
-      try {
-        const windowTitle = libnut.getWindowTitle(handle);
-        if (windowTitle.includes(title)) {
-          libnut.resizeWindow(handle, { width, height });
-          return {
-            success: true,
-            message: `Successfully resized window: ${title} to ${width}x${height}`
-          };
-        }
-      } catch {
-        continue;
-      }
+    if (handle) {
+      libnut.resizeWindow(handle, { width, height });
+      return {
+        success: true,
+        message: `Successfully resized window: ${title} to ${width}x${height}`
+      };
     }
 
     return {
@@ -112,21 +117,14 @@ export function resizeWindow(title: string, width: number, height: number): Wind
 
 export function repositionWindow(title: string, x: number, y: number): WindowsControlResponse {
   try {
-    const handles = libnut.getWindows();
+    const handle = findWindowHandle(title);
     
-    for (const handle of handles) {
-      try {
-        const windowTitle = libnut.getWindowTitle(handle);
-        if (windowTitle.includes(title)) {
-          libnut.moveWindow(handle, { x, y });
-          return {
-            success: true,
-            message: `Successfully repositioned window: ${title} to (${x},${y})`
-          };
-        }
-      } catch {
-        continue;
-      }
+    if (handle) {
+      libnut.moveWindow(handle, { x, y });
+      return {
+        success: true,
+        message: `Successfully repositioned window: ${title} to (${x},${y})`
+      };
     }
 
     return {

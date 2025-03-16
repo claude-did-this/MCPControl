@@ -33,6 +33,7 @@ describe('Screen Functions', () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.clearAllMocks();
   });
 
