@@ -53,7 +53,7 @@ jobs:
     if: github.event_name == 'pull_request'
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     
@@ -62,6 +62,7 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
+          const core = require('@actions/core');
           console.log('Processing PR #' + context.issue.number + ' in ' + context.repo.owner + '/' + context.repo.repo);
           
           try {
@@ -84,6 +85,18 @@ jobs:
             const username = '${{ secrets.WEBHOOK_USERNAME }}';
             const password = '${{ secrets.WEBHOOK_AUTH_TOKEN }}';
             const webhookUrl = '${{ vars.WEBHOOK_URL }}';
+            
+            // Validate webhook URL
+            if (!webhookUrl || !webhookUrl.trim()) {
+              throw new Error('WEBHOOK_URL is not configured');
+            }
+            
+            const url = new URL(webhookUrl);
+            // Ensure HTTPS is used for security
+            if (url.protocol !== 'https:') {
+              throw new Error('WEBHOOK_URL must use HTTPS protocol for security');
+            }
+            
             const auth = Buffer.from(`${username}:${password}`).toString('base64');
             
             // Get PR comments
@@ -100,12 +113,56 @@ jobs:
               pull_number: context.issue.number
             });
             
+            // Helper function to sanitize text content
+            const sanitizeText = (text) => {
+              if (!text) return '';
+              
+              // Sanitize common sensitive patterns
+              return text
+                // Remove potential tokens, secrets, passwords, etc.
+                .replace(/(\b|)([A-Za-z0-9+/_-]{30,})(\b|)/g, '[REDACTED]')
+                // Remove potential emails
+                .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[EMAIL REDACTED]')
+                // Remove potential IP addresses
+                .replace(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, '[IP REDACTED]')
+                // Trim excessively long strings
+                .substring(0, 10000);
+            };
+            
+            // Helper to filter file types that might contain sensitive data
+            const shouldIncludeFile = (filename) => {
+              const sensitivePatterns = [
+                // Config files that might contain secrets
+                /\.env/i, /\.ini$/i, /config.*\.json$/i, 
+                // Key or certificate files
+                /\.key$/i, /\.pem$/i, /\.pfx$/i, /\.p12$/i, 
+                // Binary files
+                /\.jpg$/i, /\.png$/i, /\.gif$/i, /\.ico$/i, /\.pdf$/i,
+                /\.zip$/i, /\.tar$/i, /\.gz$/i, /\.bin$/i, /\.exe$/i
+              ];
+              
+              // Exclude files matching sensitive patterns
+              return !sensitivePatterns.some(pattern => pattern.test(filename));
+            };
+            
+            // Helper to limit patch size
+            const limitPatch = (patch) => {
+              if (!patch) return undefined;
+              
+              // Limit patch size to ~10KB
+              const maxPatchSize = 10 * 1024;
+              if (patch.length > maxPatchSize) {
+                return patch.substring(0, maxPatchSize) + '\n[... PATCH TRUNCATED DUE TO SIZE ...]';
+              }
+              return patch;
+            };
+            
             // Build PR data payload
             const prData = {
               id: pr.data.id,
               number: pr.data.number,
-              title: pr.data.title,
-              body: pr.data.body,
+              title: sanitizeText(pr.data.title),
+              body: sanitizeText(pr.data.body),
               state: pr.data.state,
               created_at: pr.data.created_at,
               updated_at: pr.data.updated_at,
@@ -125,35 +182,54 @@ jobs:
                 login: pr.data.user.login,
                 id: pr.data.user.id
               },
-              changed_files: files.data.map(file => ({
-                filename: file.filename,
-                status: file.status,
-                additions: file.additions,
-                deletions: file.deletions,
-                changes: file.changes,
-                patch: file.patch
-              })),
-              comments: comments.data.map(comment => ({
-                id: comment.id,
-                body: comment.body,
-                user: comment.user.login,
-                created_at: comment.created_at
-              })),
-              review_comments: reviewComments.data.map(comment => ({
-                id: comment.id,
-                body: comment.body,
-                user: comment.user.login,
-                path: comment.path,
-                position: comment.position,
-                created_at: comment.created_at
-              }))
+              // Filter sensitive files and limit payload size
+              changed_files: files.data
+                .filter(file => shouldIncludeFile(file.filename))
+                .slice(0, 100) // Limit to 100 files max
+                .map(file => ({
+                  filename: file.filename,
+                  status: file.status,
+                  additions: file.additions,
+                  deletions: file.deletions,
+                  changes: file.changes,
+                  patch: limitPatch(file.patch)
+                })),
+              // Sanitize comments
+              comments: comments.data
+                .slice(0, 100) // Limit to 100 comments max
+                .map(comment => ({
+                  id: comment.id,
+                  body: sanitizeText(comment.body),
+                  user: comment.user.login,
+                  created_at: comment.created_at
+                })),
+              // Sanitize review comments
+              review_comments: reviewComments.data
+                .slice(0, 100) // Limit to 100 review comments max
+                .map(comment => ({
+                  id: comment.id,
+                  body: sanitizeText(comment.body),
+                  user: comment.user.login,
+                  path: comment.path,
+                  position: comment.position,
+                  created_at: comment.created_at
+                }))
             };
             
             console.log('Sending PR data to webhook...');
             
+            // Calculate payload size for logging
+            const payloadSize = JSON.stringify(prData).length;
+            console.log(`Payload size: ${(payloadSize / 1024).toFixed(2)} KB`);
+            
+            // Fail if payload is too large (>5MB)
+            const maxPayloadSize = 5 * 1024 * 1024;
+            if (payloadSize > maxPayloadSize) {
+              throw new Error(`Payload size (${payloadSize} bytes) exceeds maximum allowed size (${maxPayloadSize} bytes)`);
+            }
+            
             // Use https request
             const https = require('https');
-            const url = new URL(webhookUrl);
             
             const options = {
               hostname: url.hostname,
@@ -162,8 +238,10 @@ jobs:
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Basic ${auth}`
-              }
+                'Authorization': `Basic ${auth}`,
+                'Content-Length': payloadSize
+              },
+              timeout: 10000 // 10 second timeout
             };
             
             // Make the request
@@ -173,20 +251,34 @@ jobs:
               
               res.on('end', () => {
                 if (res.statusCode >= 200 && res.statusCode < 300) {
-                  console.log('Successfully sent PR data to webhook');
+                  console.log(`Successfully sent PR data to webhook (Status: ${res.statusCode})`);
                 } else {
-                  console.error('Failed to send PR data to webhook: ' + res.statusCode);
+                  const errorMsg = `Failed to send PR data to webhook: Status ${res.statusCode}`;
+                  console.error(errorMsg);
+                  console.error(`Response: ${data}`);
+                  // Fail the job if the webhook returns an error
+                  core.setFailed(errorMsg);
                 }
               });
             });
             
             req.on('error', (error) => {
-              console.error('Network error when sending to webhook: ' + error.message);
+              const errorMsg = `Network error when sending to webhook: ${error.message}`;
+              console.error(errorMsg);
+              core.setFailed(errorMsg);
+            });
+            
+            req.on('timeout', () => {
+              req.destroy();
+              const errorMsg = 'Request to webhook timed out after 10 seconds';
+              console.error(errorMsg);
+              core.setFailed(errorMsg);
             });
             
             req.write(JSON.stringify(prData));
             req.end();
             
           } catch (error) {
-            console.error('Failed to process PR data: ' + error.message);
+            console.error(`Failed to process PR data: ${error.message}`);
+            core.setFailed(`PR review webhook error: ${error.message}`);
           }
