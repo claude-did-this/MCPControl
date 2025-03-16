@@ -1,3 +1,5 @@
+// This is legacy code that will be removed once the new implementation is complete
+
 import libnut from '@nut-tree/libnut';
 import { WindowInfo } from '../types/common.js';
 import { WindowsControlResponse } from '../types/responses.js';

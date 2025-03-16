@@ -393,7 +393,7 @@ export function setupTools(server: Server): void {
       const { name, arguments: args } = request.params;
       let response;
       
-      // Create provider once per request to be reused across operations
+      // Create provider once per request - ensures consistent error handling across operations
       const provider = createAutomationProvider();
 
       switch (name) {

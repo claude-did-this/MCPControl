@@ -6,7 +6,7 @@ import { NutJSScreenAutomation } from './screen.js';
 // We'll implement this later in subsequent PRs
 // import { NutJSClipboardAutomation } from './clipboard.js';
 
-// For now, we'll just import the existing clipboard implementation
+// Clipboard implementation next to be refactored.
 import * as clipboardOriginal from '../../tools/clipboard.js';
 import { ClipboardInput } from '../../types/common.js';
 import { WindowsControlResponse } from '../../types/responses.js';
