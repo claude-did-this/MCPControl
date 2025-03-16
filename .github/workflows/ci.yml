@@ -112,56 +112,23 @@ jobs:
               pull_number: context.issue.number
             });
             
-            // Helper function to sanitize text content
-            const sanitizeText = (text) => {
-              if (!text) return '';
-              
-              // Sanitize common sensitive patterns
-              return text
-                // Remove potential tokens, secrets, passwords, etc.
-                .replace(/(\b|)([A-Za-z0-9+/_-]{30,})(\b|)/g, '[REDACTED]')
-                // Remove potential emails
-                .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[EMAIL REDACTED]')
-                // Remove potential IP addresses
-                .replace(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, '[IP REDACTED]')
-                // Trim excessively long strings
-                .substring(0, 10000);
-            };
+            // Import PR webhook utilities
+            const fs = require('fs');
+            const path = require('path');
             
-            // Helper to filter file types that might contain sensitive data
-            const shouldIncludeFile = (filename) => {
-              const sensitivePatterns = [
-                // Config files that might contain secrets
-                /\.env/i, /\.ini$/i, /config.*\.json$/i, 
-                // Key or certificate files
-                /\.key$/i, /\.pem$/i, /\.pfx$/i, /\.p12$/i, 
-                // Binary files
-                /\.jpg$/i, /\.png$/i, /\.gif$/i, /\.ico$/i, /\.pdf$/i,
-                /\.zip$/i, /\.tar$/i, /\.gz$/i, /\.bin$/i, /\.exe$/i
-              ];
-              
-              // Exclude files matching sensitive patterns
-              return !sensitivePatterns.some(pattern => pattern.test(filename));
-            };
+            // Define the path to the utils file
+            const utilsPath = path.join(process.env.GITHUB_WORKSPACE, '.github', 'pr-webhook-utils.cjs');
+            console.log(`Loading PR webhook utilities from: ${utilsPath}`);
             
-            // Helper to limit patch size
-            const limitPatch = (patch) => {
-              if (!patch) return undefined;
-              
-              // Limit patch size to ~10KB
-              const maxPatchSize = 10 * 1024;
-              if (patch.length > maxPatchSize) {
-                return patch.substring(0, maxPatchSize) + '\n[... PATCH TRUNCATED DUE TO SIZE ...]';
-              }
-              return patch;
-            };
+            // Load the utilities from the external file
+            const prDataUtils = require(utilsPath);
             
             // Build PR data payload
             const prData = {
               id: pr.data.id,
               number: pr.data.number,
-              title: sanitizeText(pr.data.title),
-              body: sanitizeText(pr.data.body),
+              title: prDataUtils.sanitizeText(pr.data.title),
+              body: prDataUtils.sanitizeText(pr.data.body),
               state: pr.data.state,
               created_at: pr.data.created_at,
               updated_at: pr.data.updated_at,
@@ -183,7 +150,7 @@ jobs:
               },
               // Filter sensitive files and limit payload size
               changed_files: files.data
-                .filter(file => shouldIncludeFile(file.filename))
+                .filter(file => prDataUtils.shouldIncludeFile(file.filename))
                 .slice(0, 100) // Limit to 100 files max
                 .map(file => ({
                   filename: file.filename,
@@ -191,14 +158,14 @@ jobs:
                   additions: file.additions,
                   deletions: file.deletions,
                   changes: file.changes,
-                  patch: limitPatch(file.patch)
+                  patch: prDataUtils.limitPatch(file.patch)
                 })),
               // Sanitize comments
               comments: comments.data
                 .slice(0, 100) // Limit to 100 comments max
                 .map(comment => ({
                   id: comment.id,
-                  body: sanitizeText(comment.body),
+                  body: prDataUtils.sanitizeText(comment.body),
                   user: comment.user.login,
                   created_at: comment.created_at
                 })),
@@ -207,7 +174,7 @@ jobs:
                 .slice(0, 100) // Limit to 100 review comments max
                 .map(comment => ({
                   id: comment.id,
-                  body: sanitizeText(comment.body),
+                  body: prDataUtils.sanitizeText(comment.body),
                   user: comment.user.login,
                   path: comment.path,
                   position: comment.position,
@@ -230,6 +197,35 @@ jobs:
             // Use https request
             const https = require('https');
             
+            // Properly stringify and send the data using safe stringify utility
+            const stringifyResult = prDataUtils.safeStringify(prData);
+            
+            if (!stringifyResult.success) {
+              console.error(`JSON stringify error: ${stringifyResult.error}`);
+              
+              // Use the simplified data creator utility
+              const simplifiedData = prDataUtils.createSimplifiedPrData(pr, context);
+              
+              // Try to stringify the simplified data
+              const simplifiedResult = prDataUtils.safeStringify(simplifiedData);
+              
+              if (!simplifiedResult.success) {
+                // Last resort - send minimal JSON
+                console.error(`Even simplified data failed: ${simplifiedResult.error}`);
+                stringifyResult.data = JSON.stringify({ error: "Failed to process PR data", pr_number: context.issue.number });
+              } else {
+                console.log('Using simplified PR data instead');
+                stringifyResult.data = simplifiedResult.data;
+              }
+            } else {
+              console.log('JSON data prepared successfully');
+            }
+            
+            // Debug output of the JSON payload
+            console.log('--- START OF JSON PAYLOAD ---');
+            console.log(stringifyResult.data);
+            console.log('--- END OF JSON PAYLOAD ---');
+            
             const options = {
               hostname: url.hostname,
               port: url.port || 443,
@@ -238,7 +234,7 @@ jobs:
               headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Basic ${auth}`,
-                'Content-Length': payloadSize
+                'Content-Length': Buffer.byteLength(stringifyResult.data)
               },
               timeout: 10000 // 10 second timeout
             };
@@ -274,7 +270,7 @@ jobs:
               core.setFailed(errorMsg);
             });
             
-            req.write(JSON.stringify(prData));
+            req.write(stringifyResult.data);
             req.end();
             
           } catch (error) {
