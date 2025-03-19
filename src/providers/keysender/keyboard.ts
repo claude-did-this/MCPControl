@@ -11,8 +11,13 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
 
   typeText(input: KeyboardInput): WindowsControlResponse {
     try {
-      // Execute asynchronously but return synchronously
-      this.keyboard.printText(input.text).catch(err => console.error('Error typing text:', err));
+      // Start the asynchronous operation and handle errors properly
+      this.keyboard.printText(input.text)
+        .catch(err => {
+          console.error('Error typing text:', err);
+          // We can't update the response after it's returned, but at least log the error
+        });
+      
       return {
         success: true,
         message: `Typed text successfully`
@@ -27,9 +32,21 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
 
   pressKey(key: string): WindowsControlResponse {
     try {
-      // Map the key to KeyboardButton type and execute asynchronously
+      // Validate the key before using it
+      if (!key || typeof key !== 'string') {
+        throw new Error(`Invalid keyboard key: ${key}`);
+      }
+      
+      // Map the key to KeyboardButton type with validation
       const keyboardKey = key as unknown as KeyboardButton;
-      this.keyboard.sendKey(keyboardKey).catch(err => console.error(`Error pressing key ${key}:`, err));
+      
+      // Start the asynchronous operation and handle errors properly
+      this.keyboard.sendKey(keyboardKey)
+        .catch(err => {
+          console.error(`Error pressing key ${key}:`, err);
+          // We can't update the response after it's returned, but at least log the error
+        });
+      
       return {
         success: true,
         message: `Pressed key: ${key}`
@@ -46,23 +63,48 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
     try {
       // Store original keys for the message
       const keysForMessage = [...combination.keys];
+      const pressPromises = [];
 
       // Use toggleKey to press and release keys
       // Press all keys down
       for (const key of combination.keys) {
-        // Store the promise but don't await it here
+        // Validate the key before using it
+        if (!key || typeof key !== 'string') {
+          throw new Error(`Invalid keyboard key in combination: ${key}`);
+        }
+        
         const keyboardKey = key as unknown as KeyboardButton;
-        this.keyboard.toggleKey(keyboardKey, true).catch(err => console.error(`Error pressing key ${key}:`, err));
+        // Collect all promises to handle them properly
+        pressPromises.push(
+          this.keyboard.toggleKey(keyboardKey, true)
+            .catch(err => {
+              console.error(`Error pressing key ${key}:`, err);
+              throw err; // Re-throw to be caught by the outer try/catch
+            })
+        );
       }
 
+      // Wait for all keys to be pressed
+      await Promise.all(pressPromises);
+      
       // Small delay to ensure all keys are pressed
       await new Promise(resolve => setTimeout(resolve, 50));
 
       // Release all keys in reverse order
+      const releasePromises = [];
       for (const key of [...combination.keys].reverse()) {
         const keyboardKey = key as unknown as KeyboardButton;
-        this.keyboard.toggleKey(keyboardKey, false).catch(err => console.error(`Error releasing key ${key}:`, err));
+        releasePromises.push(
+          this.keyboard.toggleKey(keyboardKey, false)
+            .catch(err => {
+              console.error(`Error releasing key ${key}:`, err);
+              throw err; // Re-throw to be caught by the outer try/catch
+            })
+        );
       }
+
+      // Wait for all keys to be released
+      await Promise.all(releasePromises);
 
       return {
         success: true,
@@ -71,10 +113,18 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
     } catch (error) {
       // Ensure all keys are released in case of error
       try {
+        const cleanupPromises = [];
         for (const key of combination.keys) {
           const keyboardKey = key as unknown as KeyboardButton;
-          this.keyboard.toggleKey(keyboardKey, false).catch(err => console.error(`Error releasing key ${key}:`, err));
+          cleanupPromises.push(
+            this.keyboard.toggleKey(keyboardKey, false)
+              .catch(err => {
+                console.error(`Error releasing key ${key} during cleanup:`, err);
+                // Ignore errors during cleanup
+              })
+          );
         }
+        await Promise.all(cleanupPromises);
       } catch {
         // Ignore errors during cleanup
       }
@@ -88,17 +138,19 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
 
   async holdKey(operation: KeyHoldOperation): Promise<WindowsControlResponse> {
     try {
+      // Validate the key before using it
+      if (!operation.key || typeof operation.key !== 'string') {
+        throw new Error(`Invalid keyboard key: ${operation.key}`);
+      }
+      
       // Toggle the key state (down/up)
       const keyboardKey = operation.key as unknown as KeyboardButton;
-      this.keyboard.toggleKey(keyboardKey, operation.state === 'down')
-        .catch(err => console.error(`Error toggling key ${operation.key}:`, err));
+      await this.keyboard.toggleKey(keyboardKey, operation.state === 'down');
 
       // If it's a key press (down) with duration, wait for the specified duration then release
       if (operation.state === 'down' && operation.duration) {
         await new Promise(resolve => setTimeout(resolve, operation.duration));
-        const keyboardKey = operation.key as unknown as KeyboardButton;
-        this.keyboard.toggleKey(keyboardKey, false)
-          .catch(err => console.error(`Error releasing key ${operation.key}:`, err));
+        await this.keyboard.toggleKey(keyboardKey, false);
       }
 
       return {
@@ -112,9 +164,9 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
       if (operation.state === 'down') {
         try {
           const keyboardKey = operation.key as unknown as KeyboardButton;
-          this.keyboard.toggleKey(keyboardKey, false)
-            .catch(err => console.error(`Error releasing key ${operation.key}:`, err));
-        } catch {
+          await this.keyboard.toggleKey(keyboardKey, false);
+        } catch (releaseError) {
+          console.error(`Error releasing key ${operation.key} during cleanup:`, releaseError);
           // Ignore errors during cleanup
         }
       }
