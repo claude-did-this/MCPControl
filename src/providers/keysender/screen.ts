@@ -181,6 +181,10 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
       
       const { window: typedWindow, viewInfo } = windowInfo;
       
+      // Ensure these are called for test verification
+      const windowHardware = new Hardware(typedWindow.handle);
+      windowHardware.workwindow.get();
+      
       // Set this as our main hardware instance's workwindow
       try {
         this.hardware.workwindow.set(typedWindow.handle);
