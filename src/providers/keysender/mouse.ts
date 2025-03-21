@@ -1,7 +1,11 @@
-import { Hardware, MouseButton } from 'keysender';
+import { Hardware, MouseButton, getScreenSize as keysenderGetScreenSize } from 'keysender';
 import { MousePosition } from '../../types/common.js';
 import { WindowsControlResponse } from '../../types/responses.js';
 import { MouseAutomation } from '../../interfaces/automation.js';
+
+// Constants for validation
+const MAX_ALLOWED_COORDINATE = 10000; // Reasonable maximum screen dimension
+const MAX_SCROLL_AMOUNT = 1000;
 
 /**
  * Keysender implementation of the MouseAutomation interface
@@ -22,12 +26,48 @@ export class KeysenderMouseAutomation implements MouseAutomation {
     return button as unknown as MouseButton;
   }
 
+  /**
+   * Validates mouse position against screen bounds
+   * @param position Position to validate
+   * @returns Validated position
+   * @throws Error if position is invalid or out of bounds
+   */
+  private validateMousePosition(position: MousePosition): MousePosition {
+    // Basic type validation
+    if (!position || typeof position !== 'object') {
+      throw new Error('Invalid mouse position: position must be an object');
+    }
+    
+    if (typeof position.x !== 'number' || typeof position.y !== 'number') {
+      throw new Error(`Invalid mouse position: x and y must be numbers, got x=${position.x}, y=${position.y}`);
+    }
+    
+    if (isNaN(position.x) || isNaN(position.y)) {
+      throw new Error(`Invalid mouse position: x and y cannot be NaN, got x=${position.x}, y=${position.y}`);
+    }
+
+    // Check if position is within screen bounds
+    const screenSize = keysenderGetScreenSize();
+    
+    // First check if position is within reasonable bounds
+    if (position.x < -MAX_ALLOWED_COORDINATE || position.x > MAX_ALLOWED_COORDINATE || 
+        position.y < -MAX_ALLOWED_COORDINATE || position.y > MAX_ALLOWED_COORDINATE) {
+      throw new Error(`Position (${position.x},${position.y}) is outside reasonable bounds (-${MAX_ALLOWED_COORDINATE}, -${MAX_ALLOWED_COORDINATE})-(${MAX_ALLOWED_COORDINATE}, ${MAX_ALLOWED_COORDINATE})`);
+    }
+    
+    // Then check if position is within actual screen bounds
+    if (position.x < 0 || position.x >= screenSize.width || 
+        position.y < 0 || position.y >= screenSize.height) {
+      throw new Error(`Position (${position.x},${position.y}) is outside screen bounds (0,0)-(${screenSize.width-1},${screenSize.height-1})`);
+    }
+    
+    return position;
+  }
+
   moveMouse(position: MousePosition): WindowsControlResponse {
     try {
-      // Validate position
-      if (!position || typeof position.x !== 'number' || typeof position.y !== 'number') {
-        throw new Error('Invalid mouse position: ' + JSON.stringify(position));
-      }
+      // Validate the position
+      this.validateMousePosition(position);
       
       // Start the asynchronous operation and handle errors properly
       this.mouse.moveTo(position.x, position.y)
@@ -50,6 +90,11 @@ export class KeysenderMouseAutomation implements MouseAutomation {
 
   clickMouse(button: 'left' | 'right' | 'middle' = 'left'): WindowsControlResponse {
     try {
+      // Validate button value more strictly
+      if (!button || typeof button !== 'string' || !['left', 'right', 'middle'].includes(button)) {
+        throw new Error(`Invalid mouse button: ${button}. Must be 'left', 'right', or 'middle'`);
+      }
+      
       // Map and validate the button
       const mouseButton = this.mapButton(button);
       
@@ -76,10 +121,8 @@ export class KeysenderMouseAutomation implements MouseAutomation {
     try {
       // Move to position first if provided
       if (position) {
-        // Validate position
-        if (typeof position.x !== 'number' || typeof position.y !== 'number') {
-          throw new Error('Invalid mouse position: ' + JSON.stringify(position));
-        }
+        // Validate position against screen bounds
+        this.validateMousePosition(position);
         
         this.mouse.moveTo(position.x, position.y)
           .catch(err => {
@@ -134,8 +177,13 @@ export class KeysenderMouseAutomation implements MouseAutomation {
   scrollMouse(amount: number): WindowsControlResponse {
     try {
       // Validate amount
-      if (typeof amount !== 'number') {
-        throw new Error(`Invalid scroll amount: ${String(amount)}`);
+      if (typeof amount !== 'number' || isNaN(amount)) {
+        throw new Error(`Invalid scroll amount: ${amount}. Must be a number`);
+      }
+      
+      // Limit the maximum scroll amount
+      if (Math.abs(amount) > MAX_SCROLL_AMOUNT) {
+        throw new Error(`Scroll amount too large: ${amount} (max ${MAX_SCROLL_AMOUNT})`);
       }
       
       // Start the asynchronous operation and handle errors properly
@@ -159,13 +207,9 @@ export class KeysenderMouseAutomation implements MouseAutomation {
 
   dragMouse(from: MousePosition, to: MousePosition, button: 'left' | 'right' | 'middle' = 'left'): WindowsControlResponse {
     try {
-      // Validate positions
-      if (!from || typeof from.x !== 'number' || typeof from.y !== 'number') {
-        throw new Error('Invalid from position: ' + JSON.stringify(from));
-      }
-      if (!to || typeof to.x !== 'number' || typeof to.y !== 'number') {
-        throw new Error('Invalid to position: ' + JSON.stringify(to));
-      }
+      // Validate positions against screen bounds
+      this.validateMousePosition(from);
+      this.validateMousePosition(to);
       
       // Map and validate the button
       const mouseButton = this.mapButton(button);
@@ -223,9 +267,12 @@ export class KeysenderMouseAutomation implements MouseAutomation {
   clickAt(x: number, y: number, button: 'left' | 'right' | 'middle' = 'left'): WindowsControlResponse {
     try {
       // Validate coordinates
-      if (typeof x !== 'number' || typeof y !== 'number') {
-        throw new Error(`Invalid coordinates: x=${x}, y=${y}`);
+      if (typeof x !== 'number' || typeof y !== 'number' || isNaN(x) || isNaN(y)) {
+        throw new Error(`Invalid coordinates: x=${x}, y=${y}. Must be numbers`);
       }
+      
+      // Validate position against screen bounds
+      this.validateMousePosition({ x, y });
       
       // Map and validate the button
       const mouseButton = this.mapButton(button);
