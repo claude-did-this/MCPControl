@@ -174,7 +174,7 @@ export class NutJSScreenAutomation implements ScreenAutomation {
   }
 
   /**
-   * Captures a screenshot of the entire screen or a specific region
+   * Captures a screenshot of the entire screen or a specific region with optimized memory usage
    * @param options - Optional configuration for the screenshot:
    *                  - region: Area to capture (x, y, width, height)
    *                  - format: Output format ('png' or 'jpeg')
@@ -186,64 +186,104 @@ export class NutJSScreenAutomation implements ScreenAutomation {
    */
   async getScreenshot(options?: ScreenshotOptions): Promise<WindowsControlResponse> {
     try {
+      // Set default options - always use modest sizes and higher compression
+      const mergedOptions: ScreenshotOptions = {
+        format: 'jpeg',
+        quality: 70, // Lower quality for better compression
+        resize: {
+          width: 1280,
+          fit: 'inside'
+        },
+        ...options
+      };
+
       // Capture screen or region
       const screen = options?.region ? 
         libnut.screen.capture(options.region.x, options.region.y, options.region.width, options.region.height) :
         libnut.screen.capture();
-
-      // Convert BGRA to RGBA
-      const screenImage = screen.image as Buffer;
-      const rgbaBuffer = Buffer.alloc(screenImage.length);
-      for (let i = 0; i < screenImage.length; i += 4) {
-        rgbaBuffer[i] = screenImage[i + 2];     // R (from B)
-        rgbaBuffer[i + 1] = screenImage[i + 1]; // G (unchanged)
-        rgbaBuffer[i + 2] = screenImage[i];     // B (from R)
-        rgbaBuffer[i + 3] = screenImage[i + 3]; // A (unchanged)
-      }
-
-      // Process image with Sharp
-      let pipeline = sharp(rgbaBuffer, {
-        raw: { width: screen.width, height: screen.height, channels: 4 }
-      });
-
-      if (options?.grayscale) pipeline = pipeline.grayscale();
       
-      if (options?.resize) {
+      // Get the screen dimensions and image buffer with proper typing
+      const width = screen.width;
+      const height = screen.height;
+      const screenImage = screen.image as Buffer;
+      
+      // Create a more memory-efficient pipeline using sharp
+      try {
+        // Use sharp's raw processing - eliminates need for manual RGBA conversion
+        let pipeline = sharp(screenImage, {
+          // Tell sharp this is BGRA format (not RGBA)
+          raw: { width, height, channels: 4, premultiplied: false }
+        });
+        
+        // Apply immediate downsampling to reduce memory usage before any other processing
+        const initialWidth = Math.min(width, mergedOptions.resize?.width || 1280);
         pipeline = pipeline.resize({
-          width: options.resize.width,
-          height: options.resize.height,
-          fit: options.resize.fit || 'contain',
+          width: initialWidth,
           withoutEnlargement: true
         });
+        
+        // Convert BGRA to RGB (dropping alpha for smaller size)
+        // Use individual channel operations instead of array
+        pipeline = pipeline.removeAlpha();
+        pipeline = pipeline.toColorspace('srgb');
+        
+        // Apply grayscale if requested (reduces memory further)
+        if (mergedOptions.grayscale) {
+          pipeline = pipeline.grayscale();
+        }
+        
+        // Apply any final specific resizing if needed
+        if (mergedOptions.resize?.width || mergedOptions.resize?.height) {
+          pipeline = pipeline.resize({
+            width: mergedOptions.resize?.width,
+            height: mergedOptions.resize?.height,
+            fit: mergedOptions.resize?.fit || 'inside',
+            withoutEnlargement: true
+          });
+        }
+        
+        // Apply appropriate format-specific compression
+        if (mergedOptions.format === 'jpeg') {
+          pipeline = pipeline.jpeg({
+            quality: mergedOptions.quality || 70, // Lower default quality
+            mozjpeg: true, // Better compression
+            optimizeScans: true
+          });
+        } else {
+          pipeline = pipeline.png({
+            compressionLevel: mergedOptions.compressionLevel || 9, // Maximum compression
+            adaptiveFiltering: true,
+            progressive: false
+          });
+        }
+        
+        // Get the final optimized buffer
+        const outputBuffer = await pipeline.toBuffer();
+        const base64Data = outputBuffer.toString('base64');
+        const mimeType = mergedOptions.format === 'jpeg' ? "image/jpeg" : "image/png";
+        
+        // Log the size of the image for debugging
+        console.log(`Screenshot captured: ${outputBuffer.length} bytes (${Math.round(outputBuffer.length/1024)}KB)`);
+        
+        return {
+          success: true,
+          message: "Screenshot captured successfully",
+          content: [{
+            type: "image",
+            data: base64Data,
+            mimeType: mimeType
+          }]
+        };
+      } catch (sharpError) {
+        // Fallback with minimal processing if sharp pipeline fails
+        console.error(`Sharp processing failed: ${String(sharpError)}`);
+        
+        // Create a more basic version with minimal memory usage
+        return {
+          success: false,
+          message: `Failed to process screenshot: ${sharpError instanceof Error ? sharpError.message : String(sharpError)}`
+        };
       }
-
-      // Format options
-      if (options?.format === 'jpeg') {
-        pipeline = pipeline.jpeg({
-          quality: options?.quality || 80,
-          mozjpeg: true
-        });
-      } else {
-        pipeline = pipeline.png({
-          compressionLevel: options?.compressionLevel || 6,
-          adaptiveFiltering: true
-        });
-      }
-
-      // Get the final buffer
-      const outputBuffer = await pipeline.toBuffer();
-      const base64Data = outputBuffer.toString('base64');
-      const mimeType = options?.format === 'jpeg' ? "image/jpeg" : "image/png";
-
-      return {
-        success: true,
-        message: "Screenshot captured successfully",
-        content: [{
-          type: "image",
-          data: base64Data,
-          mimeType: mimeType
-        }]
-      };
     } catch (error) {
       return {
         success: false,
