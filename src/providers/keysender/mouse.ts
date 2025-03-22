@@ -1,4 +1,8 @@
-import { Hardware, MouseButton, getScreenSize as keysenderGetScreenSize } from 'keysender';
+import pkg from 'keysender';
+const { Hardware, getScreenSize: keysenderGetScreenSize } = pkg;
+
+// Define mouse button type directly
+type MouseButtonType = 'left' | 'right' | 'middle';
 import { MousePosition } from '../../types/common.js';
 import { WindowsControlResponse } from '../../types/responses.js';
 import { MouseAutomation } from '../../interfaces/automation.js';
@@ -18,12 +22,12 @@ export class KeysenderMouseAutomation implements MouseAutomation {
    * @param button The button to map ('left', 'right', 'middle')
    * @returns The mapped MouseButton
    */
-  private mapButton(button: 'left' | 'right' | 'middle'): MouseButton {
+  private mapButton(button: 'left' | 'right' | 'middle'): MouseButtonType {
     // Validate the button
     if (!button || !['left', 'right', 'middle'].includes(button)) {
       throw new Error(`Invalid mouse button: ${button}`);
     }
-    return button as unknown as MouseButton;
+    return button as MouseButtonType;
   }
 
   /**

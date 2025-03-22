@@ -1,4 +1,8 @@
-import { Hardware, KeyboardButton } from 'keysender';
+import pkg from 'keysender';
+const { Hardware } = pkg;
+
+// Define keyboard button type directly
+type KeyboardButtonType = string;
 import { KeyboardInput, KeyCombination, KeyHoldOperation } from '../../types/common.js';
 import { WindowsControlResponse } from '../../types/responses.js';
 import { KeyboardAutomation } from '../../interfaces/automation.js';
@@ -66,7 +70,7 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
    * @returns KeyboardButton
    * @throws Error if key is invalid
    */
-  private validateKey(key: string): KeyboardButton {
+  private validateKey(key: string): KeyboardButtonType {
     if (!key || typeof key !== 'string') {
       throw new Error(`Invalid keyboard key: ${key}`);
     }
@@ -78,7 +82,7 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
       throw new Error(`Invalid key: "${String(key)}". Must be one of the allowed keys.`);
     }
     
-    return key as unknown as KeyboardButton;
+    return key;
   }
 
   typeText(input: KeyboardInput): WindowsControlResponse {
@@ -154,10 +158,10 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
 
       // Store original keys for the message
       const keysForMessage = [...combination.keys];
-      const pressPromises = [];
+      const pressPromises: Promise<void>[] = [];
 
       // Validate each key and collect press promises
-      const validatedKeys: KeyboardButton[] = [];
+      const validatedKeys: KeyboardButtonType[] = [];
       for (const key of combination.keys) {
         const keyboardKey = this.validateKey(key);
         validatedKeys.push(keyboardKey);
@@ -179,7 +183,7 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
       await new Promise(resolve => setTimeout(resolve, 50));
 
       // Release all keys in reverse order
-      const releasePromises = [];
+      const releasePromises: Promise<void>[] = [];
       for (let i = validatedKeys.length - 1; i >= 0; i--) {
         const keyboardKey = validatedKeys[i];
         const originalKey = combination.keys[i];
@@ -203,7 +207,7 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
     } catch (error) {
       // Ensure all keys are released in case of error
       try {
-        const cleanupPromises = [];
+        const cleanupPromises: Promise<void>[] = [];
         for (const key of combination.keys) {
           try {
             const keyboardKey = this.validateKey(key);
