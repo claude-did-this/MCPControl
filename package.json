@@ -1,10 +1,13 @@
 {
   "name": "mcp-control",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Cross-platform control server for the Model Context Protocol",
   "license": "MIT",
   "type": "module",
   "main": "build/index.js",
+  "bin": {
+    "mcp-control": "build/index.js"
+  },
   "scripts": {
     "build": "tsc",
     "build:all": "node scripts/build.js",
@@ -18,7 +21,6 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.1",
-    "@nut-tree/libnut": "file:./libnut-core",
     "clipboardy": "^4.0.0",
     "express": "^4.18.2",
     "jimp": "^1.6.0",
