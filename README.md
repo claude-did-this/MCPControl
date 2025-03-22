@@ -57,6 +57,18 @@ By using this software, you acknowledge and accept that:
 
 ## Installation
 
+### Option 1: NPM Package (Recommended for Windows)
+
+The simplest way to install MCPControl on Windows:
+
+```bash
+npm install -g mcpcontrol
+```
+
+This installs a pre-built Windows-compatible version that uses the Keysender provider.
+
+### Option 2: From Source
+
 1. Clone the repository:
 ```bash
 git clone https://github.com/Cheffromspace/MCPControl.git
@@ -72,7 +84,21 @@ npm install
 npm run build:all
 ```
 
-For manual building, you can still follow these steps:
+#### Platform-Specific Builds
+
+- **Windows**: For a Windows-optimized build (without NutJS dependency):
+  ```bash
+  npm run build:windows
+  ```
+
+- **Cross-Platform**: For a build with full cross-platform support (includes NutJS):
+  ```bash
+  npm run build:all
+  ```
+
+#### Manual Building
+
+For manual building, you can follow these steps:
 ```bash
 # Install cmake-js globally (required for building)
 npm install -g cmake-js
@@ -107,6 +133,20 @@ npm run test:coverage
 ## MCP Server Configuration
 
 To use this project with Claude, add the following configuration to your MCP servers:
+
+### When installed via npm
+
+```json
+{
+  "mcpServers": {
+    "MCPControl": {
+      "command": "mcpcontrol"
+    }
+  }
+}
+```
+
+### When installed from source
 
 ```json
 {

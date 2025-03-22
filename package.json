@@ -1,13 +1,41 @@
 {
-  "name": "MCPControl",
-  "version": "1.0.0",
+  "name": "mcpcontrol",
+  "version": "0.1.0",
   "description": "Cross-platform control server for the Model Context Protocol",
   "license": "MIT",
   "type": "module",
   "main": "build/index.js",
+  "bin": {
+    "mcpcontrol": "bin/mcpcontrol.js"
+  },
+  "author": "Jon Flatt <jonflatt@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Cheffromspace/MCPControl.git"
+  },
+  "keywords": [
+    "mcp",
+    "model context protocol",
+    "automation",
+    "claude",
+    "ai",
+    "control"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "files": [
+    "build/**/*",
+    "!build/**/*.test.*",
+    "bin/",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "build:all": "node scripts/build.js",
+    "build:windows": "node scripts/build-windows.js",
+    "prepublishOnly": "npm run build:windows",
     "start": "node build/index.js",
     "dev": "tsc -w",
     "test": "vitest run",
@@ -18,12 +46,14 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.1",
-    "@nut-tree/libnut": "file:./libnut-core",
     "clipboardy": "^4.0.0",
     "express": "^4.18.2",
     "jimp": "^1.6.0",
     "keysender": "^2.3.0",
     "sharp": "^0.33.5"
+  },
+  "optionalDependencies": {
+    "@nut-tree/libnut": "^2.4.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",

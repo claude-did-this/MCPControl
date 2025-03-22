@@ -20,18 +20,8 @@ class WindowsControlServer {
       // Load configuration
       const config = loadConfig();
       
-      // Validate configuration
-      if (!config || typeof config.provider !== 'string') {
-        throw new Error('Invalid configuration: provider property is missing or invalid');
-      }
-      
-      // Validate that the provider is supported
-      const supportedProviders = ['nutjs', 'keysender']; // add others as they become available
-      if (!supportedProviders.includes(config.provider.toLowerCase())) {
-        throw new Error(`Unsupported provider: ${config.provider}. Supported providers: ${supportedProviders.join(', ')}`);
-      }
-      
       // Create automation provider based on configuration
+      // The factory now handles platform-specific defaults if provider is undefined
       this.provider = createAutomationProvider(config.provider);
       
       this.server = new Server({

@@ -4,9 +4,10 @@
 export interface AutomationConfig {
   /** 
    * The provider to use for automation 
-   * Currently supported: 'nutjs', 'keysender'
+   * Currently supported: 'nutjs' (cross-platform), 'keysender' (Windows only)
+   * If not specified, a platform-appropriate default will be used
    */
-  provider: string;
+  provider?: string;
 }
 
 /**
@@ -14,6 +15,7 @@ export interface AutomationConfig {
  */
 export function loadConfig(): AutomationConfig {
   return {
-    provider: process.env.AUTOMATION_PROVIDER || 'nutjs'
+    // Allow null provider to use platform-specific defaults
+    provider: process.env.AUTOMATION_PROVIDER || undefined
   };
 }
