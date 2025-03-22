@@ -1,4 +1,5 @@
-import { Hardware, getScreenSize as keysenderGetScreenSize, getAllWindows, getWindowChildren } from 'keysender';
+import pkg from 'keysender';
+const { Hardware, getScreenSize: keysenderGetScreenSize, getAllWindows, getWindowChildren } = pkg;
 import { ScreenshotOptions } from '../../types/common.js';
 import { WindowsControlResponse } from '../../types/responses.js';
 import { ScreenAutomation } from '../../interfaces/automation.js';
@@ -576,16 +577,22 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
       }
       
       // Convert the raw buffer to base64
-      const base64Data = Buffer.from(captureResult.data).toString('base64');
+      // Type assertion to ensure TypeScript safety
+      const typedCaptureResult = captureResult as {
+        data: Buffer | Uint8Array;
+        width: number;
+        height: number;
+      };
+      const base64Data = Buffer.from(typedCaptureResult.data).toString('base64');
       
       return {
         success: true,
-        message: `Screenshot captured (${captureResult.width}x${captureResult.height})`,
+        message: `Screenshot captured (${typedCaptureResult.width}x${typedCaptureResult.height})`,
         screenshot: base64Data,
         encoding: 'base64',
         data: {
-          width: captureResult.width,
-          height: captureResult.height
+          width: typedCaptureResult.width,
+          height: typedCaptureResult.height
         },
         content: [
           {

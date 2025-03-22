@@ -30,7 +30,8 @@ vi.mock('keysender', async () => {
   const mockSetForeground = vi.fn();
   const mockSetView = vi.fn();
   
-  return {
+  // Create the mock object with all the required functions
+  const mockObject = {
     Hardware: vi.fn().mockImplementation(() => ({
       workwindow: {
         capture: mockCapture,
@@ -52,6 +53,12 @@ vi.mock('keysender', async () => {
     ]),
     getWindowChildren: vi.fn().mockReturnValue([])
   };
+  
+  // Return both default export and named exports
+  return {
+    default: mockObject, // Add default export to match 'import pkg from 'keysender''
+    ...mockObject        // Spread the same object as named exports
+  };
 });
 
 describe('KeysenderScreenAutomation', () => {
@@ -71,6 +78,7 @@ describe('KeysenderScreenAutomation', () => {
     vi.clearAllMocks();
     
     // Import the mocked module to get access to the mock functions
+    // Using dynamic import to get the mocked module
     keysender = await import('keysender');
     
     // Get references to mocks from the hardware instance

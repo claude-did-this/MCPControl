@@ -613,8 +613,13 @@ export function setupTools(server: Server, provider: AutomationProvider): void {
       }
 
       // Handle special case for screenshot which returns content with image data
-      if ('content' in response && response.content && Array.isArray(response.content) && 
-          response.content.length > 0 && 'type' in response.content[0] && 
+      if ('content' in response && 
+          response.content && 
+          Array.isArray(response.content) && 
+          response.content.length > 0 && 
+          response.content[0] && 
+          typeof response.content[0] === 'object' &&
+          'type' in response.content[0] && 
           response.content[0].type === "image") {
         return {
           content: response.content
