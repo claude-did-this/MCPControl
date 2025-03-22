@@ -3,12 +3,12 @@ import { KeysenderProvider } from './keysender/index.js';
 
 // Conditionally import NutJSProvider
 // This allows builds without NutJS dependency
-let NutJSProvider: any;
+let NutJSProvider: typeof import('./nutjs/index.js').NutJSProvider | undefined;
 try {
   // Dynamic import to prevent build-time dependency
   const nutjsModule = await import('./nutjs/index.js');
   NutJSProvider = nutjsModule.NutJSProvider;
-} catch (error) {
+} catch {
   // NutJS provider not available - this is expected in some environments
   console.log('NutJS provider not available');
 }
