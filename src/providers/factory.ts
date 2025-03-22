@@ -8,10 +8,18 @@ interface NutJSProviderConstructor {
 }
 
 let NutJSProvider: NutJSProviderConstructor | null = null;
+let nutjsImportPromise: Promise<void> | null = null;
 
-// Initialize NutJS provider with an IIFE
-(function initNutJSProvider() {
-  import('./nutjs/index.js')
+/**
+ * Initialize NutJS provider if not already initialized
+ * Returns a promise that resolves when the import is complete
+ */
+async function initNutJSProvider(): Promise<void> {
+  if (nutjsImportPromise) {
+    return nutjsImportPromise;
+  }
+  
+  nutjsImportPromise = import('./nutjs/index.js')
     .then(nutjsModule => {
       NutJSProvider = nutjsModule.NutJSProvider;
     })
@@ -19,7 +27,12 @@ let NutJSProvider: NutJSProviderConstructor | null = null;
       // NutJS provider not available - this is expected in some environments
       console.log('NutJS provider not available');
     });
-})();
+    
+  return nutjsImportPromise;
+}
+
+// Start the import immediately for faster initialization
+void initNutJSProvider();
 
 // Cache to store provider instances
 const providerCache: Record<string, AutomationProvider> = {};
@@ -41,8 +54,12 @@ function getDefaultProvider(): string {
 /**
  * Create an automation provider instance based on the specified type
  * Uses a caching mechanism to avoid creating multiple instances of the same provider
+ * @async Waits for NutJS import to complete if needed
  */
-export function createAutomationProvider(type?: string): AutomationProvider {
+export async function createAutomationProvider(type?: string): Promise<AutomationProvider> {
+  // Ensure NutJS is initialized before proceeding
+  await initNutJSProvider();
+  
   // If no type specified, use default provider
   const providerType = (type || getDefaultProvider()).toLowerCase();
   

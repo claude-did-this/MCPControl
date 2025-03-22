@@ -74,7 +74,7 @@ vi.mock('../providers/factory.js', () => {
   };
   
   return {
-    createAutomationProvider: vi.fn(() => ({
+    createAutomationProvider: vi.fn(() => Promise.resolve({
       keyboard: mockKeyboardAutomation,
       mouse: mockMouseAutomation,
       screen: mockScreenAutomation,
@@ -91,7 +91,7 @@ describe('Tools Handler', () => {
   let listToolsHandler: (request?: any) => Promise<any>;
   let callToolHandler: (request: any) => Promise<any>;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Reset all mocks
     vi.clearAllMocks();
 
@@ -107,7 +107,7 @@ describe('Tools Handler', () => {
     } as unknown as Server;
 
     // Setup tools with mock server and mock provider
-    const mockProvider = vi.mocked(createAutomationProvider)();
+    const mockProvider = await vi.mocked(createAutomationProvider)();
     setupTools(mockServer, mockProvider);
   });
 
@@ -131,7 +131,7 @@ describe('Tools Handler', () => {
   describe('Tool Execution', () => {
     it('should execute move_mouse tool with valid arguments', async () => {
       // Mock is already setup in the mock declaration with default success response
-      const mockProvider = vi.mocked(createAutomationProvider)();
+      const mockProvider = await vi.mocked(createAutomationProvider)();
 
       const result = await callToolHandler({
         params: {
@@ -149,7 +149,7 @@ describe('Tools Handler', () => {
 
     it('should execute type_text tool with valid arguments', async () => {
       // Mock is already setup in the mock declaration with default success response
-      const mockProvider = vi.mocked(createAutomationProvider)();
+      const mockProvider = await vi.mocked(createAutomationProvider)();
 
       const result = await callToolHandler({
         params: {
@@ -166,7 +166,7 @@ describe('Tools Handler', () => {
     });
 
     it('should execute click_mouse tool with default button', async () => {
-      const mockProvider = vi.mocked(createAutomationProvider)();
+      const mockProvider = await vi.mocked(createAutomationProvider)();
       vi.mocked(mockProvider.mouse.clickMouse).mockReturnValueOnce({ success: true, message: 'Mouse clicked' });
 
       const result = await callToolHandler({
@@ -184,7 +184,7 @@ describe('Tools Handler', () => {
     });
 
     it('should execute click_mouse tool with specified button', async () => {
-      const mockProvider = vi.mocked(createAutomationProvider)();
+      const mockProvider = await vi.mocked(createAutomationProvider)();
       vi.mocked(mockProvider.mouse.clickMouse).mockReturnValueOnce({ success: true, message: 'Right mouse clicked' });
 
       const result = await callToolHandler({
@@ -202,7 +202,7 @@ describe('Tools Handler', () => {
     });
 
     it('should execute press_key tool with valid arguments', async () => {
-      const mockProvider = vi.mocked(createAutomationProvider)();
+      const mockProvider = await vi.mocked(createAutomationProvider)();
       
       const result = await callToolHandler({
         params: {
@@ -245,7 +245,7 @@ describe('Tools Handler', () => {
     });
 
     it('should handle tool execution errors', async () => {
-      const mockProvider = vi.mocked(createAutomationProvider)();
+      const mockProvider = await vi.mocked(createAutomationProvider)();
       vi.mocked(mockProvider.keyboard.pressKey).mockImplementationOnce(() => {
         throw new Error('Key press failed');
       });

@@ -66,7 +66,7 @@ vi.mock('../factory.js', async () => {
   
   return {
     createAutomationProvider: vi.fn().mockImplementation((_providerType) => {
-      return new MockKeysenderProvider();
+      return Promise.resolve(new MockKeysenderProvider());
     })
   };
 });
@@ -128,8 +128,8 @@ vi.mock('./clipboard.js', async () => {
 });
 
 describe('KeysenderProvider', () => {
-  it('should be created through the factory', () => {
-    const provider = createAutomationProvider('keysender');
+  it('should be created through the factory', async () => {
+    const provider = await createAutomationProvider('keysender');
     expect(provider).toBeInstanceOf(MockKeysenderProvider);
   });
 

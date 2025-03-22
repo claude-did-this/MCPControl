@@ -27,37 +27,37 @@ vi.mock('./keysender/index.js', () => {
 });
 
 describe('createAutomationProvider', () => {
-  it('should create NutJSProvider by default', () => {
-    const provider = createAutomationProvider();
+  it('should create NutJSProvider by default', async () => {
+    const provider = await createAutomationProvider();
     expect(NutJSProvider).toHaveBeenCalled();
     expect(provider).toBeDefined();
   });
 
-  it('should create NutJSProvider when explicitly specified', () => {
-    const provider = createAutomationProvider('nutjs');
+  it('should create NutJSProvider when explicitly specified', async () => {
+    const provider = await createAutomationProvider('nutjs');
     expect(NutJSProvider).toHaveBeenCalled();
     expect(provider).toBeDefined();
   });
 
-  it('should create KeysenderProvider when specified', () => {
-    const provider = createAutomationProvider('keysender');
+  it('should create KeysenderProvider when specified', async () => {
+    const provider = await createAutomationProvider('keysender');
     expect(KeysenderProvider).toHaveBeenCalled();
     expect(provider).toBeDefined();
   });
 
-  it('should be case insensitive when creating provider', () => {
-    const provider = createAutomationProvider('NuTjS');
+  it('should be case insensitive when creating provider', async () => {
+    const provider = await createAutomationProvider('NuTjS');
     expect(NutJSProvider).toHaveBeenCalled();
     expect(provider).toBeDefined();
   });
 
-  it('should be case insensitive for KeysenderProvider', () => {
-    const provider = createAutomationProvider('KeYsEnDeR');
+  it('should be case insensitive for KeysenderProvider', async () => {
+    const provider = await createAutomationProvider('KeYsEnDeR');
     expect(KeysenderProvider).toHaveBeenCalled();
     expect(provider).toBeDefined();
   });
 
-  it('should throw error for unknown provider type', () => {
-    expect(() => createAutomationProvider('unknown')).toThrow('Unknown provider type: unknown');
+  it('should throw error for unknown provider type', async () => {
+    await expect(createAutomationProvider('unknown')).rejects.toThrow('Unknown provider type: unknown');
   });
 });

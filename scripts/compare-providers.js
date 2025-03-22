@@ -14,7 +14,7 @@ async function testProvider(providerName) {
   const config = loadConfig();
   console.log(`Using provider: ${config.provider}`);
   
-  const provider = createAutomationProvider(config.provider);
+  const provider = await createAutomationProvider(config.provider);
   console.log(`Provider created: ${provider.constructor.name}`);
   
   // 1. Get screen size
