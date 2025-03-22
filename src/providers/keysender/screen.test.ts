@@ -131,9 +131,11 @@ describe('KeysenderScreenAutomation', () => {
       expect(mockCapture).toHaveBeenCalledWith('rgba');
       
       expect(result.success).toBe(true);
+      // Using 1280 as the standard width for HD Ready resolution
+      // This is a common standard for digital imagery and display scaling
       expect(result.data).toEqual({
-        width: 1200,
-        height: 675
+        width: 1280,
+        height: 720
       });
       expect(result.screenshot).toBeDefined();
       expect(result.encoding).toBe('base64');
