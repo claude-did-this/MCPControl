@@ -1,6 +1,6 @@
 # MCPControl
 
-A cross-platform control server for the Model Context Protocol (MCP), providing programmatic control over system operations including mouse, keyboard, window management, and screen capture functionality. Built on [nut.js](https://nutjs.dev/).
+A cross-platform control server for the Model Context Protocol (MCP), providing programmatic control over system operations including mouse, keyboard, window management, and screen capture functionality.
 
 I developed this project as an experiment a few months ago, wanting to see if Claude could play some video games. After seeing it work, I was impressed but set it aside. Recently, it's gained attention from the community, prompting me to resume development. While currently in pre-release state, I'm actively working toward a stable version. If you encounter any issues, please submit them through the issue tracker.
 
@@ -63,32 +63,12 @@ git clone https://github.com/Cheffromspace/MCPControl.git
 cd MCPControl
 ```
 
-2. Build the project (this will handle libnut-core and all dependencies):
+2. Build the project:
 ```bash
 # Install dependencies
 npm install
 
-# Build everything including libnut-core
-npm run build:all
-```
-
-For manual building, you can still follow these steps:
-```bash
-# Install cmake-js globally (required for building)
-npm install -g cmake-js
-
-# Clone libnut repository directly in the project directory
-git clone https://github.com/nut-tree/libnut.git libnut-core
-cd libnut-core
-
-# Install dependencies and build
-npm install
-cmake-js rebuild
-
-# Return to the main project
-cd ..
-
-# Build MCPControl
+# Build the project
 npm run build
 ```
 
@@ -134,7 +114,7 @@ After configuring your MCP server, restart Claude to see the MCPControl service 
 ## Dependencies
 
 - [@modelcontextprotocol/sdk](https://www.npmjs.com/package/@modelcontextprotocol/sdk) - MCP SDK for protocol implementation
-- [@nut-tree/libnut](https://github.com/nut-tree/libnut) - Core native UI automation library
+- [keysender](https://www.npmjs.com/package/keysender) - Cross-platform UI automation library
 - [clipboardy](https://www.npmjs.com/package/clipboardy) - Cross-platform clipboard handling
 - [express](https://expressjs.com/) - Web server framework
 - [jimp](https://www.npmjs.com/package/jimp) & [sharp](https://www.npmjs.com/package/sharp) - Image processing
@@ -148,7 +128,7 @@ The project currently includes unit tests for core functionality. The following 
 
 ## Known Limitations
 
-- Window minimize/restore operations are currently unsupported in libnut-core
+- Window minimize/restore operations are currently unsupported
 - Advanced screen information (multiple monitors, DPI settings) is limited to main display
 - Some operations may require elevated permissions depending on the target application
 - Cross-platform support (Linux/macOS) is untested
@@ -163,6 +143,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## References
 
-- [NutJS Documentation](https://nutjs.dev/)
-- [NutJS GitHub Repository](https://github.com/nut-tree/nut.js)
 - [Model Context Protocol Documentation](https://modelcontextprotocol.github.io/)

@@ -1,40 +1,10 @@
-// This is legacy code that will be removed once the new implementation is complete
-
-import libnut from '@nut-tree/libnut';
-import { WindowInfo } from '../types/common.js';
 import { WindowsControlResponse } from '../types/responses.js';
-
-/**
- * Helper function to find a window handle by title
- */
-function findWindowHandle(title: string): number | null {
-  const handles = libnut.getWindows();
-  
-  for (const handle of handles) {
-    try {
-      const windowTitle = libnut.getWindowTitle(handle);
-      if (windowTitle.includes(title)) {
-        return handle;
-      }
-    } catch {
-      continue;
-    }
-  }
-  return null;
-}
+import { createAutomationProvider } from '../providers/factory.js';
 
 export function getScreenSize(): WindowsControlResponse {
   try {
-    const screen = libnut.screen.capture();
-    
-    return {
-      success: true,
-      message: "Screen size retrieved successfully",
-      data: {
-        width: screen.width,
-        height: screen.height
-      }
-    };
+    const provider = createAutomationProvider();
+    return provider.screen.getScreenSize();
   } catch (error) {
     return {
       success: false,
@@ -45,21 +15,8 @@ export function getScreenSize(): WindowsControlResponse {
 
 export function getActiveWindow(): WindowsControlResponse {
   try {
-    const handle = libnut.getActiveWindow();
-    const title = libnut.getWindowTitle(handle);
-    const rect = libnut.getWindowRect(handle);
-    
-    const windowInfo: WindowInfo = {
-      title: title,
-      position: { x: rect.x, y: rect.y },
-      size: { width: rect.width, height: rect.height }
-    };
-
-    return {
-      success: true,
-      message: "Active window information retrieved successfully",
-      data: windowInfo
-    };
+    const provider = createAutomationProvider();
+    return provider.screen.getActiveWindow();
   } catch (error) {
     return {
       success: false,
@@ -71,20 +28,8 @@ export function getActiveWindow(): WindowsControlResponse {
 
 export function focusWindow(title: string): WindowsControlResponse {
   try {
-    const handle = findWindowHandle(title);
-    
-    if (handle) {
-      libnut.focusWindow(handle);
-      return {
-        success: true,
-        message: `Successfully focused window: ${title}`
-      };
-    }
-
-    return {
-      success: false,
-      message: `Could not find window with title: ${title}`
-    };
+    const provider = createAutomationProvider();
+    return provider.screen.focusWindow(title);
   } catch (error) {
     return {
       success: false,
@@ -95,20 +40,8 @@ export function focusWindow(title: string): WindowsControlResponse {
 
 export function resizeWindow(title: string, width: number, height: number): WindowsControlResponse {
   try {
-    const handle = findWindowHandle(title);
-    
-    if (handle) {
-      libnut.resizeWindow(handle, { width, height });
-      return {
-        success: true,
-        message: `Successfully resized window: ${title} to ${width}x${height}`
-      };
-    }
-
-    return {
-      success: false,
-      message: `Could not find window with title: ${title}`
-    };
+    const provider = createAutomationProvider();
+    return provider.screen.resizeWindow(title, width, height);
   } catch (error) {
     return {
       success: false,
@@ -119,20 +52,8 @@ export function resizeWindow(title: string, width: number, height: number): Wind
 
 export function repositionWindow(title: string, x: number, y: number): WindowsControlResponse {
   try {
-    const handle = findWindowHandle(title);
-    
-    if (handle) {
-      libnut.moveWindow(handle, { x, y });
-      return {
-        success: true,
-        message: `Successfully repositioned window: ${title} to (${x},${y})`
-      };
-    }
-
-    return {
-      success: false,
-      message: `Could not find window with title: ${title}`
-    };
+    const provider = createAutomationProvider();
+    return provider.screen.repositionWindow(title, x, y);
   } catch (error) {
     return {
       success: false,
