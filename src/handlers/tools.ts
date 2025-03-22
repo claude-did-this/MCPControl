@@ -5,6 +5,7 @@ import {
   TextContent
 } from "@modelcontextprotocol/sdk/types.js";
 import { MousePosition, KeyboardInput, KeyCombination, ClipboardInput, KeyHoldOperation, ScreenshotOptions } from "../types/common.js";
+import { WindowsControlResponse } from "../types/responses.js";
 // All tool functions now come from the provider
 // Provider is now passed from the main server instance
 import { AutomationProvider } from "../interfaces/provider.js";
@@ -613,16 +614,17 @@ export function setupTools(server: Server, provider: AutomationProvider): void {
       }
 
       // Handle special case for screenshot which returns content with image data
-      if ('content' in response && 
-          response.content && 
-          Array.isArray(response.content) && 
-          response.content.length > 0 && 
-          response.content[0] && 
-          typeof response.content[0] === 'object' &&
-          'type' in response.content[0] && 
-          response.content[0].type === "image") {
+      const typedResponse = response as WindowsControlResponse;
+      if ('content' in typedResponse && 
+          typedResponse.content && 
+          Array.isArray(typedResponse.content) && 
+          typedResponse.content.length > 0 && 
+          typedResponse.content[0] && 
+          typeof typedResponse.content[0] === 'object' &&
+          'type' in typedResponse.content[0] && 
+          typedResponse.content[0].type === "image") {
         return {
-          content: response.content
+          content: typedResponse.content
         };
       }
       
