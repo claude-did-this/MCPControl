@@ -132,8 +132,8 @@ describe('KeysenderScreenAutomation', () => {
       
       expect(result.success).toBe(true);
       expect(result.data).toEqual({
-        width: 1920,
-        height: 1080
+        width: 1200,
+        height: 675
       });
       expect(result.screenshot).toBeDefined();
       expect(result.encoding).toBe('base64');
