@@ -1,5 +1,5 @@
 {
-  "name": "MCPControl",
+  "name": "mcp-control",
   "version": "0.1.0",
   "description": "Cross-platform control server for the Model Context Protocol",
   "license": "MIT",
