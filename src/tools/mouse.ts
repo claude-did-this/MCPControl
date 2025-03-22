@@ -1,15 +1,15 @@
-import libnut from '@nut-tree/libnut';
-import { MousePosition, ButtonMap } from '../types/common.js';
+import { MousePosition } from '../types/common.js';
 import { WindowsControlResponse } from '../types/responses.js';
+import { createAutomationProvider } from '../providers/factory.js';
+
+// Get the automation provider
+const provider = createAutomationProvider();
 
 // Constants for validation
 const MAX_ALLOWED_COORDINATE = 10000; // Reasonable maximum screen dimension
 
-const buttonMap: ButtonMap = {
-  'left': 'left',
-  'right': 'right',
-  'middle': 'middle'
-};
+// Define button types
+type MouseButton = 'left' | 'right' | 'middle';
 
 /**
  * Validates mouse position against screen bounds
@@ -40,16 +40,19 @@ function validateMousePosition(position: MousePosition): MousePosition {
       throw new Error(`Position (${position.x},${position.y}) is outside reasonable bounds (-${MAX_ALLOWED_COORDINATE}, -${MAX_ALLOWED_COORDINATE})-(${MAX_ALLOWED_COORDINATE}, ${MAX_ALLOWED_COORDINATE})`);
     }
     
-    // Check against actual screen bounds if getScreenSize is available
-    // This is wrapped in try/catch because it might not be available in tests
-    if (typeof libnut.getScreenSize === 'function') {
-      const screenSize = libnut.getScreenSize();
-      if (screenSize && typeof screenSize.width === 'number' && typeof screenSize.height === 'number') {
+    // Check against actual screen bounds
+    try {
+      const screenSizeResponse = provider.screen.getScreenSize();
+      if (screenSizeResponse.success && screenSizeResponse.data) {
+        const screenSize = screenSizeResponse.data as { width: number; height: number };
         if (position.x < 0 || position.x >= screenSize.width || 
             position.y < 0 || position.y >= screenSize.height) {
           throw new Error(`Position (${position.x},${position.y}) is outside screen bounds (0,0)-(${screenSize.width-1},${screenSize.height-1})`);
         }
       }
+    } catch (screenError) {
+      console.warn('Error checking screen bounds:', screenError);
+      // Continue without screen bounds check
     }
   } catch (e) {
     // In test environment, just let it through
@@ -68,11 +71,7 @@ export function moveMouse(position: MousePosition): WindowsControlResponse {
     // Validate the position
     validateMousePosition(position);
     
-    libnut.moveMouse(position.x, position.y);
-    return {
-      success: true,
-      message: `Mouse moved to position (${position.x}, ${position.y})`
-    };
+    return provider.mouse.moveMouse(position);
   } catch (error) {
     return {
       success: false,
@@ -87,7 +86,7 @@ export function moveMouse(position: MousePosition): WindowsControlResponse {
  * @returns Validated button
  * @throws Error if button is invalid
  */
-function validateMouseButton(button: unknown): keyof ButtonMap {
+function validateMouseButton(button: unknown): MouseButton {
   if (!button || typeof button !== 'string') {
     throw new Error(`Invalid mouse button: ${String(button)}`);
   }
@@ -96,20 +95,15 @@ function validateMouseButton(button: unknown): keyof ButtonMap {
     throw new Error(`Invalid mouse button: ${button}. Must be 'left', 'right', or 'middle'`);
   }
   
-  return button as keyof ButtonMap;
+  return button as MouseButton;
 }
 
-export function clickMouse(button: keyof ButtonMap = 'left'): WindowsControlResponse {
+export function clickMouse(button: MouseButton = 'left'): WindowsControlResponse {
   try {
     // Validate button
     const validatedButton = validateMouseButton(button);
-    const buttonName = buttonMap[validatedButton];
     
-    libnut.mouseClick(buttonName);
-    return {
-      success: true,
-      message: `Clicked ${validatedButton} mouse button`
-    };
+    return provider.mouse.clickMouse(validatedButton);
   } catch (error) {
     return {
       success: false,
@@ -123,16 +117,9 @@ export function doubleClick(position?: MousePosition): WindowsControlResponse {
     // Validate position if provided
     if (position) {
       validateMousePosition(position);
-      libnut.moveMouse(position.x, position.y);
     }
     
-    libnut.mouseClick("left", true); // Use the built-in double click parameter
-    return {
-      success: true,
-      message: position ? 
-        `Double clicked at position (${position.x}, ${position.y})` : 
-        "Double clicked at current position"
-    };
+    return provider.mouse.doubleClick(position);
   } catch (error) {
     return {
       success: false,
@@ -143,15 +130,7 @@ export function doubleClick(position?: MousePosition): WindowsControlResponse {
 
 export function getCursorPosition(): WindowsControlResponse {
   try {
-    const position = libnut.getMousePos();
-    return {
-      success: true,
-      message: "Cursor position retrieved successfully",
-      data: {
-        x: position.x,
-        y: position.y
-      }
-    };
+    return provider.mouse.getCursorPosition();
   } catch (error) {
     return {
       success: false,
@@ -173,11 +152,7 @@ export function scrollMouse(amount: number): WindowsControlResponse {
       throw new Error(`Scroll amount too large: ${amount} (max ${MAX_SCROLL_AMOUNT})`);
     }
     
-    libnut.scrollMouse(0, amount); // x is 0 for vertical scrolling
-    return {
-      success: true,
-      message: `Scrolled mouse ${amount > 0 ? 'down' : 'up'} by ${Math.abs(amount)} units`
-    };
+    return provider.mouse.scrollMouse(amount);
   } catch (error) {
     return {
       success: false,
@@ -186,7 +161,7 @@ export function scrollMouse(amount: number): WindowsControlResponse {
   }
 }
 
-export function dragMouse(from: MousePosition, to: MousePosition, button: keyof ButtonMap = 'left'): WindowsControlResponse {
+export function dragMouse(from: MousePosition, to: MousePosition, button: MouseButton = 'left'): WindowsControlResponse {
   try {
     // Validate positions
     validateMousePosition(from);
@@ -194,32 +169,9 @@ export function dragMouse(from: MousePosition, to: MousePosition, button: keyof 
     
     // Validate button
     const validatedButton = validateMouseButton(button);
-    const buttonName = buttonMap[validatedButton];
     
-    // Move to start position
-    libnut.moveMouse(from.x, from.y);
-    
-    // Press mouse button
-    libnut.mouseToggle("down", buttonName);
-    
-    // Move to end position
-    libnut.moveMouse(to.x, to.y);
-    
-    // Release mouse button
-    libnut.mouseToggle("up", buttonName);
-    
-    return {
-      success: true,
-      message: `Dragged from (${from.x}, ${from.y}) to (${to.x}, ${to.y}) with ${validatedButton} button`
-    };
+    return provider.mouse.dragMouse(from, to, validatedButton);
   } catch (error) {
-    // Ensure mouse button is released in case of error
-    try {
-      libnut.mouseToggle("up", buttonMap[button]);
-    } catch {
-      // Ignore cleanup errors
-    }
-    
     return {
       success: false,
       message: `Failed to drag mouse: ${error instanceof Error ? error.message : String(error)}`
@@ -227,7 +179,7 @@ export function dragMouse(from: MousePosition, to: MousePosition, button: keyof 
   }
 }
 
-export function clickAt(x: number, y: number, button: keyof ButtonMap = 'left'): WindowsControlResponse {
+export function clickAt(x: number, y: number, button: MouseButton = 'left'): WindowsControlResponse {
   // Special case for test compatibility (match original implementation)
   if (typeof x !== 'number' || typeof y !== 'number' || isNaN(x) || isNaN(y)) {
     return {
@@ -240,33 +192,10 @@ export function clickAt(x: number, y: number, button: keyof ButtonMap = 'left'):
     // Validate position against screen bounds
     validateMousePosition({ x, y });
     
-    // Skip button validation in tests to maintain test compatibility
-    let actualButton: string;
-    if (process.env.NODE_ENV === 'test' || process.env.VITEST) {
-      // In tests, use the button directly (with explicit string casting)
-      actualButton = button.toString();
-    } else {
-      // In production, validate button
-      const validatedButton = validateMouseButton(button);
-      actualButton = buttonMap[validatedButton];
-    }
+    // Validate button
+    const validatedButton = validateMouseButton(button);
     
-    // Store original position
-    const originalPosition = libnut.getMousePos();
-    
-    // Move to target position
-    libnut.moveMouse(x, y);
-    
-    // Perform click - in test we use button directly, in prod we use the mapped button
-    libnut.mouseClick(actualButton);
-    
-    // Return to original position
-    libnut.moveMouse(originalPosition.x, originalPosition.y);
-    
-    return {
-      success: true,
-      message: `Clicked ${button} button at position (${x}, ${y}) and returned to (${originalPosition.x}, ${originalPosition.y})`
-    };
+    return provider.mouse.clickAt(x, y, validatedButton);
   } catch (error) {
     return {
       success: false,
@@ -274,4 +203,3 @@ export function clickAt(x: number, y: number, button: keyof ButtonMap = 'left'):
     };
   }
 }
-

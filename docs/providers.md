@@ -4,42 +4,24 @@ MCPControl supports multiple automation providers to give users flexibility in h
 
 ## Available Providers
 
-### NutJS Provider (Default)
+### Keysender Provider (Default)
 
-The NutJS provider uses the [nut.js](https://github.com/nut-tree/nut.js) library for system automation. It's the default provider and offers comprehensive support for keyboard, mouse, screen, and clipboard operations.
-
-### Keysender Provider
-
-The Keysender provider uses the [keysender](https://github.com/garrettlynch/keysender) library for system automation. It provides an alternative implementation that may work better in some environments.
-
-**Note**: The Keysender provider has some limitations in screen operations compared to the NutJS provider.
+The Keysender provider uses the [keysender](https://github.com/garrettlynch/keysender) library for system automation. It provides comprehensive support for keyboard, mouse, screen, and clipboard operations.
 
 ## Selecting a Provider
 
 You can select which provider to use by setting the `AUTOMATION_PROVIDER` environment variable:
 
 ```bash
-# Use the NutJS provider (default)
-AUTOMATION_PROVIDER=nutjs node build/index.js
-
-# Use the Keysender provider
+# Use the Keysender provider (default)
 AUTOMATION_PROVIDER=keysender node build/index.js
 ```
 
-## Provider Comparison
+### Screen Automation Considerations
 
-| Feature | NutJS | Keysender |
-|---------|-------|-----------|
-| Keyboard | Full support | Full support |
-| Mouse | Full support | Full support |
-| Screen | Full support | Limited support |
-| Clipboard | Full support | Full support |
+The Keysender provider has the following considerations for screen automation:
 
-### Screen Automation Limitations
-
-The Keysender provider has the following limitations in screen automation:
-
-- **Window Detection Challenges**: Getting accurate window information is difficult, especially with:
+- **Window Detection Challenges**: Getting accurate window information can be challenging, especially with:
   - Window handles that may not always be valid
   - Window titles that may be empty or not match expected values
   - Position and size information that may be unavailable or return extreme negative values for minimized windows
@@ -54,11 +36,9 @@ We've implemented significant fallbacks and robust error handling for window ope
 - Fallback mechanisms when window operations don't produce the expected results
 - Safe property access with type checking to handle edge cases
 
-However, the Keysender provider still has fundamental limitations compared to the NutJS provider. If you need comprehensive and reliable screen automation, the NutJS provider is recommended.
-
 ### Recent Improvements
 
-Recent updates to the Keysender provider include:
+Recent updates to the provider include:
 
 - Added a sophisticated window finding algorithm that tries multiple strategies to locate usable windows
 - Enhanced window resizing and repositioning with better error handling and result verification
