@@ -3,41 +3,39 @@ import { KeysenderProvider } from './keysender/index.js';
 
 // Conditionally import NutJSProvider
 // This allows builds without NutJS dependency
-let NutJSProvider: any;
-try {
-  // Dynamic import to prevent build-time dependency
-  const nutjsModule = await import('./nutjs/index.js');
-  NutJSProvider = nutjsModule.NutJSProvider;
-} catch (error) {
-  // NutJS provider not available - this is expected in some environments
-  console.log('NutJS provider not available');
+interface NutJSProviderConstructor {
+  new(): AutomationProvider;
 }
+
+let NutJSProvider: NutJSProviderConstructor | null = null;
+
+// Initialize NutJS provider with an IIFE
+(function initNutJSProvider() {
+  import('./nutjs/index.js')
+    .then(nutjsModule => {
+      NutJSProvider = nutjsModule.NutJSProvider;
+    })
+    .catch(_ => {
+      // NutJS provider not available - this is expected in some environments
+      console.log('NutJS provider not available');
+    });
+})();
 
 // Cache to store provider instances
 const providerCache: Record<string, AutomationProvider> = {};
 
 /**
- * Detect the current platform
- * @returns Platform identifier: 'win32', 'darwin', 'linux', or 'unknown'
- */
-function detectPlatform(): string {
-  return process.platform || 'unknown';
-}
-
-/**
- * Determine the best provider based on the current platform
- * @returns Provider type string
+ * Determine the best provider to use
+ * @returns Provider type string ('nutjs' if available, otherwise 'keysender')
  */
 function getDefaultProvider(): string {
-  const platform = detectPlatform();
-  
-  // On Windows, prefer keysender
-  if (platform === 'win32') {
-    return 'keysender';
+  // Use NutJS if available, regardless of platform
+  if (NutJSProvider) {
+    return 'nutjs';
   }
   
-  // On other platforms, use NutJS if available
-  return NutJSProvider ? 'nutjs' : 'keysender';
+  // Fall back to keysender if NutJS is not available
+  return 'keysender';
 }
 
 /**
@@ -45,7 +43,7 @@ function getDefaultProvider(): string {
  * Uses a caching mechanism to avoid creating multiple instances of the same provider
  */
 export function createAutomationProvider(type?: string): AutomationProvider {
-  // If no type specified, use platform-specific default
+  // If no type specified, use default provider
   const providerType = (type || getDefaultProvider()).toLowerCase();
   
   // Return cached instance if available
