@@ -22,7 +22,7 @@ export default tseslint.config(
       '@typescript-eslint/explicit-module-boundary-types': 'error',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
-    ignores: ['build/**', 'coverage/**', 'libnut-core/**'],
+    ignores: ['build/**', 'coverage/**'],
   },
   {
     // Test files specific configuration

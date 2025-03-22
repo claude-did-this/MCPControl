@@ -73,8 +73,8 @@ async function testProvider(providerName) {
     // First test keysender provider
     await testProvider('keysender');
     
-    // Then test nutjs provider for comparison
-    await testProvider('nutjs');
+    // Only test keysender provider
+    // await testProvider('other-provider');
   } catch (error) {
     console.error('Error in testing:', error);
   }
