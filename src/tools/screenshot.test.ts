@@ -1,29 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-
-// Mock Declarations must be at the top level - before imports
-vi.mock('@nut-tree/libnut', () => ({
-  default: {
-    screen: {
-      capture: vi.fn()
-    }
-  }
-}));
-
-// Mock the sharp module
-vi.mock('sharp', () => ({
-  default: vi.fn().mockImplementation(() => ({
-    grayscale: vi.fn().mockReturnThis(),
-    resize: vi.fn().mockReturnThis(),
-    jpeg: vi.fn().mockReturnThis(),
-    png: vi.fn().mockReturnThis(),
-    toBuffer: vi.fn().mockResolvedValue(Buffer.from('test-image-data'))
-  }))
-}));
-
-// Import mocked modules after vi.mock declarations
-import libnut from '@nut-tree/libnut';
-import sharp, { Sharp } from 'sharp';
 import { getScreenshot } from './screenshot';
+import { createAutomationProvider } from '../providers/factory';
+
+// Mock the factory module
+vi.mock('../providers/factory', () => ({
+  createAutomationProvider: vi.fn()
+}));
 
 describe('Screenshot Functions', () => {
   beforeEach(() => {
@@ -36,83 +18,96 @@ describe('Screenshot Functions', () => {
   });
 
   describe('getScreenshot', () => {
-    it('should return screenshot data on success', async () => {
-      // Setup
-      const mockScreen = { 
-        width: 1920, 
-        height: 1080, 
-        image: Buffer.from('test') 
+    it('should delegate to provider and return screenshot data on success', async () => {
+      // Setup mock provider
+      const mockProvider = {
+        screen: {
+          getScreenshot: vi.fn().mockResolvedValue({
+            success: true,
+            message: "Screenshot captured successfully",
+            content: [{
+              type: "image",
+              data: "test-image-data-base64",
+              mimeType: "image/png"
+            }]
+          })
+        }
       };
-      (libnut.screen.capture as any).mockReturnValue(mockScreen);
       
-      const mockBuffer = Buffer.from('test-image-data');
-      
-      vi.mocked(sharp).mockImplementation(() => ({
-        grayscale: vi.fn().mockReturnThis(),
-        resize: vi.fn().mockReturnThis(),
-        jpeg: vi.fn().mockReturnThis(),
-        png: vi.fn().mockReturnThis(),
-        toBuffer: vi.fn().mockResolvedValue(mockBuffer)
-      }) as unknown as Sharp);
+      // Make createAutomationProvider return our mock
+      vi.mocked(createAutomationProvider).mockReturnValue(mockProvider as any);
 
       // Execute
       const result = await getScreenshot();
 
       // Verify
-      expect(libnut.screen.capture).toHaveBeenCalledTimes(1);
+      expect(createAutomationProvider).toHaveBeenCalledTimes(1);
+      expect(mockProvider.screen.getScreenshot).toHaveBeenCalledTimes(1);
       expect(result).toEqual({
         success: true,
         message: "Screenshot captured successfully",
         content: [{
           type: "image",
-          data: mockBuffer.toString('base64'),
+          data: "test-image-data-base64",
           mimeType: "image/png"
         }]
       });
     });
 
-    it('should handle screenshot with region option', async () => {
-      // Setup
-      const mockScreen = { 
-        width: 800, 
-        height: 600, 
-        image: Buffer.from('test') 
+    it('should pass options to provider when specified', async () => {
+      // Setup mock provider
+      const mockProvider = {
+        screen: {
+          getScreenshot: vi.fn().mockResolvedValue({
+            success: true,
+            message: "Screenshot captured successfully",
+            content: [{
+              type: "image",
+              data: "test-image-data-base64",
+              mimeType: "image/jpeg"
+            }]
+          })
+        }
       };
-      (libnut.screen.capture as any).mockReturnValue(mockScreen);
       
-      const mockBuffer = Buffer.from('test-image-data');
-      
-      vi.mocked(sharp).mockImplementation(() => ({
-        grayscale: vi.fn().mockReturnThis(),
-        resize: vi.fn().mockReturnThis(),
-        jpeg: vi.fn().mockReturnThis(),
-        png: vi.fn().mockReturnThis(),
-        toBuffer: vi.fn().mockResolvedValue(mockBuffer)
-      }) as unknown as Sharp);
+      // Make createAutomationProvider return our mock
+      vi.mocked(createAutomationProvider).mockReturnValue(mockProvider as any);
+
+      // Options to pass
+      const options = {
+        region: { x: 100, y: 100, width: 800, height: 600 },
+        format: 'jpeg' as const
+      };
 
       // Execute
-      const result = await getScreenshot({
-        region: { x: 100, y: 100, width: 800, height: 600 }
-      });
+      const result = await getScreenshot(options);
 
       // Verify
-      expect(libnut.screen.capture).toHaveBeenCalledWith(100, 100, 800, 600);
+      expect(createAutomationProvider).toHaveBeenCalledTimes(1);
+      expect(mockProvider.screen.getScreenshot).toHaveBeenCalledWith(options);
       expect(result).toEqual({
         success: true,
         message: "Screenshot captured successfully",
         content: [{
           type: "image",
-          data: mockBuffer.toString('base64'),
-          mimeType: "image/png"
+          data: "test-image-data-base64",
+          mimeType: "image/jpeg"
         }]
       });
     });
 
-    it('should return error response when capture fails', async () => {
-      // Setup
-      (libnut.screen.capture as any).mockImplementation(() => {
-        throw new Error('Capture failed');
-      });
+    it('should return error response when provider throws an error', async () => {
+      // Setup mock provider that throws
+      const mockProvider = {
+        screen: {
+          getScreenshot: vi.fn().mockImplementation(() => {
+            throw new Error('Capture failed');
+          })
+        }
+      };
+      
+      // Make createAutomationProvider return our mock
+      vi.mocked(createAutomationProvider).mockReturnValue(mockProvider as any);
 
       // Execute
       const result = await getScreenshot();

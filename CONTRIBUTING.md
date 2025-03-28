@@ -1,6 +1,6 @@
-# Contributing to NutJS Windows Control
+# Contributing to MCP Control
 
-Thank you for your interest in contributing to NutJS Windows Control! This document provides guidelines and instructions for contributing to the project.
+Thank you for your interest in contributing to MCP Control! This document provides guidelines and instructions for contributing to the project.
 
 ## Table of Contents
 
@@ -30,7 +30,6 @@ Please be respectful and considerate of others when contributing to this project
 - Node.js (latest LTS version recommended)
 - npm
 - git
-- cmake-js (for building libnut-core)
 - C++ compiler (for building native modules)
 
 ### Setup
@@ -42,32 +41,12 @@ Please be respectful and considerate of others when contributing to this project
    cd MCPControl
    ```
 
-3. Build the project (this will handle libnut-core and all dependencies):
+3. Build the project:
    ```bash
    # Install dependencies
    npm install
 
-   # Build everything including libnut-core
-   npm run build:all
-   ```
-
-   For manual building, you can follow these steps instead:
-   ```bash
-   # Install cmake-js globally (required for building)
-   npm install -g cmake-js
-
-   # Clone libnut repository directly in the project directory
-   git clone https://github.com/nut-tree/libnut.git libnut-core
-   cd libnut-core
-
-   # Install dependencies and build
-   npm install
-   cmake-js rebuild
-
-   # Return to the main project
-   cd ..
-
-   # Build MCPControl
+   # Build the project
    npm run build
    ```
 
@@ -162,4 +141,4 @@ See the [TASKS.md](./TASKS.md) file for the current roadmap and planned features
 
 ---
 
-Thank you for contributing to NutJS Windows Control!
+Thank you for contributing to MCP Control!

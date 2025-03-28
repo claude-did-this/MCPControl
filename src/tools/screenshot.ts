@@ -1,5 +1,4 @@
-import libnut from '@nut-tree/libnut';
-import sharp from 'sharp';
+import { createAutomationProvider } from '../providers/factory.js';
 import { ScreenshotOptions } from '../types/common.js';
 import { WindowsControlResponse } from '../types/responses.js';
 
@@ -11,64 +10,14 @@ import { WindowsControlResponse } from '../types/responses.js';
  */
 export async function getScreenshot(options?: ScreenshotOptions): Promise<WindowsControlResponse> {
   try {
-    // Capture screen or region
-    const screen = options?.region ? 
-      libnut.screen.capture(options.region.x, options.region.y, options.region.width, options.region.height) :
-      libnut.screen.capture();
-
-    // Convert BGRA to RGBA
-    const screenImage = screen.image as Buffer;
-    const rgbaBuffer = Buffer.alloc(screenImage.length);
-    for (let i = 0; i < screenImage.length; i += 4) {
-      rgbaBuffer[i] = screenImage[i + 2];     // R (from B)
-      rgbaBuffer[i + 1] = screenImage[i + 1]; // G (unchanged)
-      rgbaBuffer[i + 2] = screenImage[i];     // B (from R)
-      rgbaBuffer[i + 3] = screenImage[i + 3]; // A (unchanged)
-    }
-
-    // Process image with Sharp
-    let pipeline = sharp(rgbaBuffer, {
-      raw: { width: screen.width, height: screen.height, channels: 4 }
-    });
-
-    if (options?.grayscale) pipeline = pipeline.grayscale();
+    // Create a provider instance to handle the screenshot
+    const provider = createAutomationProvider();
     
-    if (options?.resize) {
-      pipeline = pipeline.resize({
-        width: options.resize.width,
-        height: options.resize.height,
-        fit: options.resize.fit || 'contain',
-        withoutEnlargement: true
-      });
-    }
-
-    // Format options
-    if (options?.format === 'jpeg') {
-      pipeline = pipeline.jpeg({
-        quality: options?.quality || 80,
-        mozjpeg: true
-      });
-    } else {
-      pipeline = pipeline.png({
-        compressionLevel: options?.compressionLevel || 6,
-        adaptiveFiltering: true
-      });
-    }
-
-    // Get the final buffer
-    const outputBuffer = await pipeline.toBuffer();
-    const base64Data = outputBuffer.toString('base64');
-    const mimeType = options?.format === 'jpeg' ? "image/jpeg" : "image/png";
-
-    return {
-      success: true,
-      message: "Screenshot captured successfully",
-      content: [{
-        type: "image",
-        data: base64Data,
-        mimeType: mimeType
-      }]
-    };
+    // Delegate to the provider's screenshot implementation
+    const result = await provider.screen.getScreenshot(options);
+    
+    // Return the result directly from the provider
+    return result;
   } catch (error) {
     return {
       success: false,

@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { setupTools } from "./handlers/tools.js";
@@ -5,7 +6,7 @@ import { loadConfig } from "./config.js";
 import { createAutomationProvider } from "./providers/factory.js";
 import { AutomationProvider } from "./interfaces/provider.js";
 
-class WindowsControlServer {
+class MCPControlServer {
   private server: Server;
   
   /** 
@@ -26,7 +27,7 @@ class WindowsControlServer {
       }
       
       // Validate that the provider is supported
-      const supportedProviders = ['nutjs', 'keysender']; // add others as they become available
+      const supportedProviders = ['keysender']; // add others as they become available
       if (!supportedProviders.includes(config.provider.toLowerCase())) {
         throw new Error(`Unsupported provider: ${config.provider}. Supported providers: ${supportedProviders.join(', ')}`);
       }
@@ -35,8 +36,8 @@ class WindowsControlServer {
       this.provider = createAutomationProvider(config.provider);
       
       this.server = new Server({
-        name: "windows-control",
-        version: "1.0.0"
+        name: "mcp-control",
+        version: "0.1.1"
       }, {
         capabilities: {
           tools: {}
@@ -46,7 +47,7 @@ class WindowsControlServer {
       this.setupHandlers();
       this.setupErrorHandling();
     } catch (error) {
-      console.error(`Failed to initialize Windows Control Server: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(`Failed to initialize MCP Control Server: ${error instanceof Error ? error.message : String(error)}`);
       // Log additional shutdown information
       console.error('Server initialization failed. Application will now exit.');
       // Exit with non-zero status to indicate error
@@ -72,9 +73,9 @@ class WindowsControlServer {
   async run(): Promise<void> {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    console.error(`Windows Control MCP server running on stdio (using ${this.provider.constructor.name})`);
+    console.error(`MCP Control server running on stdio (using ${this.provider.constructor.name})`);
   }
 }
 
-const server = new WindowsControlServer();
+const server = new MCPControlServer();
 server.run().catch(console.error);

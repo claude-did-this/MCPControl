@@ -5,8 +5,8 @@ import fs from 'fs';
 import path from 'path';
 
 /**
- * Build script for MCPControl and libnut-core dependency
- * Handles the complete build process including dependency setup
+ * Build script for MCPControl
+ * Handles the complete build process
  */
 
 // ANSI color codes for terminal output
@@ -44,31 +44,6 @@ function execute(command, options = {}) {
 // Main build process
 function build() {
   console.log(`\n${colors.green}===== MCPControl Build Process =====${colors.reset}\n`);
-  
-  // Check if cmake-js is installed
-  try {
-    execSync('cmake-js --version', { stdio: 'pipe' });
-    console.log(`${colors.green}✓ cmake-js is installed${colors.reset}`);
-  } catch (error) {
-    console.log(`${colors.yellow}⚠ cmake-js is not installed. Installing globally...${colors.reset}`);
-    execute('npm install -g cmake-js');
-  }
-  
-  // Check if libnut-core exists, if not clone it
-  const libnutPath = path.join(process.cwd(), 'libnut-core');
-  if (!fs.existsSync(libnutPath)) {
-    console.log(`\n${colors.blue}Cloning libnut-core...${colors.reset}`);
-    execute('git clone https://github.com/nut-tree/libnut.git libnut-core');
-  } else {
-    console.log(`\n${colors.green}✓ libnut-core already exists${colors.reset}`);
-  }
-  
-  // Build libnut-core
-  console.log(`\n${colors.blue}Building libnut-core...${colors.reset}`);
-  process.chdir('libnut-core');
-  execute('npm install');
-  execute('cmake-js rebuild');
-  process.chdir('..');
   
   // Build MCPControl
   console.log(`\n${colors.blue}Building MCPControl...${colors.reset}`);
