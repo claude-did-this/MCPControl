@@ -1,6 +1,6 @@
 {
   "name": "mcp-control",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "description": "Windows control server for the Model Context Protocol",
   "license": "MIT",
   "type": "module",

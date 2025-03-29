@@ -65,7 +65,14 @@ If you're interested in contributing or building from source, please see [CONTRI
 
 ## MCP Server Configuration
 
-To use this project, add the following configuration to your MCP settings:
+To use this project, you may need to install the Visual C++ build tools workload for Visual Studio 2022 Build Tools first:
+
+```
+choco install python visualstudio2022-workload-vctools -y
+```
+
+Then, add the following configuration to your MCP settings:
+
 
 ```json
 {
@@ -82,7 +89,7 @@ To use this project, add the following configuration to your MCP settings:
 }
 ```
 
-After configuring your MCP settings, restart Claude to see the MCPControl service in the menu.
+After configuring your MCP settings, restart your clint to see the MCPControl service in the menu.
 
 ## Project Structure
 
