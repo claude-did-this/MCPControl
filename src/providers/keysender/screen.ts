@@ -1,5 +1,5 @@
 import pkg from 'keysender';
-const { Hardware, getScreenSize: keysenderGetScreenSize, getAllWindows, getWindowChildren } = pkg;
+const { Hardware, getScreenSize: keysenderGetScreenSize, getAllWindows } = pkg;
 import { ScreenshotOptions } from '../../types/common.js';
 import { WindowsControlResponse } from '../../types/responses.js';
 import { ScreenAutomation } from '../../interfaces/automation.js';
@@ -43,9 +43,6 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
     try {
       // Get all windows
       const allWindows = getAllWindows();
-      
-      // Log all windows for debugging
-      console.log("Available windows:", allWindows.map(w => `"${w.title}" (${w.handle})`).join(", "));
       
       // If no windows found, return null
       if (!allWindows || allWindows.length === 0) {
@@ -117,9 +114,6 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
               typeof viewInfo.width === 'number' && viewInfo.width > 0 &&
               typeof viewInfo.height === 'number' && viewInfo.height > 0 &&
               viewInfo.x > -10000 && viewInfo.y > -10000) {
-            
-            // Found a valid window with good view information
-            console.log(`Found suitable window: "${typedWindow.title}" (${typedWindow.handle}) at position (${viewInfo.x}, ${viewInfo.y}) with size ${viewInfo.width}x${viewInfo.height}`);
             
             return {
               window: typedWindow,
@@ -229,8 +223,6 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
 
   focusWindow(title: string): WindowsControlResponse {
     try {
-      console.log(`Attempting to focus window with title: "${title}"`);
-      
       // Try to find a suitable window matching the title
       const windowInfo = this.findSuitableWindow(title);
       
@@ -240,7 +232,6 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
         if (title === "Unknown") {
           const anyWindow = this.findSuitableWindow();
           if (anyWindow) {
-            console.log(`Using alternative window "${anyWindow.window.title}" for "Unknown"`);
             
             // Set this window as our workwindow
             try {
@@ -249,7 +240,6 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
               // Try to bring the window to the foreground
               try {
                 this.hardware.workwindow.setForeground();
-                console.log(`Set window "${anyWindow.window.title}" as foreground`);
               } catch (e) {
                 console.warn(`Failed to set window as foreground: ${String(e)}`);
               }
@@ -297,7 +287,6 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
       // Set this window as our workwindow
       try {
         this.hardware.workwindow.set(targetWindow.handle);
-        console.log(`Set workwindow to "${targetWindow.title}" (${targetWindow.handle})`);
       } catch (error) {
         console.warn(`Failed to set workwindow: ${String(error)}`);
       }
@@ -305,7 +294,6 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
       // Try to bring the window to the foreground
       try {
         this.hardware.workwindow.setForeground();
-        console.log(`Set window "${targetWindow.title}" as foreground`);
       } catch (e) {
         console.warn(`Failed to set window as foreground: ${String(e)}`);
       }
@@ -324,17 +312,6 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
         isOpen = this.hardware.workwindow.isOpen();
       } catch (error) {
         console.warn(`Failed to check if window is open: ${String(error)}`);
-      }
-      
-      // If the window has child windows, log them for debugging
-      try {
-        const childWindows = getWindowChildren(targetWindow.handle);
-        if (childWindows && childWindows.length > 0) {
-          console.log(`Child windows of "${targetWindow.title}":`, 
-            childWindows.map(w => `"${w.title}" (${w.handle})`).join(", "));
-        }
-      } catch (error) {
-        console.warn(`Failed to get child windows: ${String(error)}`);
       }
       
       return {
@@ -383,10 +360,6 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
     operationType: 'reposition' | 'resize'
   ): Promise<WindowsControlResponse> {
     try {
-      console.log(`Attempting to ${operationType} window "${windowTitle}" to ${
-        operationType === 'reposition' ? `(${x}, ${y})` : `${width}x${height}`
-      }`);
-      
       // First focus the window
       const focusResult = this.focusWindow(windowTitle);
       if (!focusResult.success) {
@@ -409,7 +382,6 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
       let currentView: { x: number; y: number; width: number; height: number };
       try {
         currentView = this.hardware.workwindow.getView();
-        console.log(`Current window view before ${operationType}:`, currentView);
       } catch (viewError) {
         console.warn(`Failed to get window view before ${operationType}: ${String(viewError)}`);
         console.warn("Using default values");
@@ -427,7 +399,6 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
       // Apply the new view
       try {
         this.hardware.workwindow.setView(newView);
-        console.log(`${operationType === 'resize' ? 'Resized' : 'Repositioned'} window to x:${newView.x}, y:${newView.y}, width:${newView.width}, height:${newView.height}`);
       } catch (updateError) {
         console.warn(`Failed to ${operationType} window: ${String(updateError)}`);
         // Continue anyway to return a success response since the UI test expects it
@@ -440,7 +411,6 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
         await new Promise(resolve => setTimeout(resolve, 100));
         
         updatedView = this.hardware.workwindow.getView();
-        console.log(`Window view after ${operationType}:`, updatedView);
         
         // Verify the operation was successful
         if (operationType === 'resize' && width && height && 
@@ -670,9 +640,6 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
         const base64Data = outputBuffer.toString('base64');
         const mimeType = mergedOptions.format === 'jpeg' ? "image/jpeg" : "image/png";
 
-        // Log the size of the image for debugging
-        console.log(`Screenshot captured: ${outputBuffer.length} bytes (${Math.round(outputBuffer.length/1024)}KB)`);
-
         return {
           success: true,
           message: "Screenshot captured successfully",
@@ -698,8 +665,6 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
         // Create a more basic version with minimal memory usage - still return the image data
         const base64Data = screenImage.toString('base64');
         const mimeType = mergedOptions.format === 'jpeg' ? "image/jpeg" : "image/png";
-        
-        console.log(`Fallback to basic processing due to Sharp error: ${String(sharpError)}`);
         
         // Calculate scaled dimensions using the standard 1280 width (HD Ready)
         const maxSize = 1280;

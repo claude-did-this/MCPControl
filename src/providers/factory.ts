@@ -13,11 +13,8 @@ export function createAutomationProvider(type: string = 'keysender'): Automation
   
   // Return cached instance if available
   if (providerCache[providerType]) {
-    console.log(`Using cached provider instance: ${providerType}`);
     return providerCache[providerType];
   }
-  
-  console.log(`Creating new provider instance: ${providerType}`);
   
   let provider: AutomationProvider;
   switch (providerType) {
