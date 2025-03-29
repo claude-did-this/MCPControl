@@ -47,9 +47,10 @@ class MCPControlServer {
       this.setupHandlers();
       this.setupErrorHandling();
     } catch (error) {
-      console.error(`Failed to initialize MCP Control Server: ${error instanceof Error ? error.message : String(error)}`);
+      // Using process.stderr.write to avoid affecting the JSON-RPC stream
+      process.stderr.write(`Failed to initialize MCP Control Server: ${error instanceof Error ? error.message : String(error)}\n`);
       // Log additional shutdown information
-      console.error('Server initialization failed. Application will now exit.');
+      process.stderr.write('Server initialization failed. Application will now exit.\n');
       // Exit with non-zero status to indicate error
       process.exit(1);
     }
@@ -62,7 +63,8 @@ class MCPControlServer {
 
   private setupErrorHandling(): void {
     this.server.onerror = (error) => {
-      console.error("[MCP Error]", error);
+      // Using process.stderr.write to avoid affecting the JSON-RPC stream
+      process.stderr.write(`[MCP Error] ${error instanceof Error ? error.message : String(error)}\n`);
     };
 
     process.on('SIGINT', () => {
@@ -73,9 +75,13 @@ class MCPControlServer {
   async run(): Promise<void> {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    console.error(`MCP Control server running on stdio (using ${this.provider.constructor.name})`);
+    // Using process.stderr.write to avoid affecting the JSON-RPC stream
+    process.stderr.write(`MCP Control server running on stdio (using ${this.provider.constructor.name})\n`);
   }
 }
 
 const server = new MCPControlServer();
-server.run().catch(console.error);
+server.run().catch(err => {
+  // Using process.stderr.write to avoid affecting the JSON-RPC stream
+  process.stderr.write(`Error starting server: ${err instanceof Error ? err.message : String(err)}\n`);
+});

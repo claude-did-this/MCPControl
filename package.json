@@ -1,6 +1,6 @@
 {
- "name": "mcp-control",
-  "version": "0.1.11",
+  "name": "mcp-control",
+  "version": "0.1.17",
   "description": "Windows control server for the Model Context Protocol",
   "license": "MIT",
   "type": "module",
@@ -18,17 +18,20 @@
     "lint:fix": "eslint src --ext .ts --fix"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.1",
+    "@modelcontextprotocol/sdk": "^1.8.0",
     "clipboardy": "^4.0.0",
     "express": "^4.18.2",
     "jimp": "^1.6.0",
     "keysender": "^2.3.0",
-    "sharp": "^0.33.5"
+    "mcp-control": "^0.1.15",
+    "sharp": "^0.33.5",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",
     "@types/express": "^4.17.21",
     "@types/node": "^20.17.9",
+    "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.26.1",
     "@typescript-eslint/parser": "^8.26.1",
     "@vitest/coverage-v8": "^3.0.8",

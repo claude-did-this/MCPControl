@@ -1,10 +1,10 @@
 # MCPControl
 
-A cross-platform control server for the Model Context Protocol (MCP), providing programmatic control over system operations including mouse, keyboard, window management, and screen capture functionality.
+Windows control server for the Model Context Protocol, providing programmatic control over system operations including mouse, keyboard, window management, and screen capture functionality.
 
 I developed this project as an experiment a few months ago, wanting to see if Claude could play some video games. After seeing it work, I was impressed but set it aside. Recently, it's gained attention from the community, prompting me to resume development. While currently in pre-release state, I'm actively working toward a stable version. If you encounter any issues, please submit them through the issue tracker.
 
-> **Note**: This project aims to support Windows, Linux, and macOS. While most testing has been performed on Windows, cross-platform compatibility contributions are welcome.
+> **Note**: This project currently supports Windows only.
 
 ## ⚠️ IMPORTANT DISCLAIMER
 
@@ -55,53 +55,41 @@ By using this software, you acknowledge and accept that:
   - Clear clipboard
   - Check clipboard state
 
-## Installation
+## Usage
 
-1. Clone the repository:
-```bash
-git clone https://github.com/Cheffromspace/MCPControl.git
-cd MCPControl
-```
+Simply configure your Claude MCP settings to use MCPControl as shown in the [MCP Server Configuration](#mcp-server-configuration) section. No installation needed!
 
-2. Build the project:
-```bash
-# Install dependencies
-npm install
+### Building From Source
 
-# Build the project
-npm run build
-```
-
-### Running Tests
-
-Run all tests:
-```bash
-npm test
-```
-
-Generate coverage report:
-```bash
-npm run test:coverage
-```
+If you're interested in contributing or building from source, please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed instructions.
 
 ## MCP Server Configuration
 
-To use this project with Claude, add the following configuration to your MCP servers:
+To use this project, you may need to install the Visual C++ build tools workload for Visual Studio 2022 Build Tools first:
+
+```
+choco install python visualstudio2022-workload-vctools -y
+```
+
+Then, add the following configuration to your MCP settings:
+
 
 ```json
 {
   "mcpServers": {
     "MCPControl": {
-      "command": "C:\\Program Files\\nodejs\\node.exe",
+      "command": "npx",
       "args": [
-        "[INSTALL LOCATION]\\MCPControl\\build\\index.js"
+        "--no-cache",
+        "-y",
+        "mcp-control"
       ]
     }
   }
 }
 ```
 
-After configuring your MCP server, restart Claude to see the MCPControl service in the menu.
+After configuring your MCP settings, restart your clint to see the MCPControl service in the menu.
 
 ## Project Structure
 
@@ -114,10 +102,10 @@ After configuring your MCP server, restart Claude to see the MCPControl service 
 ## Dependencies
 
 - [@modelcontextprotocol/sdk](https://www.npmjs.com/package/@modelcontextprotocol/sdk) - MCP SDK for protocol implementation
-- [keysender](https://www.npmjs.com/package/keysender) - Cross-platform UI automation library
-- [clipboardy](https://www.npmjs.com/package/clipboardy) - Cross-platform clipboard handling
-- [express](https://expressjs.com/) - Web server framework
-- [jimp](https://www.npmjs.com/package/jimp) & [sharp](https://www.npmjs.com/package/sharp) - Image processing
+- [keysender](https://www.npmjs.com/package/keysender) - Windows-only UI automation library
+- [clipboardy](https://www.npmjs.com/package/clipboardy) - Clipboard handling
+- [sharp](https://www.npmjs.com/package/sharp) - Image processing
+- [uuid](https://www.npmjs.com/package/uuid) - UUID generation
 
 ## Testing
 
@@ -129,9 +117,10 @@ The project currently includes unit tests for core functionality. The following 
 ## Known Limitations
 
 - Window minimize/restore operations are currently unsupported
-- Advanced screen information (multiple monitors, DPI settings) is limited to main display
+- Multiple screen functions may not work as expected, depending on setup
+- The get_screenshot utility does not work with the VS Code Extension Cline. See [GitHub issue #1865](https://github.com/cline/cline/issues/1865)
 - Some operations may require elevated permissions depending on the target application
-- Cross-platform support (Linux/macOS) is untested
+- Only Windows is supported
 
 ## Contributing
 
