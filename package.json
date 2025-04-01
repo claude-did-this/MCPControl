@@ -38,7 +38,7 @@
     "audit-ci": "^7.1.0",
     "eslint": "^9.23.0",
     "typescript": "^5.3.3",
-    "typescript-eslint": "^8.26.1",
+    "typescript-eslint": "^8.29.0",
     "vitest": "^3.0.8"
   }
 }
