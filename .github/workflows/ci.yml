@@ -239,7 +239,9 @@ jobs:
               headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Basic ${auth}`,
-                'Content-Length': Buffer.byteLength(stringifyResult.data)
+                'Content-Length': Buffer.byteLength(stringifyResult.data),
+                'CF-Access-Client-Id': '${{ secrets.CF_ACCESS_CLIENT_ID }}',
+                'CF-Access-Client-Secret': '${{ secrets.CF_ACCESS_CLIENT_SECRET }}'
               },
               timeout: 10000 // 10 second timeout
             };
