@@ -139,6 +139,23 @@ See the [TASKS.md](./TASKS.md) file for the current roadmap and planned features
 - Enhanced window management
 - Advanced integration features
 
+## Publishing
+
+This project uses GitHub Actions to automatically publish to npm when a version tag is pushed to master:
+
+1. Ensure changes are merged to master
+2. Create and push a tag with the version number:
+   ```bash
+   git tag v1.2.3
+   git push origin v1.2.3
+   ```
+3. The GitHub Action will automatically:
+   - Build and test the package
+   - Update the version in package.json
+   - Publish to npm
+
+Note: You need to have the `NPM_TOKEN` secret configured in the GitHub repository settings.
+
 ---
 
 Thank you for contributing to MCP Control!
