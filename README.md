@@ -89,7 +89,7 @@ Then, add the following configuration to your MCP settings:
 }
 ```
 
-After configuring your MCP settings, restart your clint to see the MCPControl service in the menu.
+After configuring your MCP settings, restart your client to see the MCPControl service in the menu.
 
 ## Project Structure
 
