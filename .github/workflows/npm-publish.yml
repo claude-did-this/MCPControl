@@ -27,10 +27,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
       
-      # Windows-build-tools are required for the keysender package
+      # Dependencies required for native modules
       - name: Install global dependencies
         run: |
-          npm install --global windows-build-tools
           npm install -g node-gyp
           npm install -g cmake-js
       

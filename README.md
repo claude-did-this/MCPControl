@@ -68,19 +68,22 @@ If you're interested in contributing or building from source, please see [CONTRI
 To build this project for development, you'll need:
 
 1. Windows operating system (required for the keysender dependency)
-2. Node.js 18 or later
+2. Node.js 18 or later (install using the official Windows installer which includes build tools)
 3. npm package manager
-4. Visual C++ build tools for Visual Studio 2022
-5. cmake-js globally installed: `npm install -g cmake-js`
+4. Native build tools:
+   - node-gyp: `npm install -g node-gyp`
+   - cmake-js: `npm install -g cmake-js`
 
 The keysender dependency relies on Windows-specific native modules that require these build tools.
 
 ## MCP Server Configuration
 
-To use this project, you'll need the necessary build tools, which can be installed directly through npm:
+To use this project, you'll need the necessary build tools:
+
+1. Install Node.js using the official Windows installer, which includes necessary build tools
+2. Install additional required tools:
 
 ```
-npm install --global windows-build-tools
 npm install -g node-gyp
 npm install -g cmake-js
 ```

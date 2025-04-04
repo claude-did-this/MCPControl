@@ -8,10 +8,11 @@ import { KeysenderClipboardAutomation } from './clipboard.js';
 /**
  * Keysender implementation of the AutomationProvider
  * 
- * NOTE: This provider requires the Windows operating system and windows-build-tools
- * to compile native dependencies. Building this module on non-Windows platforms will fail.
+ * NOTE: This provider requires the Windows operating system to compile native dependencies.
+ * Building this module on non-Windows platforms will fail.
  * Development requires:
- * - Visual C++ build tools for Visual Studio
+ * - Node.js installed via the official Windows installer (includes necessary build tools)
+ * - node-gyp installed globally (npm install -g node-gyp)
  * - cmake-js installed globally (npm install -g cmake-js)
  */
 export class KeysenderProvider implements AutomationProvider {
