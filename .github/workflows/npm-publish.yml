@@ -19,6 +19,21 @@ jobs:
           node-version: '18'
           registry-url: 'https://registry.npmjs.org'
       
+      - name: Cache npm dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      
+      # Windows-build-tools are required for the keysender package
+      - name: Install global dependencies
+        run: |
+          npm install --global windows-build-tools
+          npm install -g node-gyp
+          npm install -g cmake-js
+      
       - name: Install dependencies
         run: npm ci
       
@@ -33,14 +48,20 @@ jobs:
       
       - name: Extract version
         id: extract_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-        shell: bash
+        run: echo "VERSION=$($env:GITHUB_REF -replace 'refs/tags/v', '')" >> $env:GITHUB_OUTPUT
+        shell: pwsh
       
       - name: Update package version
         run: npm version ${{ steps.extract_version.outputs.VERSION }} --no-git-tag-version
-        shell: bash
+      
+      - name: Verify package contents
+        run: npm pack && tar -xf *.tgz && ls -la package/
       
       - name: Publish to NPM
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      
+      - name: Verify publish
+        run: npm view $(node -p "require('./package.json').name") version
+        if: success()
