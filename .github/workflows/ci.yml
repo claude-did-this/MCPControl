@@ -21,8 +21,10 @@ jobs:
         node-version: '18'
         cache: 'npm'
     
-    - name: Install cmake-js globally
-      run: npm install -g cmake-js
+    - name: Install global dependencies
+      run: |
+        npm install -g node-gyp
+        npm install -g cmake-js
     
     - name: Install dependencies
       run: npm ci

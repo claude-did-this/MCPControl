@@ -1,0 +1,66 @@
+name: Publish to NPM
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
+      
+      - name: Cache npm dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      
+      # Dependencies required for native modules
+      - name: Install global dependencies
+        run: |
+          npm install -g node-gyp
+          npm install -g cmake-js
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Lint
+        run: npm run lint
+      
+      - name: Run tests
+        run: npm run test
+      
+      - name: Build
+        run: npm run build:all
+      
+      - name: Extract version
+        id: extract_version
+        run: echo "VERSION=$($env:GITHUB_REF -replace 'refs/tags/v', '')" >> $env:GITHUB_OUTPUT
+        shell: pwsh
+      
+      - name: Update package version
+        run: npm version ${{ steps.extract_version.outputs.VERSION }} --no-git-tag-version
+      
+      - name: Verify package contents
+        run: npm pack && tar -xf *.tgz && ls -la package/
+      
+      - name: Publish to NPM
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      
+      - name: Verify publish
+        run: npm view $(node -p "require('./package.json').name") version
+        if: success()
