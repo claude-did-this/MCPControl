@@ -467,62 +467,14 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
     }
   }
 
-  resizeWindow(title: string, width: number, height: number): WindowsControlResponse {
-    // Call the async method and handle the promise directly for backward compatibility
-    try {
-      // Start the async operation but don't wait for it
-      void this.updateWindowPosition(title, null, null, width, height, 'resize');
-      
-      // Since the original method is not async, we need to return a non-promise result
-      // This is a workaround to maintain compatibility with the interface
-      return {
-        success: true,
-        message: `Resized window "${title}" to ${width}x${height}`,
-        data: {
-          title: title,
-          handle: 0,
-          position: { x: 0, y: 0 },
-          size: { width, height },
-          isForeground: false,
-          requestedSize: { width, height }
-        }
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        success: false,
-        message: `Failed to resize window: ${errorMessage}`
-      };
-    }
+  async resizeWindow(title: string, width: number, height: number): Promise<WindowsControlResponse> {
+    // Directly use the async updateWindowPosition method
+    return await this.updateWindowPosition(title, null, null, width, height, 'resize');
   }
 
-  repositionWindow(title: string, x: number, y: number): WindowsControlResponse {
-    // Call the async method and handle the promise directly for backward compatibility
-    try {
-      // Start the async operation but don't wait for it
-      void this.updateWindowPosition(title, x, y, null, null, 'reposition');
-      
-      // Since the original method is not async, we need to return a non-promise result
-      // This is a workaround to maintain compatibility with the interface
-      return {
-        success: true,
-        message: `Repositioned window "${title}" to (${x}, ${y})`,
-        data: {
-          title: title,
-          handle: 0,
-          position: { x, y },
-          size: { width: 0, height: 0 },
-          isForeground: false,
-          requestedPosition: { x, y }
-        }
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        success: false,
-        message: `Failed to reposition window: ${errorMessage}`
-      };
-    }
+  async repositionWindow(title: string, x: number, y: number): Promise<WindowsControlResponse> {
+    // Directly use the async updateWindowPosition method
+    return await this.updateWindowPosition(title, x, y, null, null, 'reposition');
   }
 
   /**

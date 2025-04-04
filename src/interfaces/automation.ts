@@ -22,8 +22,8 @@ export interface ScreenAutomation {
   getScreenSize(): WindowsControlResponse;
   getActiveWindow(): WindowsControlResponse;
   focusWindow(title: string): WindowsControlResponse;
-  resizeWindow(title: string, width: number, height: number): WindowsControlResponse;
-  repositionWindow(title: string, x: number, y: number): WindowsControlResponse;
+  resizeWindow(title: string, width: number, height: number): Promise<WindowsControlResponse>;
+  repositionWindow(title: string, x: number, y: number): Promise<WindowsControlResponse>;
   getScreenshot(options?: ScreenshotOptions): Promise<WindowsControlResponse>;
 }
 

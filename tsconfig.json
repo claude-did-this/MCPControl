@@ -10,7 +10,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "declaration": true,
-    "noImplicitAny": false
+    "noImplicitAny": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "build"]
