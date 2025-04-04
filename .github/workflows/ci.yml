@@ -80,15 +80,8 @@ jobs:
             });
             console.log('Files changed:', files.data.length);
             
-            // Setup auth
-            const username = '${{ secrets.WEBHOOK_USERNAME }}';
-            const password = '${{ secrets.WEBHOOK_AUTH_TOKEN }}';
+            // Setup webhook URL
             const webhookUrl = '${{ vars.WEBHOOK_URL }}';
-            
-            // Validate auth credentials
-            if (!username || !password) {
-              throw new Error('Webhook authentication credentials not properly configured');
-            }
             
             // Validate webhook URL
             if (!webhookUrl || !webhookUrl.trim()) {
@@ -100,10 +93,6 @@ jobs:
             if (url.protocol !== 'https:') {
               throw new Error('WEBHOOK_URL must use HTTPS protocol for security');
             }
-            
-            // TEMPORARY: Using Basic Auth until token-based auth is implemented (see issue #37)
-            // Note: This is only base64 encoded, not encrypted, but is protected by HTTPS
-            const auth = Buffer.from(`${username}:${password}`).toString('base64');
             
             // Get PR comments
             const comments = await github.rest.issues.listComments({
@@ -238,8 +227,9 @@ jobs:
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Basic ${auth}`,
-                'Content-Length': Buffer.byteLength(stringifyResult.data)
+                'Content-Length': Buffer.byteLength(stringifyResult.data),
+                'CF-Access-Client-Id': '${{ secrets.CF_ACCESS_CLIENT_ID }}',
+                'CF-Access-Client-Secret': '${{ secrets.CF_ACCESS_CLIENT_SECRET }}'
               },
               timeout: 10000 // 10 second timeout
             };
