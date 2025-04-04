@@ -259,8 +259,8 @@ describe('KeysenderScreenAutomation', () => {
   });
   
   describe('resizeWindow', () => {
-    it('should resize a window to specified dimensions', () => {
-      const result = screenAutomation.resizeWindow('Test Window', 1024, 768);
+    it('should resize a window to specified dimensions', async () => {
+      const result = await screenAutomation.resizeWindow('Test Window', 1024, 768);
       
       expect(mockGetAllWindows).toHaveBeenCalled();
       expect(mockSet).toHaveBeenCalled();
@@ -275,8 +275,8 @@ describe('KeysenderScreenAutomation', () => {
   });
   
   describe('repositionWindow', () => {
-    it('should reposition a window to specified coordinates', () => {
-      const result = screenAutomation.repositionWindow('Test Window', 50, 100);
+    it('should reposition a window to specified coordinates', async () => {
+      const result = await screenAutomation.repositionWindow('Test Window', 50, 100);
       
       expect(mockGetAllWindows).toHaveBeenCalled();
       expect(mockSet).toHaveBeenCalled();

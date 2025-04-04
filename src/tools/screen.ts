@@ -38,10 +38,10 @@ export function focusWindow(title: string): WindowsControlResponse {
   }
 }
 
-export function resizeWindow(title: string, width: number, height: number): WindowsControlResponse {
+export async function resizeWindow(title: string, width: number, height: number): Promise<WindowsControlResponse> {
   try {
     const provider = createAutomationProvider();
-    return provider.screen.resizeWindow(title, width, height);
+    return await provider.screen.resizeWindow(title, width, height);
   } catch (error) {
     return {
       success: false,
@@ -50,10 +50,10 @@ export function resizeWindow(title: string, width: number, height: number): Wind
   }
 }
 
-export function repositionWindow(title: string, x: number, y: number): WindowsControlResponse {
+export async function repositionWindow(title: string, x: number, y: number): Promise<WindowsControlResponse> {
   try {
     const provider = createAutomationProvider();
-    return provider.screen.repositionWindow(title, x, y);
+    return await provider.screen.repositionWindow(title, x, y);
   } catch (error) {
     return {
       success: false,

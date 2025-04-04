@@ -167,9 +167,9 @@ describe('Screen Functions', () => {
   });
 
   describe('resizeWindow', () => {
-    it('should resize window with matching title', () => {
+    it('should resize window with matching title', async () => {
       // Execute
-      const result = resizeWindow('Target', 1024, 768);
+      const result = await resizeWindow('Target', 1024, 768);
 
       // Verify
       expect(result).toEqual({
@@ -178,9 +178,9 @@ describe('Screen Functions', () => {
       });
     });
 
-    it('should return error when window with title is not found', () => {
+    it('should return error when window with title is not found', async () => {
       // Execute
-      const result = resizeWindow('Nonexistent', 1024, 768);
+      const result = await resizeWindow('Nonexistent', 1024, 768);
 
       // Verify
       expect(result).toEqual({
@@ -189,9 +189,9 @@ describe('Screen Functions', () => {
       });
     });
 
-    it('should return error response when resize operation fails', () => {
+    it('should return error response when resize operation fails', async () => {
       // Execute
-      const result = resizeWindow('Any', 1024, 768);
+      const result = await resizeWindow('Any', 1024, 768);
 
       // Verify
       expect(result).toEqual({
@@ -202,9 +202,9 @@ describe('Screen Functions', () => {
   });
 
   describe('repositionWindow', () => {
-    it('should reposition window with matching title', () => {
+    it('should reposition window with matching title', async () => {
       // Execute
-      const result = repositionWindow('Target', 100, 200);
+      const result = await repositionWindow('Target', 100, 200);
 
       // Verify
       expect(result).toEqual({
@@ -213,9 +213,9 @@ describe('Screen Functions', () => {
       });
     });
 
-    it('should return error when window with title is not found', () => {
+    it('should return error when window with title is not found', async () => {
       // Execute
-      const result = repositionWindow('Nonexistent', 100, 200);
+      const result = await repositionWindow('Nonexistent', 100, 200);
 
       // Verify
       expect(result).toEqual({
@@ -224,9 +224,9 @@ describe('Screen Functions', () => {
       });
     });
 
-    it('should return error response when reposition operation fails', () => {
+    it('should return error response when reposition operation fails', async () => {
       // Execute
-      const result = repositionWindow('Any', 100, 200);
+      const result = await repositionWindow('Any', 100, 200);
 
       // Verify
       expect(result).toEqual({
