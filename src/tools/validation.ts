@@ -21,7 +21,8 @@ export const VALID_KEYS = [
   // Function keys
   'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'f11', 'f12',
   // Symbols
-  '.', ',', '/', '\\', '[', ']', ';', '\'', '`', '-', '=', 'plus'
+  '.', ',', '/', '\\', '[', ']', '{', '}', '(', ')', ';', ':', '\'', '"', '`', 
+  '-', '=', 'plus', '?', '!', '@', '#', '$', '%', '^', '&', '*', '_', '<', '>'
 ];
 
 /**
@@ -99,6 +100,13 @@ export function validateKey(key: string): string {
  */
 export function isDangerousKeyCombination(keys: string[]): string | null {
   const normalizedKeys = keys.map(k => k.toLowerCase());
+  
+  // Explicitly allow common copy/paste shortcuts
+  if (normalizedKeys.length === 2 && 
+      normalizedKeys.includes('control') && 
+      (normalizedKeys.includes('c') || normalizedKeys.includes('v') || normalizedKeys.includes('x'))) {
+    return null;
+  }
   
   // Check for OS-level dangerous combinations
   if (normalizedKeys.includes('command') || normalizedKeys.includes('control')) {
