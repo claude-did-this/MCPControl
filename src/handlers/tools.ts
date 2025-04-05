@@ -5,7 +5,6 @@ import {
   TextContent
 } from "@modelcontextprotocol/sdk/types.js";
 import { MousePosition, KeyboardInput, KeyCombination, ClipboardInput, KeyHoldOperation, ScreenshotOptions } from "../types/common.js";
-import { WindowsControlResponse } from "../types/responses.js";
 // All tool functions now come from the provider
 // Provider is now passed from the main server instance
 import { AutomationProvider } from "../interfaces/provider.js";
@@ -34,6 +33,11 @@ function validateButton(button?: unknown): 'left' | 'right' | 'middle' {
  * 
  * @param server The Model Context Protocol server instance
  * @param provider The automation provider implementation that will handle system interactions
+ */
+/**
+ * Set up automation tools on the MCP server without Zod validation.
+ * 
+ * @deprecated Consider using setupToolsWithZod for enhanced validation
  */
 export function setupTools(server: Server, provider: AutomationProvider): void {
   // List available tools
@@ -457,16 +461,18 @@ export function setupTools(server: Server, provider: AutomationProvider): void {
           break;
         }
           
-        case "click_at":
+        case "click_at": {
           if (typeof args?.x !== 'number' || typeof args?.y !== 'number') {
             throw new Error("Invalid click_at arguments");
           }
+          const validButtonClickAt = validateButton(args?.button);
           response = provider.mouse.clickAt(
             args.x,
             args.y,
-            validateButton(args?.button)
+            validButtonClickAt
           );
           break;
+        }
 
         case "move_mouse":
           if (!isMousePosition(args)) {
@@ -475,25 +481,27 @@ export function setupTools(server: Server, provider: AutomationProvider): void {
           response = provider.mouse.moveMouse(args);
           break;
 
-        case "click_mouse":
-          response = provider.mouse.clickMouse(
-            validateButton(args?.button)
-          );
+        case "click_mouse": {
+          const validButtonClickMouse = validateButton(args?.button);
+          response = provider.mouse.clickMouse(validButtonClickMouse);
           break;
+        }
 
-        case "drag_mouse":
+        case "drag_mouse": {
           if (typeof args?.fromX !== 'number' || 
               typeof args?.fromY !== 'number' ||
               typeof args?.toX !== 'number' ||
               typeof args?.toY !== 'number') {
             throw new Error("Invalid drag mouse arguments");
           }
+          const validButtonDragMouse = validateButton(args?.button);
           response = provider.mouse.dragMouse(
             { x: args.fromX, y: args.fromY },
             { x: args.toX, y: args.toY },
-            validateButton(args?.button)
+            validButtonDragMouse
           );
           break;
+        }
 
 
         case "scroll_mouse":
@@ -614,7 +622,7 @@ export function setupTools(server: Server, provider: AutomationProvider): void {
       }
 
       // Handle special case for screenshot which returns content with image data
-      const typedResponse = response as WindowsControlResponse;
+      const typedResponse = response;
       if ('content' in typedResponse && 
           typedResponse.content && 
           Array.isArray(typedResponse.content) && 
@@ -708,4 +716,313 @@ function isClipboardInput(args: unknown): args is ClipboardInput {
   if (typeof args !== 'object' || args === null) return false;
   const input = args as Record<string, unknown>;
   return typeof input.text === 'string';
+}
+
+/**
+ * Set up automation tools on the MCP server using Zod validation.
+ * This function is similar to setupTools but uses Zod schemas for
+ * more robust validation with better error messages.
+ * 
+ * @param server The Model Context Protocol server instance
+ * @param provider The automation provider implementation
+ */
+export function setupToolsWithZod(server: Server, provider: AutomationProvider): void {
+  // Re-use the same tool definitions for consistency
+  setupTools(server, provider);
+  
+  // Override the call tool handler with Zod validation
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    try {
+      const { name, arguments: args } = request.params;
+      let response;
+      
+      // Use Zod validation before calling provider methods
+      switch (name) {
+        case "get_screenshot": {
+          // Import Zod schemas dynamically to avoid circular dependencies
+          const { ScreenshotOptionsSchema } = await import('../tools/validation.zod.js');
+          
+          // Default screenshot options with AI-optimized defaults
+          const defaultOptions = {
+            format: 'jpeg' as const,
+            quality: 85,
+            grayscale: true,
+            resize: {
+              width: 1280,
+              fit: 'contain' as const
+            }
+          };
+          
+          // Parse and validate with Zod
+          const screenshotOptions = ScreenshotOptionsSchema.parse({
+            ...defaultOptions,
+            ...args
+          });
+          
+          response = await provider.screen.getScreenshot(screenshotOptions);
+          break;
+        }
+          
+        case "click_at": {
+          const { MousePositionSchema, MouseButtonSchema } = await import('../tools/validation.zod.js');
+          
+          if (typeof args?.x !== 'number' || typeof args?.y !== 'number') {
+            throw new Error("Invalid click_at arguments");
+          }
+          
+          // Validate position and button
+          MousePositionSchema.parse({ x: args.x, y: args.y });
+          const button = args?.button || 'left';
+          MouseButtonSchema.parse(button);
+          
+          const validatedButton = button as 'left' | 'right' | 'middle';
+          response = provider.mouse.clickAt(args.x, args.y, validatedButton);
+          break;
+        }
+
+        case "move_mouse": {
+          const { MousePositionSchema } = await import('../tools/validation.zod.js');
+          
+          if (!isMousePosition(args)) {
+            throw new Error("Invalid mouse position arguments");
+          }
+          
+          // Validate with Zod
+          MousePositionSchema.parse(args);
+          
+          response = provider.mouse.moveMouse(args);
+          break;
+        }
+
+        // Add Zod validation for other tools as needed...
+        
+        default:
+          // Fall back to the original handler for tools without Zod validation yet
+          return await executeOriginalToolHandler(name, args || {}, provider);
+      }
+
+      // Handle special case for screenshot which returns content with image data
+      const typedResponse = response;
+      if ('content' in typedResponse && 
+          typedResponse.content && 
+          Array.isArray(typedResponse.content) && 
+          typedResponse.content.length > 0 && 
+          typedResponse.content[0] && 
+          typeof typedResponse.content[0] === 'object' &&
+          'type' in typedResponse.content[0] && 
+          typedResponse.content[0].type === "image") {
+        return {
+          content: typedResponse.content
+        };
+      }
+      
+      // For all other responses, return as text
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify(response, null, 2)
+        }]
+      };
+
+    } catch (error) {
+      // Enhanced error handling for Zod validation errors
+      let errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // Check if it's a Zod error to provide more helpful validation messages
+      if (error && typeof error === 'object' && 'errors' in error) {
+        try {
+          errorMessage = JSON.stringify(error, null, 2);
+        } catch {
+          // Fall back to standard message if error can't be stringified
+        }
+      }
+      
+      const errorContent: TextContent = {
+        type: "text",
+        text: `Error: ${errorMessage}`
+      };
+
+      return {
+        content: [errorContent],
+        isError: true
+      };
+    }
+  });
+}
+
+/**
+ * Helper function to execute the original tool handler logic
+ * Used as a fallback for tools that don't yet have Zod validation
+ */
+async function executeOriginalToolHandler(name: string, args: Record<string, unknown>, provider: AutomationProvider) {
+  let response;
+  
+  switch (name) {
+    case "click_mouse": {
+      const button = validateButton(args?.button);
+      response = provider.mouse.clickMouse(button);
+      break;
+    }
+
+    case "drag_mouse": {
+      const fromX = typeof args.fromX === 'number' ? args.fromX : 0;
+      const fromY = typeof args.fromY === 'number' ? args.fromY : 0;
+      const toX = typeof args.toX === 'number' ? args.toX : 0;
+      const toY = typeof args.toY === 'number' ? args.toY : 0;
+      
+      if (typeof fromX !== 'number' || 
+          typeof fromY !== 'number' ||
+          typeof toX !== 'number' ||
+          typeof toY !== 'number') {
+        throw new Error("Invalid drag mouse arguments");
+      }
+      
+      const validButtonDragMouse2 = validateButton(args.button); 
+      response = provider.mouse.dragMouse(
+        { x: fromX, y: fromY },
+        { x: toX, y: toY },
+        validButtonDragMouse2
+      );
+      break;
+    }
+
+    case "scroll_mouse":
+      if (typeof args?.amount !== 'number') {
+        throw new Error("Invalid scroll amount argument");
+      }
+      response = provider.mouse.scrollMouse(args.amount);
+      break;
+
+    case "type_text":
+      if (!isKeyboardInput(args)) {
+        throw new Error("Invalid keyboard input arguments");
+      }
+      response = provider.keyboard.typeText(args);
+      break;
+
+    case "press_key":
+      if (typeof args?.key !== 'string') {
+        throw new Error("Invalid key press arguments");
+      }
+      response = provider.keyboard.pressKey(args.key);
+      break;
+
+    case "hold_key":
+      if (!isKeyHoldOperation(args)) {
+        throw new Error("Invalid key hold arguments");
+      }
+      response = await provider.keyboard.holdKey(args);
+      break;
+
+    case "press_key_combination":
+      if (!isKeyCombination(args)) {
+        throw new Error("Invalid key combination arguments");
+      }
+      response = await provider.keyboard.pressKeyCombination(args);
+      break;
+
+    case "get_screen_size":
+      response = provider.screen.getScreenSize();
+      break;
+
+    case "get_cursor_position":
+      response = provider.mouse.getCursorPosition();
+      break;
+
+    case "double_click":
+      if (args && typeof args.x === 'number' && typeof args.y === 'number') {
+        response = provider.mouse.doubleClick({ x: args.x, y: args.y });
+      } else {
+        response = provider.mouse.doubleClick();
+      }
+      break;
+
+    case "get_active_window":
+      response = provider.screen.getActiveWindow();
+      break;
+
+    case "focus_window":
+      if (typeof args?.title !== 'string') {
+        throw new Error("Invalid window title argument");
+      }
+      response = provider.screen.focusWindow(args.title);
+      break;
+
+    case "resize_window":
+      if (typeof args?.title !== 'string' || 
+          typeof args?.width !== 'number' || 
+          typeof args?.height !== 'number') {
+        throw new Error("Invalid window resize arguments");
+      }
+      response = provider.screen.resizeWindow(args.title, args.width, args.height);
+      break;
+
+    case "reposition_window":
+      if (typeof args?.title !== 'string' || 
+          typeof args?.x !== 'number' || 
+          typeof args?.y !== 'number') {
+        throw new Error("Invalid window reposition arguments");
+      }
+      response = provider.screen.repositionWindow(args.title, args.x, args.y);
+      break;
+      
+    case "minimize_window":
+      if (typeof args?.title !== 'string') {
+        throw new Error("Invalid window title argument");
+      }
+      response = { success: false, message: "Minimize window operation is not supported" };
+      break;
+
+    case "restore_window":
+      if (typeof args?.title !== 'string') {
+        throw new Error("Invalid window title argument");
+      }
+      response = { success: false, message: "Restore window operation is not supported" };
+      break;
+
+    case "get_clipboard_content":
+      response = await provider.clipboard.getClipboardContent();
+      break;
+
+    case "set_clipboard_content":
+      if (!isClipboardInput(args)) {
+        throw new Error("Invalid clipboard input arguments");
+      }
+      response = await provider.clipboard.setClipboardContent(args);
+      break;
+
+    case "has_clipboard_text":
+      response = await provider.clipboard.hasClipboardText();
+      break;
+
+    case "clear_clipboard":
+      response = await provider.clipboard.clearClipboard();
+      break;
+
+    default:
+      throw new Error(`Unknown tool: ${name}`);
+  }
+
+  // Check for image content in response
+  const typedResponse = response;
+  if ('content' in typedResponse && 
+      typedResponse.content && 
+      Array.isArray(typedResponse.content) && 
+      typedResponse.content.length > 0 && 
+      typedResponse.content[0] && 
+      typeof typedResponse.content[0] === 'object' &&
+      'type' in typedResponse.content[0] && 
+      typedResponse.content[0].type === "image") {
+    return {
+      content: typedResponse.content
+    };
+  }
+  
+  // For all other responses, return as text
+  return {
+    content: [{
+      type: "text",
+      text: JSON.stringify(response, null, 2)
+    }]
+  };
 }

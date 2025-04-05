@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { setupTools } from "./handlers/tools.js";
+import { setupTools, setupToolsWithZod } from "./handlers/tools.js";
 import { loadConfig } from "./config.js";
 import { createAutomationProvider } from "./providers/factory.js";
 import { AutomationProvider } from "./interfaces/provider.js";
@@ -15,9 +15,19 @@ class MCPControlServer {
    * through a consistent interface allowing for different backend implementations
    */
   private provider: AutomationProvider;
+  
+  /**
+   * Flag indicating whether to use Zod validation for enhanced type checking
+   * Set via the --zod command line argument
+   */
+  private useZodValidation: boolean;
 
   constructor() {
     try {
+      // Parse command line arguments
+      const args = process.argv.slice(2);
+      const useZod = args.includes('--zod');
+      
       // Load configuration
       const config = loadConfig();
       
@@ -37,12 +47,15 @@ class MCPControlServer {
       
       this.server = new Server({
         name: "mcp-control",
-        version: "0.1.1"
+        version: "0.1.17"
       }, {
         capabilities: {
           tools: {}
         }
       });
+      
+      // Flag to determine whether to use Zod validation
+      this.useZodValidation = useZod;
 
       this.setupHandlers();
       this.setupErrorHandling();
@@ -57,8 +70,15 @@ class MCPControlServer {
   }
 
   private setupHandlers(): void {
-    // Pass the provider to setupTools
-    setupTools(this.server, this.provider);
+    // Choose the appropriate setup function based on the --zod flag
+    if (this.useZodValidation) {
+      // Use enhanced Zod validation when requested
+      setupToolsWithZod(this.server, this.provider);
+      process.stderr.write(`Using enhanced Zod validation for MCP tools\n`);
+    } else {
+      // Use original validation by default
+      setupTools(this.server, this.provider);
+    }
   }
 
   private setupErrorHandling(): void {
