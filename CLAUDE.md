@@ -1,11 +1,11 @@
 # MCPControl - Development Guide
 
 ## Build & Test Commands
-- Build: `npm run build` - Compiles TypeScript to JavaScript
-- Start: `npm run start` - Runs the built application
-- Dev: `npm run dev` - Watches for changes and rebuilds
-- Test: `npm run test` - Runs all Vitest tests
-- Run single test: `npm run test -- tools/keyboard.test.ts` or `npm run test -- -t "specific test name"`
+- Build: `pwsh.exe -c "npm run build"` - Compiles TypeScript to JavaScript
+- Start: MCP servers are started by the Client as a sub-process
+- Test: `pwsh.exe -c "npm run test"` - Runs all Vitest tests
+- Lint: `pwsh.exe -c "npm run lint"` - Runs eslint
+- Run single test: `pwsh.exe -c "npm run test -- tools/keyboard.test.ts"` or `pwsh.exe -c "npm run test -- -t 'specific test name'`
 - Watch tests: `npm run test:watch` - Runs tests in watch mode
 - Coverage: `npm run test:coverage` - Generates test coverage report
 
