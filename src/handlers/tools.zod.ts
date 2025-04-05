@@ -4,41 +4,29 @@ import {
   CallToolRequestSchema,
   TextContent
 } from "@modelcontextprotocol/sdk/types.js";
-import { MousePosition, KeyboardInput, KeyCombination, ClipboardInput, KeyHoldOperation, ScreenshotOptions } from "../types/common.js";
-// All tool functions now come from the provider
-// Provider is now passed from the main server instance
 import { AutomationProvider } from "../interfaces/provider.js";
-import { setupTools as setupToolsWithZod } from './tools.zod.js';
+import {
+  MouseButtonSchema,
+  MousePositionSchema,
+  KeyboardInputSchema,
+  KeyCombinationSchema,
+  KeyHoldOperationSchema,
+  ScrollAmountSchema,
+  ClipboardInputSchema,
+  ScreenshotOptionsSchema
+} from "../tools/validation.zod.js";
+import { z } from "zod";
 
 /**
- * Validates the mouse button parameter and returns a valid button value
- * @param button The button parameter to validate
- * @returns A validated mouse button value: 'left', 'right', or 'middle'
- * @deprecated Use Zod validation instead
- */
-function validateButton(button?: unknown): 'left' | 'right' | 'middle' {
-  return (typeof button === 'string' && 
-    ['left', 'right', 'middle'].includes(button)) ? 
-    button as 'left' | 'right' | 'middle' : 'left';
-}
-
-/**
- * Set up automation tools on the MCP server using the provided automation provider.
+ * Set up automation tools on the MCP server using Zod validation.
  * This function implements the provider pattern for all tool handlers, allowing
  * for dependency injection of automation implementations.
  * 
- * The provider pattern offers several benefits:
- * - Testability: Makes unit testing easier by allowing mock providers
- * - Flexibility: Allows changing provider implementations without changing tool handlers
- * - Consistency: Ensures all automation is handled through a single provider interface
- * - Maintainability: Reduces direct dependencies on specific implementation details
- * 
  * @param server The Model Context Protocol server instance
  * @param provider The automation provider implementation that will handle system interactions
- * @deprecated Use setupToolsWithZod for enhanced validation
  */
-export function setupToolsLegacy(server: Server, provider: AutomationProvider): void {
-  // List available tools
+export function setupTools(server: Server, provider: AutomationProvider): void {
+  // Define available tools 
   server.setRequestHandler(ListToolsRequestSchema, () => ({
     tools: [
       {
@@ -379,241 +367,261 @@ export function setupToolsLegacy(server: Server, provider: AutomationProvider): 
     ]
   }));
 
-  // Handle tool calls
+  // Handle tool calls with Zod validation
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     try {
       const { name, arguments: args } = request.params;
       let response;
-      
-      // Use the provider passed from the server instance
 
       switch (name) {
         case "get_screenshot": {
-          // Validate and convert screenshot options with AI-optimized defaults
-          const screenshotOptions: ScreenshotOptions = {
-            // Default values for text-heavy content readability
-            format: 'jpeg',
+          // Default options for AI-optimized screenshots
+          const defaultOptions = {
+            format: 'jpeg' as const,
             quality: 85,
             grayscale: true,
             resize: {
               width: 1280,
-              fit: 'contain'
+              fit: 'contain' as const
             }
           };
           
-          if (args?.region && 
-              typeof args.region === 'object' && 
-              'x' in args.region && typeof args.region.x === 'number' && 
-              'y' in args.region && typeof args.region.y === 'number' &&
-              'width' in args.region && typeof args.region.width === 'number' &&
-              'height' in args.region && typeof args.region.height === 'number') {
-            screenshotOptions.region = {
-              x: args.region.x,
-              y: args.region.y,
-              width: args.region.width,
-              height: args.region.height
-            };
-          }
-          
-          if (args?.format === 'jpeg' || args?.format === 'png') {
-            screenshotOptions.format = args.format;
-          }
-          
-          if (typeof args?.quality === 'number') {
-            screenshotOptions.quality = args.quality;
-          }
-          
-          if (typeof args?.grayscale === 'boolean') {
-            screenshotOptions.grayscale = args.grayscale;
-          }
-          
-          if (typeof args?.compressionLevel === 'number') {
-            screenshotOptions.compressionLevel = args.compressionLevel;
-          }
-          
-          if (args?.resize && typeof args.resize === 'object') {
-            // Preserve the default resize settings that weren't explicitly overridden
-            if (!screenshotOptions.resize) {
-              screenshotOptions.resize = { width: 1280, fit: 'contain' };
-            }
-            
-            if ('width' in args.resize && typeof args.resize.width === 'number') {
-              screenshotOptions.resize.width = args.resize.width;
-            }
-            
-            if ('height' in args.resize && typeof args.resize.height === 'number') {
-              screenshotOptions.resize.height = args.resize.height;
-            }
-            
-            if ('fit' in args.resize && typeof args.resize.fit === 'string') {
-              // Type-safe check for valid fit values
-              const fitValue = args.resize.fit;
-              if (fitValue === 'contain' || fitValue === 'cover' || 
-                  fitValue === 'fill' || fitValue === 'inside' || fitValue === 'outside') {
-                screenshotOptions.resize.fit = fitValue;
-              }
-            }
-          }
+          // Parse and validate with Zod
+          const screenshotOptions = ScreenshotOptionsSchema.parse({
+            ...defaultOptions,
+            ...args
+          });
           
           response = await provider.screen.getScreenshot(screenshotOptions);
           break;
         }
           
         case "click_at": {
-          if (typeof args?.x !== 'number' || typeof args?.y !== 'number') {
-            throw new Error("Invalid click_at arguments");
-          }
-          const validButtonClickAt = validateButton(args?.button);
+          // Define Zod schema for click_at arguments
+          const clickAtSchema = z.object({
+            x: z.number(),
+            y: z.number(),
+            button: MouseButtonSchema.optional().default('left')
+          });
+          
+          const validatedArgs = clickAtSchema.parse(args);
+          
+          // Validate position
+          MousePositionSchema.parse({ 
+            x: validatedArgs.x, 
+            y: validatedArgs.y 
+          });
+          
           response = provider.mouse.clickAt(
-            args.x,
-            args.y,
-            validButtonClickAt
+            validatedArgs.x,
+            validatedArgs.y,
+            validatedArgs.button
           );
           break;
         }
 
-        case "move_mouse":
-          if (!isMousePosition(args)) {
-            throw new Error("Invalid mouse position arguments");
-          }
-          response = provider.mouse.moveMouse(args);
+        case "move_mouse": {
+          const validatedPosition = MousePositionSchema.parse(args);
+          response = provider.mouse.moveMouse(validatedPosition);
           break;
+        }
 
         case "click_mouse": {
-          const validButtonClickMouse = validateButton(args?.button);
-          response = provider.mouse.clickMouse(validButtonClickMouse);
+          const clickMouseSchema = z.object({
+            button: MouseButtonSchema.optional().default('left')
+          });
+          
+          const validatedArgs = clickMouseSchema.parse(args || {});
+          response = provider.mouse.clickMouse(validatedArgs.button);
           break;
         }
 
         case "drag_mouse": {
-          if (typeof args?.fromX !== 'number' || 
-              typeof args?.fromY !== 'number' ||
-              typeof args?.toX !== 'number' ||
-              typeof args?.toY !== 'number') {
-            throw new Error("Invalid drag mouse arguments");
-          }
-          const validButtonDragMouse = validateButton(args?.button);
+          const dragMouseSchema = z.object({
+            fromX: z.number(),
+            fromY: z.number(),
+            toX: z.number(),
+            toY: z.number(),
+            button: MouseButtonSchema.optional().default('left')
+          });
+          
+          const validatedArgs = dragMouseSchema.parse(args);
+          
+          // Validate positions
+          MousePositionSchema.parse({ x: validatedArgs.fromX, y: validatedArgs.fromY });
+          MousePositionSchema.parse({ x: validatedArgs.toX, y: validatedArgs.toY });
+          
           response = provider.mouse.dragMouse(
-            { x: args.fromX, y: args.fromY },
-            { x: args.toX, y: args.toY },
-            validButtonDragMouse
+            { x: validatedArgs.fromX, y: validatedArgs.fromY },
+            { x: validatedArgs.toX, y: validatedArgs.toY },
+            validatedArgs.button
           );
           break;
         }
 
-
-        case "scroll_mouse":
-          if (typeof args?.amount !== 'number') {
-            throw new Error("Invalid scroll amount argument");
-          }
-          response = provider.mouse.scrollMouse(args.amount);
+        case "scroll_mouse": {
+          const scrollMouseSchema = z.object({
+            amount: ScrollAmountSchema
+          });
+          
+          const validatedArgs = scrollMouseSchema.parse(args);
+          response = provider.mouse.scrollMouse(validatedArgs.amount);
           break;
+        }
 
-        case "type_text":
-          if (!isKeyboardInput(args)) {
-            throw new Error("Invalid keyboard input arguments");
-          }
-          response = provider.keyboard.typeText(args);
+        case "type_text": {
+          const validatedArgs = KeyboardInputSchema.parse(args);
+          response = provider.keyboard.typeText(validatedArgs);
           break;
+        }
 
-        case "press_key":
-          if (typeof args?.key !== 'string') {
-            throw new Error("Invalid key press arguments");
-          }
-          response = provider.keyboard.pressKey(args.key);
+        case "press_key": {
+          const pressKeySchema = z.object({
+            key: z.string()
+          });
+          
+          const validatedArgs = pressKeySchema.parse(args);
+          const key = validatedArgs.key;
+          
+          // Use the KeySchema from validation.zod.ts to validate the key
+          const { KeySchema } = await import('../tools/validation.zod.js');
+          KeySchema.parse(key);
+          
+          response = provider.keyboard.pressKey(key);
           break;
+        }
 
-        case "hold_key":
-          if (!isKeyHoldOperation(args)) {
-            throw new Error("Invalid key hold arguments");
-          }
-          response = await provider.keyboard.holdKey(args);
+        case "hold_key": {
+          const validatedArgs = KeyHoldOperationSchema.parse(args);
+          response = await provider.keyboard.holdKey(validatedArgs);
           break;
+        }
 
-        case "press_key_combination":
-          if (!isKeyCombination(args)) {
-            throw new Error("Invalid key combination arguments");
-          }
-          response = await provider.keyboard.pressKeyCombination(args);
+        case "press_key_combination": {
+          const validatedArgs = KeyCombinationSchema.parse(args);
+          response = await provider.keyboard.pressKeyCombination(validatedArgs);
           break;
+        }
 
-        case "get_screen_size":
+        case "get_screen_size": {
           response = provider.screen.getScreenSize();
           break;
+        }
 
-        case "get_cursor_position":
+        case "get_cursor_position": {
           response = provider.mouse.getCursorPosition();
           break;
+        }
 
-        case "double_click":
-          if (args && typeof args.x === 'number' && typeof args.y === 'number') {
-            response = provider.mouse.doubleClick({ x: args.x, y: args.y });
+        case "double_click": {
+          // Define schema for double click
+          const doubleClickSchema = z.object({
+            x: z.number().optional(),
+            y: z.number().optional()
+          });
+          
+          const validatedArgs = doubleClickSchema.parse(args || {});
+          
+          if (validatedArgs.x !== undefined && validatedArgs.y !== undefined) {
+            // Validate position if provided
+            const position = { x: validatedArgs.x, y: validatedArgs.y };
+            MousePositionSchema.parse(position);
+            response = provider.mouse.doubleClick(position);
           } else {
             response = provider.mouse.doubleClick();
           }
           break;
+        }
 
-        case "get_active_window":
+        case "get_active_window": {
           response = provider.screen.getActiveWindow();
           break;
+        }
 
-        case "focus_window":
-          if (typeof args?.title !== 'string') {
-            throw new Error("Invalid window title argument");
-          }
-          response = provider.screen.focusWindow(args.title);
-          break;
-
-        case "resize_window":
-          if (typeof args?.title !== 'string' || 
-              typeof args?.width !== 'number' || 
-              typeof args?.height !== 'number') {
-            throw new Error("Invalid window resize arguments");
-          }
-          response = provider.screen.resizeWindow(args.title, args.width, args.height);
-          break;
-
-        case "reposition_window":
-          if (typeof args?.title !== 'string' || 
-              typeof args?.x !== 'number' || 
-              typeof args?.y !== 'number') {
-            throw new Error("Invalid window reposition arguments");
-          }
-          response = provider.screen.repositionWindow(args.title, args.x, args.y);
-          break;
+        case "focus_window": {
+          const focusWindowSchema = z.object({
+            title: z.string().min(1)
+          });
           
-        case "minimize_window":
-          if (typeof args?.title !== 'string') {
-            throw new Error("Invalid window title argument");
-          }
+          const validatedArgs = focusWindowSchema.parse(args);
+          response = provider.screen.focusWindow(validatedArgs.title);
+          break;
+        }
+
+        case "resize_window": {
+          const resizeWindowSchema = z.object({
+            title: z.string().min(1),
+            width: z.number().int().positive(),
+            height: z.number().int().positive()
+          });
+          
+          const validatedArgs = resizeWindowSchema.parse(args);
+          response = provider.screen.resizeWindow(
+            validatedArgs.title, 
+            validatedArgs.width, 
+            validatedArgs.height
+          );
+          break;
+        }
+
+        case "reposition_window": {
+          const repositionWindowSchema = z.object({
+            title: z.string().min(1),
+            x: z.number().int(),
+            y: z.number().int()
+          });
+          
+          const validatedArgs = repositionWindowSchema.parse(args);
+          response = provider.screen.repositionWindow(
+            validatedArgs.title, 
+            validatedArgs.x, 
+            validatedArgs.y
+          );
+          break;
+        }
+          
+        case "minimize_window": {
+          const minimizeWindowSchema = z.object({
+            title: z.string().min(1)
+          });
+          
+          // Just validate but don't use the result as this operation is not supported
+          minimizeWindowSchema.parse(args);
           response = { success: false, message: "Minimize window operation is not supported" };
           break;
+        }
 
-        case "restore_window":
-          if (typeof args?.title !== 'string') {
-            throw new Error("Invalid window title argument");
-          }
+        case "restore_window": {
+          const restoreWindowSchema = z.object({
+            title: z.string().min(1)
+          });
+          
+          // Just validate but don't use the result as this operation is not supported
+          restoreWindowSchema.parse(args);
           response = { success: false, message: "Restore window operation is not supported" };
           break;
+        }
 
-        case "get_clipboard_content":
+        case "get_clipboard_content": {
           response = await provider.clipboard.getClipboardContent();
           break;
+        }
 
-        case "set_clipboard_content":
-          if (!isClipboardInput(args)) {
-            throw new Error("Invalid clipboard input arguments");
-          }
-          response = await provider.clipboard.setClipboardContent(args);
+        case "set_clipboard_content": {
+          const validatedArgs = ClipboardInputSchema.parse(args);
+          response = await provider.clipboard.setClipboardContent(validatedArgs);
           break;
+        }
 
-        case "has_clipboard_text":
+        case "has_clipboard_text": {
           response = await provider.clipboard.hasClipboardText();
           break;
+        }
 
-        case "clear_clipboard":
+        case "clear_clipboard": {
           response = await provider.clipboard.clearClipboard();
           break;
+        }
 
         default:
           throw new Error(`Unknown tool: ${name}`);
@@ -643,9 +651,21 @@ export function setupToolsLegacy(server: Server, provider: AutomationProvider): 
       };
 
     } catch (error) {
+      // Enhanced error handling for Zod validation errors
+      let errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // Check if it's a Zod error to provide more helpful validation messages
+      if (error && typeof error === 'object' && 'errors' in error) {
+        try {
+          errorMessage = JSON.stringify(error, null, 2);
+        } catch {
+          // Fall back to standard message if error can't be stringified
+        }
+      }
+      
       const errorContent: TextContent = {
         type: "text",
-        text: `Error: ${error instanceof Error ? error.message : String(error)}`
+        text: `Error: ${errorMessage}`
       };
 
       return {
@@ -654,80 +674,4 @@ export function setupToolsLegacy(server: Server, provider: AutomationProvider): 
       };
     }
   });
-}
-
-/**
- * Type guard to validate if an object matches the MousePosition interface
- * @param args The object to validate
- * @returns True if the object is a valid MousePosition
- * @deprecated Use Zod validation instead
- */
-function isMousePosition(args: unknown): args is MousePosition {
-  if (typeof args !== 'object' || args === null) return false;
-  const pos = args as Record<string, unknown>;
-  return typeof pos.x === 'number' && typeof pos.y === 'number';
-}
-
-/**
- * Type guard to validate if an object matches the KeyboardInput interface
- * @param args The object to validate
- * @returns True if the object is a valid KeyboardInput
- * @deprecated Use Zod validation instead
- */
-function isKeyboardInput(args: unknown): args is KeyboardInput {
-  if (typeof args !== 'object' || args === null) return false;
-  const input = args as Record<string, unknown>;
-  return typeof input.text === 'string';
-}
-
-/**
- * Type guard to validate if an object matches the KeyCombination interface
- * @param args The object to validate
- * @returns True if the object is a valid KeyCombination
- * @deprecated Use Zod validation instead
- */
-function isKeyCombination(args: unknown): args is KeyCombination {
-  if (typeof args !== 'object' || args === null) return false;
-  const combo = args as Record<string, unknown>;
-  if (!Array.isArray(combo.keys)) return false;
-  return combo.keys.every(key => typeof key === 'string');
-}
-
-/**
- * Type guard to validate if an object matches the KeyHoldOperation interface
- * @param args The object to validate
- * @returns True if the object is a valid KeyHoldOperation
- * @deprecated Use Zod validation instead
- */
-function isKeyHoldOperation(args: unknown): args is KeyHoldOperation {
-  if (typeof args !== 'object' || args === null) return false;
-  const op = args as Record<string, unknown>;
-  return (
-    typeof op.key === 'string' &&
-    (op.state === 'down' || op.state === 'up') &&
-    (op.duration === undefined || typeof op.duration === 'number')
-  );
-}
-
-/**
- * Type guard to validate if an object matches the ClipboardInput interface
- * @param args The object to validate
- * @returns True if the object is a valid ClipboardInput
- * @deprecated Use Zod validation instead
- */
-function isClipboardInput(args: unknown): args is ClipboardInput {
-  if (typeof args !== 'object' || args === null) return false;
-  const input = args as Record<string, unknown>;
-  return typeof input.text === 'string';
-}
-
-/**
- * Set up automation tools on the MCP server using Zod validation.
- * This function provides robust validation with better error messages.
- * 
- * @param server The Model Context Protocol server instance
- * @param provider The automation provider implementation
- */
-export function setupTools(server: Server, provider: AutomationProvider): void {
-  setupToolsWithZod(server, provider);
 }

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { setupTools, setupToolsWithZod } from "./handlers/tools.js";
+import { setupTools } from "./handlers/tools.js";
+import { setupToolsLegacy } from "./handlers/tools.js";
 import { loadConfig } from "./config.js";
 import { createAutomationProvider } from "./providers/factory.js";
 import { AutomationProvider } from "./interfaces/provider.js";
@@ -17,16 +18,16 @@ class MCPControlServer {
   private provider: AutomationProvider;
   
   /**
-   * Flag indicating whether to use Zod validation for enhanced type checking
-   * Set via the --zod command line argument
+   * Flag indicating whether to use legacy validation instead of Zod validation
+   * Set via the --legacy-validation command line argument
    */
-  private useZodValidation: boolean;
+  private useLegacyValidation: boolean;
 
   constructor() {
     try {
       // Parse command line arguments
       const args = process.argv.slice(2);
-      const useZod = args.includes('--zod');
+      const useLegacy = args.includes('--legacy-validation');
       
       // Load configuration
       const config = loadConfig();
@@ -54,8 +55,8 @@ class MCPControlServer {
         }
       });
       
-      // Flag to determine whether to use Zod validation
-      this.useZodValidation = useZod;
+      // Flag to determine whether to use legacy validation
+      this.useLegacyValidation = useLegacy;
 
       this.setupHandlers();
       this.setupErrorHandling();
@@ -70,14 +71,15 @@ class MCPControlServer {
   }
 
   private setupHandlers(): void {
-    // Choose the appropriate setup function based on the --zod flag
-    if (this.useZodValidation) {
-      // Use enhanced Zod validation when requested
-      setupToolsWithZod(this.server, this.provider);
-      process.stderr.write(`Using enhanced Zod validation for MCP tools\n`);
+    // Choose the appropriate setup function based on the --legacy-validation flag
+    if (this.useLegacyValidation) {
+      // Use original validation when legacy mode is requested
+      setupToolsLegacy(this.server, this.provider);
+      process.stderr.write(`Using legacy validation for MCP tools\n`);
     } else {
-      // Use original validation by default
+      // Use enhanced Zod validation by default
       setupTools(this.server, this.provider);
+      process.stderr.write(`Using enhanced Zod validation for MCP tools\n`);
     }
   }
 
