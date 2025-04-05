@@ -37,7 +37,7 @@ class MCPControlServer {
       
       this.server = new Server({
         name: "mcp-control",
-        version: "0.1.1"
+        version: "0.1.17"
       }, {
         capabilities: {
           tools: {}
@@ -57,7 +57,7 @@ class MCPControlServer {
   }
 
   private setupHandlers(): void {
-    // Pass the provider to setupTools
+    // Set up tools with Zod validation
     setupTools(this.server, this.provider);
   }
 

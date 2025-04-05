@@ -241,7 +241,9 @@ describe('Tools Handler', () => {
       });
 
       expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain('Invalid mouse position arguments');
+      // Updated to match Zod validation error format
+      expect(result.content[0].text).toContain('issues');
+      expect(result.content[0].text).toContain('invalid_type');
     });
 
     it('should handle tool execution errors', async () => {

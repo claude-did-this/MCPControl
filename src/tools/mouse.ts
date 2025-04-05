@@ -2,10 +2,10 @@ import { MousePosition } from '../types/common.js';
 import { WindowsControlResponse } from '../types/responses.js';
 import { createAutomationProvider } from '../providers/factory.js';
 import { 
-  validateMousePosition, 
-  validateMouseButton,
-  validateScrollAmount
-} from './validation.js';
+  MousePositionSchema, 
+  MouseButtonSchema,
+  ScrollAmountSchema
+} from './validation.zod.js';
 
 // Get the automation provider
 const provider = createAutomationProvider();
@@ -16,7 +16,7 @@ type MouseButton = 'left' | 'right' | 'middle';
 export function moveMouse(position: MousePosition): WindowsControlResponse {
   try {
     // Validate the position
-    validateMousePosition(position);
+    MousePositionSchema.parse(position);
     
     // Additional screen bounds check if not in test environment
     if (!(process.env.NODE_ENV === 'test' || process.env.VITEST)) {
@@ -47,7 +47,8 @@ export function moveMouse(position: MousePosition): WindowsControlResponse {
 export function clickMouse(button: MouseButton = 'left'): WindowsControlResponse {
   try {
     // Validate button
-    const validatedButton = validateMouseButton(button);
+    MouseButtonSchema.parse(button);
+    const validatedButton = button;
     
     return provider.mouse.clickMouse(validatedButton);
   } catch (error) {
@@ -62,7 +63,7 @@ export function doubleClick(position?: MousePosition): WindowsControlResponse {
   try {
     // Validate position if provided
     if (position) {
-      validateMousePosition(position);
+      MousePositionSchema.parse(position);
     }
     
     return provider.mouse.doubleClick(position);
@@ -88,7 +89,7 @@ export function getCursorPosition(): WindowsControlResponse {
 export function scrollMouse(amount: number): WindowsControlResponse {
   try {
     // Validate amount
-    validateScrollAmount(amount);
+    ScrollAmountSchema.parse(amount);
     
     return provider.mouse.scrollMouse(amount);
   } catch (error) {
@@ -102,11 +103,12 @@ export function scrollMouse(amount: number): WindowsControlResponse {
 export function dragMouse(from: MousePosition, to: MousePosition, button: MouseButton = 'left'): WindowsControlResponse {
   try {
     // Validate positions
-    validateMousePosition(from);
-    validateMousePosition(to);
+    MousePositionSchema.parse(from);
+    MousePositionSchema.parse(to);
     
     // Validate button
-    const validatedButton = validateMouseButton(button);
+    MouseButtonSchema.parse(button);
+    const validatedButton = button;
     
     return provider.mouse.dragMouse(from, to, validatedButton);
   } catch (error) {
@@ -128,10 +130,11 @@ export function clickAt(x: number, y: number, button: MouseButton = 'left'): Win
   
   try {
     // Validate position against screen bounds
-    validateMousePosition({ x, y });
+    MousePositionSchema.parse({ x, y });
     
     // Validate button
-    const validatedButton = validateMouseButton(button);
+    MouseButtonSchema.parse(button);
+    const validatedButton = button;
     
     return provider.mouse.clickAt(x, y, validatedButton);
   } catch (error) {

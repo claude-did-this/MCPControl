@@ -3,10 +3,10 @@ import { WindowsControlResponse } from '../types/responses.js';
 import { createAutomationProvider } from '../providers/factory.js';
 import { 
   MAX_TEXT_LENGTH, 
-  validateKey, 
-  validateKeyCombination, 
-  validateKeyHoldOperation 
-} from './validation.js';
+  KeySchema, 
+  KeyCombinationSchema, 
+  KeyHoldOperationSchema 
+} from './validation.zod.js';
 
 // Get the automation provider
 const provider = createAutomationProvider();
@@ -33,8 +33,8 @@ export function typeText(input: KeyboardInput): WindowsControlResponse {
 
 export function pressKey(key: string): WindowsControlResponse {
   try {
-    // Validate key using shared validation function
-    validateKey(key);
+    // Validate key using Zod schema
+    KeySchema.parse(key);
 
     return provider.keyboard.pressKey(key);
   } catch (error) {
@@ -47,8 +47,8 @@ export function pressKey(key: string): WindowsControlResponse {
 
 export async function pressKeyCombination(combination: KeyCombination): Promise<WindowsControlResponse> {
   try {
-    // Validate the key combination using shared validation function
-    validateKeyCombination(combination);
+    // Validate the key combination using Zod schema
+    KeyCombinationSchema.parse(combination);
 
     return await provider.keyboard.pressKeyCombination(combination);
   } catch (error) {
@@ -61,8 +61,8 @@ export async function pressKeyCombination(combination: KeyCombination): Promise<
 
 export async function holdKey(operation: KeyHoldOperation): Promise<WindowsControlResponse> {
   try {
-    // Validate key hold operation using shared validation function
-    validateKeyHoldOperation(operation);
+    // Validate key hold operation using Zod schema
+    KeyHoldOperationSchema.parse(operation);
 
     return await provider.keyboard.holdKey(operation);
   } catch (error) {
