@@ -54,7 +54,10 @@ jobs:
         run: npm version ${{ steps.extract_version.outputs.VERSION }} --no-git-tag-version
       
       - name: Verify package contents
-        run: npm pack && tar -xf *.tgz && ls -la package/
+        run: |
+          $package = npm pack
+          tar -xf $package
+          ls -la package/
       
       - name: Publish to NPM
         run: npm publish
