@@ -2,7 +2,6 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { setupTools } from "./handlers/tools.js";
-import { setupToolsLegacy } from "./handlers/tools.js";
 import { loadConfig } from "./config.js";
 import { createAutomationProvider } from "./providers/factory.js";
 import { AutomationProvider } from "./interfaces/provider.js";
@@ -16,19 +15,9 @@ class MCPControlServer {
    * through a consistent interface allowing for different backend implementations
    */
   private provider: AutomationProvider;
-  
-  /**
-   * Flag indicating whether to use legacy validation instead of Zod validation
-   * Set via the --legacy-validation command line argument
-   */
-  private useLegacyValidation: boolean;
 
   constructor() {
     try {
-      // Parse command line arguments
-      const args = process.argv.slice(2);
-      const useLegacy = args.includes('--legacy-validation');
-      
       // Load configuration
       const config = loadConfig();
       
@@ -54,9 +43,6 @@ class MCPControlServer {
           tools: {}
         }
       });
-      
-      // Flag to determine whether to use legacy validation
-      this.useLegacyValidation = useLegacy;
 
       this.setupHandlers();
       this.setupErrorHandling();
@@ -71,16 +57,8 @@ class MCPControlServer {
   }
 
   private setupHandlers(): void {
-    // Choose the appropriate setup function based on the --legacy-validation flag
-    if (this.useLegacyValidation) {
-      // Use original validation when legacy mode is requested
-      setupToolsLegacy(this.server, this.provider);
-      process.stderr.write(`Using legacy validation for MCP tools\n`);
-    } else {
-      // Use enhanced Zod validation by default
-      setupTools(this.server, this.provider);
-      process.stderr.write(`Using enhanced Zod validation for MCP tools\n`);
-    }
+    // Set up tools with Zod validation
+    setupTools(this.server, this.provider);
   }
 
   private setupErrorHandling(): void {

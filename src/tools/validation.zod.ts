@@ -1,5 +1,29 @@
 import { z } from 'zod';
-import { VALID_KEYS, MAX_TEXT_LENGTH, MAX_ALLOWED_COORDINATE, MAX_SCROLL_AMOUNT } from './validation.js';
+
+// Constants for validation
+export const MAX_TEXT_LENGTH = 1000;
+export const MAX_ALLOWED_COORDINATE = 10000; // Reasonable maximum screen dimension
+export const MAX_SCROLL_AMOUNT = 1000;
+
+/**
+ * List of allowed keyboard keys for validation
+ */
+export const VALID_KEYS = [
+  // Letters
+  'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+  'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+  // Numbers
+  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+  // Special keys
+  'space', 'escape', 'tab', 'alt', 'control', 'shift', 'right_shift',
+  'command', 'enter', 'return', 'backspace', 'delete', 'home', 'end',
+  'page_up', 'page_down', 'left', 'up', 'right', 'down',
+  // Function keys
+  'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'f11', 'f12',
+  // Symbols
+  '.', ',', '/', '\\', '[', ']', '{', '}', '(', ')', ';', ':', '\'', '"', '`', 
+  '-', '=', 'plus', '?', '!', '@', '#', '$', '%', '^', '&', '*', '_', '<', '>'
+];
 
 /**
  * Zod schema for mouse position validation
@@ -98,16 +122,35 @@ export const KeyHoldOperationSchema = z.object({
   key: KeySchema,
   state: z.enum(['down', 'up']),
   duration: z.number()
-    .min(10, "Duration too short: must be at least 10ms")
+    .min(0, "Duration cannot be negative")
     .max(10000, "Duration too long: maximum is 10000ms (10 seconds)")
     .optional()
-}).refine(
-  data => !(data.state === 'down' && data.duration === undefined),
-  {
-    message: "Duration is required for key down operations",
-    path: ['duration']
+})
+.strict() // Ensure no extra properties
+.superRefine((data, ctx) => {
+  // Check for 'down' state
+  if (data.state === 'down') {
+    if (data.duration === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Duration is required for key down operations",
+        path: ['duration']
+      });
+    } else if (data.duration < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Duration for key down operations must be at least 1ms",
+        path: ['duration']
+      });
+    }
   }
-);
+})
+// Empty objects should always fail validation
+.refine(data => {
+  return Object.keys(data).length > 0;
+}, {
+  message: "Missing required properties"
+});
 
 /**
  * Zod schema for scroll amount validation

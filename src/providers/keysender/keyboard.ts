@@ -8,10 +8,10 @@ import { WindowsControlResponse } from '../../types/responses.js';
 import { KeyboardAutomation } from '../../interfaces/automation.js';
 import { 
   MAX_TEXT_LENGTH, 
-  validateKey,
-  validateKeyCombination, 
-  validateKeyHoldOperation
-} from '../../tools/validation.js';
+  KeySchema,
+  KeyCombinationSchema, 
+  KeyHoldOperationSchema
+} from '../../tools/validation.zod.js';
 
 /**
  * Keysender implementation of the KeyboardAutomation interface
@@ -51,8 +51,9 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
 
   pressKey(key: string): WindowsControlResponse {
     try {
-      // Validate the key using shared validation function
-      const keyboardKey = validateKey(key);
+      // Validate the key using Zod schema
+      KeySchema.parse(key);
+      const keyboardKey = key;
       
       // Start the asynchronous operation and handle errors properly
       this.keyboard.sendKey(keyboardKey)
@@ -75,8 +76,8 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
 
   async pressKeyCombination(combination: KeyCombination): Promise<WindowsControlResponse> {
     try {
-      // Validate the key combination using shared validation function
-      validateKeyCombination(combination);
+      // Validate the key combination using Zod schema
+      KeyCombinationSchema.parse(combination);
 
       // Store original keys for the message
       const keysForMessage = [...combination.keys];
@@ -85,7 +86,8 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
       // Validate each key and collect press promises
       const validatedKeys: KeyboardButtonType[] = [];
       for (const key of combination.keys) {
-        const keyboardKey = validateKey(key);
+        KeySchema.parse(key);
+        const keyboardKey = key;
         validatedKeys.push(keyboardKey);
         
         // Collect all promises to handle them properly
@@ -132,7 +134,8 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
         const cleanupPromises: Promise<void>[] = [];
         for (const key of combination.keys) {
           try {
-            const keyboardKey = validateKey(key);
+            KeySchema.parse(key);
+            const keyboardKey = key;
             cleanupPromises.push(
               this.keyboard.toggleKey(keyboardKey, false)
                 .catch(err => {
@@ -159,8 +162,8 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
 
   async holdKey(operation: KeyHoldOperation): Promise<WindowsControlResponse> {
     try {
-      // Validate key hold operation using shared validation function
-      validateKeyHoldOperation(operation);
+      // Validate key hold operation using Zod schema
+      KeyHoldOperationSchema.parse(operation);
       
       // Toggle the key state (down/up)
       await this.keyboard.toggleKey(operation.key, operation.state === 'down');

@@ -6,10 +6,10 @@ import { MousePosition } from '../../types/common.js';
 import { WindowsControlResponse } from '../../types/responses.js';
 import { MouseAutomation } from '../../interfaces/automation.js';
 import { 
-  validateMousePosition, 
-  validateMouseButton,
-  validateScrollAmount
-} from '../../tools/validation.js';
+  MousePositionSchema, 
+  MouseButtonSchema,
+  ScrollAmountSchema
+} from '../../tools/validation.zod.js';
 
 /**
  * Keysender implementation of the MouseAutomation interface
@@ -25,7 +25,7 @@ export class KeysenderMouseAutomation implements MouseAutomation {
    */
   private validatePositionAgainstScreen(position: MousePosition): MousePosition {
     // First run the basic validation
-    validateMousePosition(position);
+    MousePositionSchema.parse(position);
 
     // Then check against actual screen bounds
     const screenSize = keysenderGetScreenSize();
@@ -63,8 +63,9 @@ export class KeysenderMouseAutomation implements MouseAutomation {
 
   clickMouse(button: 'left' | 'right' | 'middle' = 'left'): WindowsControlResponse {
     try {
-      // Validate button using shared validation function
-      const mouseButton = validateMouseButton(button);
+      // Validate button using Zod schema
+      MouseButtonSchema.parse(button);
+      const mouseButton = button;
       
       // Start the asynchronous operation and handle errors properly
       this.mouse.click(mouseButton)
@@ -144,8 +145,8 @@ export class KeysenderMouseAutomation implements MouseAutomation {
 
   scrollMouse(amount: number): WindowsControlResponse {
     try {
-      // Validate amount using shared validation function
-      validateScrollAmount(amount);
+      // Validate amount using Zod schema
+      ScrollAmountSchema.parse(amount);
       
       // Start the asynchronous operation and handle errors properly
       this.mouse.scrollWheel(amount)
@@ -172,8 +173,9 @@ export class KeysenderMouseAutomation implements MouseAutomation {
       this.validatePositionAgainstScreen(from);
       this.validatePositionAgainstScreen(to);
       
-      // Validate button using shared validation function
-      const mouseButton = validateMouseButton(button);
+      // Validate button using Zod schema
+      MouseButtonSchema.parse(button);
+      const mouseButton = button;
       
       // Start the drag operation
       // Move to start position
@@ -210,7 +212,8 @@ export class KeysenderMouseAutomation implements MouseAutomation {
     } catch (error) {
       // Ensure mouse button is released in case of error
       try {
-        const mouseButton = validateMouseButton(button);
+        MouseButtonSchema.parse(button);
+        const mouseButton = button;
         this.mouse.toggle(mouseButton, false)
           .catch(err => console.error(`Error releasing ${button} button during cleanup:`, err));
       } catch (releaseError) {
@@ -235,8 +238,9 @@ export class KeysenderMouseAutomation implements MouseAutomation {
       // Validate position against screen bounds
       this.validatePositionAgainstScreen({ x, y });
       
-      // Validate button using shared validation function
-      const mouseButton = validateMouseButton(button);
+      // Validate button using Zod schema
+      MouseButtonSchema.parse(button);
+      const mouseButton = button;
       
       // Move to position
       this.mouse.moveTo(x, y)
