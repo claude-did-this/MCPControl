@@ -57,7 +57,7 @@ jobs:
         run: |
           $package = npm pack
           tar -xf $package
-          ls -la package/
+          Get-Childitem -Force package/
       
       - name: Publish to NPM
         run: npm publish
