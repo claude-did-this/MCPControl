@@ -6,11 +6,11 @@ type KeyboardButtonType = string;
 import { KeyboardInput, KeyCombination, KeyHoldOperation } from '../../types/common.js';
 import { WindowsControlResponse } from '../../types/responses.js';
 import { KeyboardAutomation } from '../../interfaces/automation.js';
-import { 
-  MAX_TEXT_LENGTH, 
+import {
+  MAX_TEXT_LENGTH,
   KeySchema,
-  KeyCombinationSchema, 
-  KeyHoldOperationSchema
+  KeyCombinationSchema,
+  KeyHoldOperationSchema,
 } from '../../tools/validation.zod.js';
 
 /**
@@ -25,26 +25,25 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
       if (!input.text) {
         throw new Error('Text is required');
       }
-      
+
       if (input.text.length > MAX_TEXT_LENGTH) {
         throw new Error(`Text too long: ${input.text.length} characters (max ${MAX_TEXT_LENGTH})`);
       }
 
       // Start the asynchronous operation and handle errors properly
-      this.keyboard.printText(input.text)
-        .catch(err => {
-          console.error('Error typing text:', err);
-          // We can't update the response after it's returned, but at least log the error
-        });
-      
+      this.keyboard.printText(input.text).catch((err) => {
+        console.error('Error typing text:', err);
+        // We can't update the response after it's returned, but at least log the error
+      });
+
       return {
         success: true,
-        message: `Typed text successfully`
+        message: `Typed text successfully`,
       };
     } catch (error) {
       return {
         success: false,
-        message: `Failed to type text: ${error instanceof Error ? error.message : String(error)}`
+        message: `Failed to type text: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   }
@@ -54,22 +53,21 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
       // Validate the key using Zod schema
       KeySchema.parse(key);
       const keyboardKey = key;
-      
+
       // Start the asynchronous operation and handle errors properly
-      this.keyboard.sendKey(keyboardKey)
-        .catch(err => {
-          console.error(`Error pressing key ${key}:`, err);
-          // We can't update the response after it's returned, but at least log the error
-        });
-      
+      this.keyboard.sendKey(keyboardKey).catch((err) => {
+        console.error(`Error pressing key ${key}:`, err);
+        // We can't update the response after it's returned, but at least log the error
+      });
+
       return {
         success: true,
-        message: `Pressed key: ${key}`
+        message: `Pressed key: ${key}`,
       };
     } catch (error) {
       return {
         success: false,
-        message: `Failed to press key: ${error instanceof Error ? error.message : String(error)}`
+        message: `Failed to press key: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   }
@@ -89,35 +87,33 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
         KeySchema.parse(key);
         const keyboardKey = key;
         validatedKeys.push(keyboardKey);
-        
+
         // Collect all promises to handle them properly
         pressPromises.push(
-          this.keyboard.toggleKey(keyboardKey, true)
-            .catch(err => {
-              console.error(`Error pressing key ${key}:`, err);
-              throw err; // Re-throw to be caught by the outer try/catch
-            })
+          this.keyboard.toggleKey(keyboardKey, true).catch((err) => {
+            console.error(`Error pressing key ${key}:`, err);
+            throw err; // Re-throw to be caught by the outer try/catch
+          }),
         );
       }
 
       // Wait for all keys to be pressed
       await Promise.all(pressPromises);
-      
+
       // Small delay to ensure all keys are pressed
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Release all keys in reverse order
       const releasePromises: Promise<void>[] = [];
       for (let i = validatedKeys.length - 1; i >= 0; i--) {
         const keyboardKey = validatedKeys[i];
         const originalKey = combination.keys[i];
-        
+
         releasePromises.push(
-          this.keyboard.toggleKey(keyboardKey, false)
-            .catch(err => {
-              console.error(`Error releasing key ${originalKey}:`, err);
-              throw err; // Re-throw to be caught by the outer try/catch
-            })
+          this.keyboard.toggleKey(keyboardKey, false).catch((err) => {
+            console.error(`Error releasing key ${originalKey}:`, err);
+            throw err; // Re-throw to be caught by the outer try/catch
+          }),
         );
       }
 
@@ -126,7 +122,7 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
 
       return {
         success: true,
-        message: `Pressed key combination: ${keysForMessage.join('+')}`
+        message: `Pressed key combination: ${keysForMessage.join('+')}`,
       };
     } catch (error) {
       // Ensure all keys are released in case of error
@@ -137,11 +133,10 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
             KeySchema.parse(key);
             const keyboardKey = key;
             cleanupPromises.push(
-              this.keyboard.toggleKey(keyboardKey, false)
-                .catch(err => {
-                  console.error(`Error releasing key ${key} during cleanup:`, err);
-                  // Ignore errors during cleanup
-                })
+              this.keyboard.toggleKey(keyboardKey, false).catch((err) => {
+                console.error(`Error releasing key ${key} during cleanup:`, err);
+                // Ignore errors during cleanup
+              }),
             );
           } catch (validationError) {
             console.error(`Error validating key ${key} during cleanup:`, validationError);
@@ -155,7 +150,7 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
 
       return {
         success: false,
-        message: `Failed to press key combination: ${error instanceof Error ? error.message : String(error)}`
+        message: `Failed to press key combination: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   }
@@ -164,13 +159,13 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
     try {
       // Validate key hold operation using Zod schema
       KeyHoldOperationSchema.parse(operation);
-      
+
       // Toggle the key state (down/up)
       await this.keyboard.toggleKey(operation.key, operation.state === 'down');
 
       // If it's a key press (down) with duration, wait for the specified duration then release
       if (operation.state === 'down' && operation.duration) {
-        await new Promise(resolve => setTimeout(resolve, operation.duration));
+        await new Promise((resolve) => setTimeout(resolve, operation.duration));
         await this.keyboard.toggleKey(operation.key, false);
       }
 
@@ -178,7 +173,7 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
         success: true,
         message: `Key ${operation.key} ${operation.state === 'down' ? 'held' : 'released'} successfully${
           operation.state === 'down' && operation.duration ? ` for ${operation.duration}ms` : ''
-        }`
+        }`,
       };
     } catch (error) {
       // Ensure key is released in case of error during hold
@@ -195,7 +190,7 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
         success: false,
         message: `Failed to ${operation.state} key ${operation.key}: ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
       };
     }
   }

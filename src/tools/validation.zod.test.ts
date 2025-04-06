@@ -7,7 +7,7 @@ import {
   KeyHoldOperationSchema,
   ScrollAmountSchema,
   ClipboardInputSchema,
-  ScreenshotOptionsSchema
+  ScreenshotOptionsSchema,
 } from './validation.zod.js';
 import { MAX_ALLOWED_COORDINATE, MAX_SCROLL_AMOUNT } from './validation.zod.js';
 
@@ -17,8 +17,12 @@ describe('Zod Validation Schemas', () => {
       expect(() => MousePositionSchema.parse({ x: 100, y: 200 })).not.toThrow();
       expect(() => MousePositionSchema.parse({ x: -100, y: -200 })).not.toThrow();
       expect(() => MousePositionSchema.parse({ x: 0, y: 0 })).not.toThrow();
-      expect(() => MousePositionSchema.parse({ x: MAX_ALLOWED_COORDINATE, y: MAX_ALLOWED_COORDINATE })).not.toThrow();
-      expect(() => MousePositionSchema.parse({ x: -MAX_ALLOWED_COORDINATE, y: -MAX_ALLOWED_COORDINATE })).not.toThrow();
+      expect(() =>
+        MousePositionSchema.parse({ x: MAX_ALLOWED_COORDINATE, y: MAX_ALLOWED_COORDINATE }),
+      ).not.toThrow();
+      expect(() =>
+        MousePositionSchema.parse({ x: -MAX_ALLOWED_COORDINATE, y: -MAX_ALLOWED_COORDINATE }),
+      ).not.toThrow();
     });
 
     it('should reject invalid mouse positions', () => {
@@ -83,16 +87,26 @@ describe('Zod Validation Schemas', () => {
 
   describe('KeyHoldOperationSchema', () => {
     it('should validate valid key hold operations', () => {
-      expect(() => KeyHoldOperationSchema.parse({ key: 'shift', state: 'down', duration: 1000 })).not.toThrow();
+      expect(() =>
+        KeyHoldOperationSchema.parse({ key: 'shift', state: 'down', duration: 1000 }),
+      ).not.toThrow();
       expect(() => KeyHoldOperationSchema.parse({ key: 'a', state: 'up' })).not.toThrow();
     });
 
     it('should reject invalid key hold operations', () => {
       expect(() => KeyHoldOperationSchema.parse({ key: 'shift', state: 'down' })).toThrow();
-      expect(() => KeyHoldOperationSchema.parse({ key: 'invalid', state: 'down', duration: 1000 })).toThrow();
-      expect(() => KeyHoldOperationSchema.parse({ key: 'shift', state: 'invalid', duration: 1000 })).toThrow();
-      expect(() => KeyHoldOperationSchema.parse({ key: 'shift', state: 'down', duration: 0 })).toThrow(); // Changed from 5ms to 0ms
-      expect(() => KeyHoldOperationSchema.parse({ key: 'shift', state: 'down', duration: 20000 })).toThrow();
+      expect(() =>
+        KeyHoldOperationSchema.parse({ key: 'invalid', state: 'down', duration: 1000 }),
+      ).toThrow();
+      expect(() =>
+        KeyHoldOperationSchema.parse({ key: 'shift', state: 'invalid', duration: 1000 }),
+      ).toThrow();
+      expect(() =>
+        KeyHoldOperationSchema.parse({ key: 'shift', state: 'down', duration: 0 }),
+      ).toThrow(); // Changed from 5ms to 0ms
+      expect(() =>
+        KeyHoldOperationSchema.parse({ key: 'shift', state: 'down', duration: 20000 }),
+      ).toThrow();
       expect(() => KeyHoldOperationSchema.parse({})).toThrow();
     });
   });
@@ -133,38 +147,50 @@ describe('Zod Validation Schemas', () => {
 
   describe('ScreenshotOptionsSchema', () => {
     it('should validate valid screenshot options', () => {
-      expect(() => ScreenshotOptionsSchema.parse({
-        region: { x: 100, y: 100, width: 500, height: 500 },
-        format: 'jpeg',
-        quality: 90,
-        grayscale: true,
-        resize: { width: 1280, fit: 'contain' }
-      })).not.toThrow();
+      expect(() =>
+        ScreenshotOptionsSchema.parse({
+          region: { x: 100, y: 100, width: 500, height: 500 },
+          format: 'jpeg',
+          quality: 90,
+          grayscale: true,
+          resize: { width: 1280, fit: 'contain' },
+        }),
+      ).not.toThrow();
 
-      expect(() => ScreenshotOptionsSchema.parse({
-        format: 'png',
-        compressionLevel: 6
-      })).not.toThrow();
+      expect(() =>
+        ScreenshotOptionsSchema.parse({
+          format: 'png',
+          compressionLevel: 6,
+        }),
+      ).not.toThrow();
 
       expect(() => ScreenshotOptionsSchema.parse({})).not.toThrow();
     });
 
     it('should reject invalid screenshot options', () => {
-      expect(() => ScreenshotOptionsSchema.parse({
-        region: { x: 100, y: 100, width: -500, height: 500 }
-      })).toThrow();
+      expect(() =>
+        ScreenshotOptionsSchema.parse({
+          region: { x: 100, y: 100, width: -500, height: 500 },
+        }),
+      ).toThrow();
 
-      expect(() => ScreenshotOptionsSchema.parse({
-        quality: 101
-      })).toThrow();
+      expect(() =>
+        ScreenshotOptionsSchema.parse({
+          quality: 101,
+        }),
+      ).toThrow();
 
-      expect(() => ScreenshotOptionsSchema.parse({
-        format: 'gif'
-      })).toThrow();
+      expect(() =>
+        ScreenshotOptionsSchema.parse({
+          format: 'gif',
+        }),
+      ).toThrow();
 
-      expect(() => ScreenshotOptionsSchema.parse({
-        resize: { width: -100, fit: 'invalid' }
-      })).toThrow();
+      expect(() =>
+        ScreenshotOptionsSchema.parse({
+          resize: { width: -100, fit: 'invalid' },
+        }),
+      ).toThrow();
     });
   });
 });

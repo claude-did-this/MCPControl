@@ -6,7 +6,7 @@ import './index.js';
 // Mock keysender module
 vi.mock('keysender', async () => {
   await vi.importActual('vitest');
-  
+
   const mockObject = {
     Hardware: vi.fn().mockImplementation(() => ({
       workwindow: {
@@ -17,7 +17,7 @@ vi.mock('keysender', async () => {
         setForeground: vi.fn(),
         setView: vi.fn(),
         isForeground: vi.fn(),
-        isOpen: vi.fn()
+        isOpen: vi.fn(),
       },
       mouse: {
         move: vi.fn(),
@@ -29,26 +29,26 @@ vi.mock('keysender', async () => {
         leftUp: vi.fn(),
         rightDown: vi.fn(),
         rightUp: vi.fn(),
-        scroll: vi.fn()
+        scroll: vi.fn(),
       },
       keyboard: {
         pressKey: vi.fn(),
         releaseKey: vi.fn(),
-        typeString: vi.fn()
+        typeString: vi.fn(),
       },
       clipboard: {
         getClipboard: vi.fn(),
-        setClipboard: vi.fn()
-      }
+        setClipboard: vi.fn(),
+      },
     })),
     getScreenSize: vi.fn().mockReturnValue({ width: 1920, height: 1080 }),
     getAllWindows: vi.fn().mockReturnValue([{ title: 'Test Window', handle: 12345 }]),
-    getWindowChildren: vi.fn().mockReturnValue([])
+    getWindowChildren: vi.fn().mockReturnValue([]),
   };
-  
+
   return {
     default: mockObject,
-    ...mockObject
+    ...mockObject,
   };
 });
 
@@ -63,11 +63,11 @@ class MockKeysenderProvider {
 // Mock the factory to avoid native module loading issues
 vi.mock('../factory.js', async () => {
   await vi.importActual('vitest');
-  
+
   return {
     createAutomationProvider: vi.fn().mockImplementation((_providerType) => {
       return new MockKeysenderProvider();
-    })
+    }),
   };
 });
 
@@ -80,8 +80,8 @@ vi.mock('./keyboard.js', async () => {
       keyToggle: vi.fn(),
       typeString: vi.fn(),
       typeStringDelayed: vi.fn(),
-      setKeyboardDelay: vi.fn()
-    }))
+      setKeyboardDelay: vi.fn(),
+    })),
   };
 });
 
@@ -98,8 +98,8 @@ vi.mock('./mouse.js', async () => {
       scrollMouse: vi.fn(),
       getMousePosition: vi.fn(),
       setMousePosition: vi.fn(),
-      setMouseSpeed: vi.fn()
-    }))
+      setMouseSpeed: vi.fn(),
+    })),
   };
 });
 
@@ -112,8 +112,8 @@ vi.mock('./screen.js', async () => {
       getActiveWindow: vi.fn(),
       focusWindow: vi.fn(),
       resizeWindow: vi.fn(),
-      repositionWindow: vi.fn()
-    }))
+      repositionWindow: vi.fn(),
+    })),
   };
 });
 
@@ -122,8 +122,8 @@ vi.mock('./clipboard.js', async () => {
   return {
     KeysenderClipboardAutomation: vi.fn().mockImplementation(() => ({
       readClipboard: vi.fn(),
-      writeClipboard: vi.fn()
-    }))
+      writeClipboard: vi.fn(),
+    })),
   };
 });
 
@@ -135,7 +135,7 @@ describe('KeysenderProvider', () => {
 
   it('should have all required automation interfaces', () => {
     const provider = new MockKeysenderProvider();
-    
+
     expect(provider.keyboard).toBeDefined();
     expect(provider.mouse).toBeDefined();
     expect(provider.screen).toBeDefined();

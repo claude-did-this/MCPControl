@@ -4,7 +4,7 @@ import { createAutomationProvider } from '../providers/factory';
 
 // Mock the factory module
 vi.mock('../providers/factory', () => ({
-  createAutomationProvider: vi.fn()
+  createAutomationProvider: vi.fn(),
 }));
 
 describe('Screenshot Functions', () => {
@@ -24,16 +24,18 @@ describe('Screenshot Functions', () => {
         screen: {
           getScreenshot: vi.fn().mockResolvedValue({
             success: true,
-            message: "Screenshot captured successfully",
-            content: [{
-              type: "image",
-              data: "test-image-data-base64",
-              mimeType: "image/png"
-            }]
-          })
-        }
+            message: 'Screenshot captured successfully',
+            content: [
+              {
+                type: 'image',
+                data: 'test-image-data-base64',
+                mimeType: 'image/png',
+              },
+            ],
+          }),
+        },
       };
-      
+
       // Make createAutomationProvider return our mock
       vi.mocked(createAutomationProvider).mockReturnValue(mockProvider as any);
 
@@ -45,12 +47,14 @@ describe('Screenshot Functions', () => {
       expect(mockProvider.screen.getScreenshot).toHaveBeenCalledTimes(1);
       expect(result).toEqual({
         success: true,
-        message: "Screenshot captured successfully",
-        content: [{
-          type: "image",
-          data: "test-image-data-base64",
-          mimeType: "image/png"
-        }]
+        message: 'Screenshot captured successfully',
+        content: [
+          {
+            type: 'image',
+            data: 'test-image-data-base64',
+            mimeType: 'image/png',
+          },
+        ],
       });
     });
 
@@ -60,23 +64,25 @@ describe('Screenshot Functions', () => {
         screen: {
           getScreenshot: vi.fn().mockResolvedValue({
             success: true,
-            message: "Screenshot captured successfully",
-            content: [{
-              type: "image",
-              data: "test-image-data-base64",
-              mimeType: "image/jpeg"
-            }]
-          })
-        }
+            message: 'Screenshot captured successfully',
+            content: [
+              {
+                type: 'image',
+                data: 'test-image-data-base64',
+                mimeType: 'image/jpeg',
+              },
+            ],
+          }),
+        },
       };
-      
+
       // Make createAutomationProvider return our mock
       vi.mocked(createAutomationProvider).mockReturnValue(mockProvider as any);
 
       // Options to pass
       const options = {
         region: { x: 100, y: 100, width: 800, height: 600 },
-        format: 'jpeg' as const
+        format: 'jpeg' as const,
       };
 
       // Execute
@@ -87,12 +93,14 @@ describe('Screenshot Functions', () => {
       expect(mockProvider.screen.getScreenshot).toHaveBeenCalledWith(options);
       expect(result).toEqual({
         success: true,
-        message: "Screenshot captured successfully",
-        content: [{
-          type: "image",
-          data: "test-image-data-base64",
-          mimeType: "image/jpeg"
-        }]
+        message: 'Screenshot captured successfully',
+        content: [
+          {
+            type: 'image',
+            data: 'test-image-data-base64',
+            mimeType: 'image/jpeg',
+          },
+        ],
       });
     });
 
@@ -102,10 +110,10 @@ describe('Screenshot Functions', () => {
         screen: {
           getScreenshot: vi.fn().mockImplementation(() => {
             throw new Error('Capture failed');
-          })
-        }
+          }),
+        },
       };
-      
+
       // Make createAutomationProvider return our mock
       vi.mocked(createAutomationProvider).mockReturnValue(mockProvider as any);
 
@@ -115,7 +123,7 @@ describe('Screenshot Functions', () => {
       // Verify
       expect(result).toEqual({
         success: false,
-        message: "Failed to capture screenshot: Capture failed"
+        message: 'Failed to capture screenshot: Capture failed',
       });
     });
   });

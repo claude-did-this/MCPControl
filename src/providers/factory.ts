@@ -10,12 +10,12 @@ const providerCache: Record<string, AutomationProvider> = {};
  */
 export function createAutomationProvider(type: string = 'keysender'): AutomationProvider {
   const providerType = type.toLowerCase();
-  
+
   // Return cached instance if available
   if (providerCache[providerType]) {
     return providerCache[providerType];
   }
-  
+
   let provider: AutomationProvider;
   switch (providerType) {
     case 'keysender':
@@ -24,7 +24,7 @@ export function createAutomationProvider(type: string = 'keysender'): Automation
     default:
       throw new Error(`Unknown provider type: ${providerType}`);
   }
-  
+
   // Cache the instance
   providerCache[providerType] = provider;
   return provider;

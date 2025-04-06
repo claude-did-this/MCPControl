@@ -6,36 +6,36 @@ vi.mock('../providers/factory.js', () => ({
     screen: {
       getScreenSize: vi.fn().mockReturnValue({
         success: true,
-        message: "Screen size retrieved successfully",
+        message: 'Screen size retrieved successfully',
         data: {
           width: 1920,
-          height: 1080
-        }
+          height: 1080,
+        },
       }),
       getActiveWindow: vi.fn().mockReturnValue({
         success: true,
-        message: "Active window information retrieved successfully",
+        message: 'Active window information retrieved successfully',
         data: {
           title: 'Test Window',
           position: { x: 10, y: 20 },
-          size: { width: 800, height: 600 }
-        }
+          size: { width: 800, height: 600 },
+        },
       }),
       focusWindow: vi.fn().mockImplementation((title) => {
         if (title === 'Target') {
           return {
             success: true,
-            message: "Successfully focused window: Target"
+            message: 'Successfully focused window: Target',
           };
         } else if (title === 'Nonexistent') {
           return {
             success: false,
-            message: "Could not find window with title: Nonexistent"
+            message: 'Could not find window with title: Nonexistent',
           };
         } else {
           return {
             success: false,
-            message: "Failed to focus window: Cannot list windows"
+            message: 'Failed to focus window: Cannot list windows',
           };
         }
       }),
@@ -43,17 +43,17 @@ vi.mock('../providers/factory.js', () => ({
         if (title === 'Target') {
           return {
             success: true,
-            message: `Successfully resized window: Target to ${width}x${height}`
+            message: `Successfully resized window: Target to ${width}x${height}`,
           };
         } else if (title === 'Nonexistent') {
           return {
             success: false,
-            message: "Could not find window with title: Nonexistent"
+            message: 'Could not find window with title: Nonexistent',
           };
         } else {
           return {
             success: false,
-            message: "Failed to resize window: Cannot list windows"
+            message: 'Failed to resize window: Cannot list windows',
           };
         }
       }),
@@ -61,29 +61,29 @@ vi.mock('../providers/factory.js', () => ({
         if (title === 'Target') {
           return {
             success: true,
-            message: `Successfully repositioned window: Target to (${x},${y})`
+            message: `Successfully repositioned window: Target to (${x},${y})`,
           };
         } else if (title === 'Nonexistent') {
           return {
             success: false,
-            message: "Could not find window with title: Nonexistent"
+            message: 'Could not find window with title: Nonexistent',
           };
         } else {
           return {
             success: false,
-            message: "Failed to reposition window: Cannot list windows"
+            message: 'Failed to reposition window: Cannot list windows',
           };
         }
-      })
-    }
-  })
+      }),
+    },
+  }),
 }));
-import { 
-  getScreenSize, 
-  getActiveWindow, 
+import {
+  getScreenSize,
+  getActiveWindow,
   focusWindow,
   resizeWindow,
-  repositionWindow
+  repositionWindow,
 } from './screen.js';
 
 describe('Screen Functions', () => {
@@ -104,11 +104,11 @@ describe('Screen Functions', () => {
       // Verify
       expect(result).toEqual({
         success: true,
-        message: "Screen size retrieved successfully",
+        message: 'Screen size retrieved successfully',
         data: {
           width: 1920,
-          height: 1080
-        }
+          height: 1080,
+        },
       });
     });
   });
@@ -121,12 +121,12 @@ describe('Screen Functions', () => {
       // Verify
       expect(result).toEqual({
         success: true,
-        message: "Active window information retrieved successfully",
+        message: 'Active window information retrieved successfully',
         data: {
           title: 'Test Window',
           position: { x: 10, y: 20 },
-          size: { width: 800, height: 600 }
-        }
+          size: { width: 800, height: 600 },
+        },
       });
     });
   });
@@ -139,7 +139,7 @@ describe('Screen Functions', () => {
       // Verify
       expect(result).toEqual({
         success: true,
-        message: "Successfully focused window: Target"
+        message: 'Successfully focused window: Target',
       });
     });
 
@@ -150,7 +150,7 @@ describe('Screen Functions', () => {
       // Verify
       expect(result).toEqual({
         success: false,
-        message: "Could not find window with title: Nonexistent"
+        message: 'Could not find window with title: Nonexistent',
       });
     });
 
@@ -161,7 +161,7 @@ describe('Screen Functions', () => {
       // Verify
       expect(result).toEqual({
         success: false,
-        message: "Failed to focus window: Cannot list windows"
+        message: 'Failed to focus window: Cannot list windows',
       });
     });
   });
@@ -174,7 +174,7 @@ describe('Screen Functions', () => {
       // Verify
       expect(result).toEqual({
         success: true,
-        message: "Successfully resized window: Target to 1024x768"
+        message: 'Successfully resized window: Target to 1024x768',
       });
     });
 
@@ -185,7 +185,7 @@ describe('Screen Functions', () => {
       // Verify
       expect(result).toEqual({
         success: false,
-        message: "Could not find window with title: Nonexistent"
+        message: 'Could not find window with title: Nonexistent',
       });
     });
 
@@ -196,7 +196,7 @@ describe('Screen Functions', () => {
       // Verify
       expect(result).toEqual({
         success: false,
-        message: "Failed to resize window: Cannot list windows"
+        message: 'Failed to resize window: Cannot list windows',
       });
     });
   });
@@ -209,7 +209,7 @@ describe('Screen Functions', () => {
       // Verify
       expect(result).toEqual({
         success: true,
-        message: "Successfully repositioned window: Target to (100,200)"
+        message: 'Successfully repositioned window: Target to (100,200)',
       });
     });
 
@@ -220,7 +220,7 @@ describe('Screen Functions', () => {
       // Verify
       expect(result).toEqual({
         success: false,
-        message: "Could not find window with title: Nonexistent"
+        message: 'Could not find window with title: Nonexistent',
       });
     });
 
@@ -231,7 +231,7 @@ describe('Screen Functions', () => {
       // Verify
       expect(result).toEqual({
         success: false,
-        message: "Failed to reposition window: Cannot list windows"
+        message: 'Failed to reposition window: Cannot list windows',
       });
     });
   });

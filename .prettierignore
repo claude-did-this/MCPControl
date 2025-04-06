@@ -1,0 +1,10 @@
+# Build output
+build/
+coverage/
+
+# Dependencies
+node_modules/
+
+# Misc
+.DS_Store
+*.log

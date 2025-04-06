@@ -9,8 +9,8 @@ vi.mock('./keysender/index.js', () => {
       keyboard: {},
       mouse: {},
       screen: {},
-      clipboard: {}
-    }))
+      clipboard: {},
+    })),
   };
 });
 

@@ -1,4 +1,11 @@
-import { MousePosition, KeyboardInput, KeyCombination, KeyHoldOperation, ScreenshotOptions, ClipboardInput } from '../types/common.js';
+import {
+  MousePosition,
+  KeyboardInput,
+  KeyCombination,
+  KeyHoldOperation,
+  ScreenshotOptions,
+  ClipboardInput,
+} from '../types/common.js';
 import { WindowsControlResponse } from '../types/responses.js';
 
 export interface KeyboardAutomation {
@@ -14,7 +21,11 @@ export interface MouseAutomation {
   doubleClick(position?: MousePosition): WindowsControlResponse;
   getCursorPosition(): WindowsControlResponse;
   scrollMouse(amount: number): WindowsControlResponse;
-  dragMouse(from: MousePosition, to: MousePosition, button?: 'left' | 'right' | 'middle'): WindowsControlResponse;
+  dragMouse(
+    from: MousePosition,
+    to: MousePosition,
+    button?: 'left' | 'right' | 'middle',
+  ): WindowsControlResponse;
   clickAt(x: number, y: number, button?: 'left' | 'right' | 'middle'): WindowsControlResponse;
 }
 

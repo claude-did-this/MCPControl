@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setupTools } from './tools.js';
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { ListToolsRequestSchema, CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
 // Mock all tool modules
 vi.mock('../tools/mouse.js', () => ({
@@ -11,7 +11,7 @@ vi.mock('../tools/mouse.js', () => ({
   getCursorPosition: vi.fn(),
   scrollMouse: vi.fn(),
   dragMouse: vi.fn(),
-  clickAt: vi.fn()
+  clickAt: vi.fn(),
 }));
 
 vi.mock('../tools/keyboard.js', () => ({
@@ -19,9 +19,9 @@ vi.mock('../tools/keyboard.js', () => ({
   pressKey: vi.fn(() => ({ success: true, message: 'Key pressed' })),
   pressKeyCombination: vi.fn().mockResolvedValue({
     success: true,
-    message: 'Pressed key combination: control+c'
+    message: 'Pressed key combination: control+c',
   }),
-  holdKey: vi.fn()
+  holdKey: vi.fn(),
 }));
 
 vi.mock('../tools/screen.js', () => ({
@@ -31,7 +31,7 @@ vi.mock('../tools/screen.js', () => ({
   resizeWindow: vi.fn(),
   repositionWindow: vi.fn(),
   minimizeWindow: vi.fn(),
-  restoreWindow: vi.fn()
+  restoreWindow: vi.fn(),
 }));
 
 // Mock the automation provider factory
@@ -42,11 +42,11 @@ vi.mock('../providers/factory.js', () => {
     pressKey: vi.fn(() => ({ success: true, message: 'Key pressed' })),
     pressKeyCombination: vi.fn().mockResolvedValue({
       success: true,
-      message: 'Pressed key combination: control+c'
+      message: 'Pressed key combination: control+c',
     }),
-    holdKey: vi.fn()
+    holdKey: vi.fn(),
   };
-  
+
   const mockMouseAutomation = {
     moveMouse: vi.fn(() => ({ success: true, message: 'Mouse moved' })),
     clickMouse: vi.fn(),
@@ -54,32 +54,32 @@ vi.mock('../providers/factory.js', () => {
     getCursorPosition: vi.fn(),
     scrollMouse: vi.fn(),
     dragMouse: vi.fn(),
-    clickAt: vi.fn()
+    clickAt: vi.fn(),
   };
-  
+
   const mockScreenAutomation = {
     getScreenSize: vi.fn(),
     getActiveWindow: vi.fn(),
     focusWindow: vi.fn(),
     resizeWindow: vi.fn(),
     repositionWindow: vi.fn(),
-    getScreenshot: vi.fn()
+    getScreenshot: vi.fn(),
   };
-  
+
   const mockClipboardAutomation = {
     getClipboardContent: vi.fn(),
     setClipboardContent: vi.fn(),
     hasClipboardText: vi.fn(),
-    clearClipboard: vi.fn()
+    clearClipboard: vi.fn(),
   };
-  
+
   return {
     createAutomationProvider: vi.fn(() => ({
       keyboard: mockKeyboardAutomation,
       mouse: mockMouseAutomation,
       screen: mockScreenAutomation,
-      clipboard: mockClipboardAutomation
-    }))
+      clipboard: mockClipboardAutomation,
+    })),
   };
 });
 
@@ -103,7 +103,7 @@ describe('Tools Handler', () => {
         } else if (schema === CallToolRequestSchema) {
           callToolHandler = handler;
         }
-      })
+      }),
     } as unknown as Server;
 
     // Setup tools with mock server and mock provider
@@ -114,8 +114,14 @@ describe('Tools Handler', () => {
   describe('Tool Registration', () => {
     it('should register both request handlers', () => {
       expect(mockServer.setRequestHandler).toHaveBeenCalledTimes(2);
-      expect(mockServer.setRequestHandler).toHaveBeenCalledWith(ListToolsRequestSchema, expect.any(Function));
-      expect(mockServer.setRequestHandler).toHaveBeenCalledWith(CallToolRequestSchema, expect.any(Function));
+      expect(mockServer.setRequestHandler).toHaveBeenCalledWith(
+        ListToolsRequestSchema,
+        expect.any(Function),
+      );
+      expect(mockServer.setRequestHandler).toHaveBeenCalledWith(
+        CallToolRequestSchema,
+        expect.any(Function),
+      );
     });
 
     it('should return list of available tools', async () => {
@@ -136,14 +142,14 @@ describe('Tools Handler', () => {
       const result = await callToolHandler({
         params: {
           name: 'move_mouse',
-          arguments: { x: 100, y: 200 }
-        }
+          arguments: { x: 100, y: 200 },
+        },
       });
 
       expect(mockProvider.mouse.moveMouse).toHaveBeenCalledWith({ x: 100, y: 200 });
       expect(JSON.parse(result.content[0].text)).toEqual({
         success: true,
-        message: 'Mouse moved'
+        message: 'Mouse moved',
       });
     });
 
@@ -154,67 +160,73 @@ describe('Tools Handler', () => {
       const result = await callToolHandler({
         params: {
           name: 'type_text',
-          arguments: { text: 'Hello World' }
-        }
+          arguments: { text: 'Hello World' },
+        },
       });
 
       expect(mockProvider.keyboard.typeText).toHaveBeenCalledWith({ text: 'Hello World' });
       expect(JSON.parse(result.content[0].text)).toEqual({
         success: true,
-        message: 'Text typed'
+        message: 'Text typed',
       });
     });
 
     it('should execute click_mouse tool with default button', async () => {
       const mockProvider = vi.mocked(createAutomationProvider)();
-      vi.mocked(mockProvider.mouse.clickMouse).mockReturnValueOnce({ success: true, message: 'Mouse clicked' });
+      vi.mocked(mockProvider.mouse.clickMouse).mockReturnValueOnce({
+        success: true,
+        message: 'Mouse clicked',
+      });
 
       const result = await callToolHandler({
         params: {
           name: 'click_mouse',
-          arguments: {}
-        }
+          arguments: {},
+        },
       });
 
       expect(mockProvider.mouse.clickMouse).toHaveBeenCalledWith('left');
       expect(JSON.parse(result.content[0].text)).toEqual({
         success: true,
-        message: 'Mouse clicked'
+        message: 'Mouse clicked',
       });
     });
 
     it('should execute click_mouse tool with specified button', async () => {
       const mockProvider = vi.mocked(createAutomationProvider)();
-      vi.mocked(mockProvider.mouse.clickMouse).mockReturnValueOnce({ success: true, message: 'Right mouse clicked' });
+      vi.mocked(mockProvider.mouse.clickMouse).mockReturnValueOnce({
+        success: true,
+        message: 'Right mouse clicked',
+      });
 
       const result = await callToolHandler({
         params: {
           name: 'click_mouse',
-          arguments: { button: 'right' }
-        }
+          arguments: { button: 'right' },
+        },
       });
 
       expect(mockProvider.mouse.clickMouse).toHaveBeenCalledWith('right');
       expect(JSON.parse(result.content[0].text)).toEqual({
         success: true,
-        message: 'Right mouse clicked'
+        message: 'Right mouse clicked',
       });
     });
 
     it('should execute press_key tool with valid arguments', async () => {
       const mockProvider = vi.mocked(createAutomationProvider)();
-      
+
       const result = await callToolHandler({
         params: {
           name: 'press_key',
-          arguments: { key: 'enter' }
-        }
+          arguments: { key: 'enter' },
+        },
       });
 
       expect(mockProvider.keyboard.pressKey).toHaveBeenCalledWith('enter');
       expect(JSON.parse(result.content[0].text)).toEqual({
         success: true,
-        message: 'Key pressed'
+        message: 'Key pressed',
       });
     });
   });
@@ -224,8 +236,8 @@ describe('Tools Handler', () => {
       const result = await callToolHandler({
         params: {
           name: 'invalid_tool',
-          arguments: {}
-        }
+          arguments: {},
+        },
       });
 
       expect(result.isError).toBe(true);
@@ -236,8 +248,8 @@ describe('Tools Handler', () => {
       const result = await callToolHandler({
         params: {
           name: 'move_mouse',
-          arguments: { invalid: 'args' }
-        }
+          arguments: { invalid: 'args' },
+        },
       });
 
       expect(result.isError).toBe(true);
@@ -255,8 +267,8 @@ describe('Tools Handler', () => {
       const result = await callToolHandler({
         params: {
           name: 'press_key',
-          arguments: { key: 'enter' }
-        }
+          arguments: { key: 'enter' },
+        },
       });
 
       expect(result.isError).toBe(true);
@@ -271,16 +283,16 @@ describe('Tools Handler', () => {
       const validResult = await callToolHandler({
         params: {
           name: 'move_mouse',
-          arguments: { x: 100, y: 200 }
-        }
+          arguments: { x: 100, y: 200 },
+        },
       });
       expect(JSON.parse(validResult.content[0].text)).toHaveProperty('success');
 
       const invalidResult = await callToolHandler({
         params: {
           name: 'move_mouse',
-          arguments: { x: 'invalid', y: 200 }
-        }
+          arguments: { x: 'invalid', y: 200 },
+        },
       });
       expect(invalidResult.isError).toBe(true);
     });
@@ -291,16 +303,16 @@ describe('Tools Handler', () => {
       const validResult = await callToolHandler({
         params: {
           name: 'type_text',
-          arguments: { text: 'Hello' }
-        }
+          arguments: { text: 'Hello' },
+        },
       });
       expect(JSON.parse(validResult.content[0].text)).toHaveProperty('success');
 
       const invalidResult = await callToolHandler({
         params: {
           name: 'type_text',
-          arguments: { text: 123 }
-        }
+          arguments: { text: 123 },
+        },
       });
       expect(invalidResult.isError).toBe(true);
     });
@@ -309,19 +321,19 @@ describe('Tools Handler', () => {
       const validResult = await callToolHandler({
         params: {
           name: 'press_key_combination',
-          arguments: { keys: ['control', 'c'] }
-        }
+          arguments: { keys: ['control', 'c'] },
+        },
       });
       expect(JSON.parse(validResult.content[0].text)).toEqual({
         success: true,
-        message: 'Pressed key combination: control+c'
+        message: 'Pressed key combination: control+c',
       });
 
       const invalidResult = await callToolHandler({
         params: {
           name: 'press_key_combination',
-          arguments: { keys: 'invalid' }
-        }
+          arguments: { keys: 'invalid' },
+        },
       });
       expect(invalidResult.isError).toBe(true);
     });

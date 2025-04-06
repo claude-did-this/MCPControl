@@ -8,23 +8,26 @@ vi.mock('../providers/factory.js', () => ({
     keyboard: {
       typeText: vi.fn().mockImplementation(() => ({
         success: true,
-        message: 'Typed text successfully'
+        message: 'Typed text successfully',
       })),
       pressKey: vi.fn().mockImplementation((key) => ({
         success: true,
-        message: `Pressed key: ${key}`
+        message: `Pressed key: ${key}`,
       })),
       pressKeyCombination: vi.fn().mockImplementation((combination) => ({
         success: true,
-        message: `Pressed key combination: ${combination.keys.join('+')}`
+        message: `Pressed key combination: ${combination.keys.join('+')}`,
       })),
-      holdKey: vi.fn().mockImplementation((operation) => 
+      holdKey: vi.fn().mockImplementation((operation) =>
         operation.state === 'down'
-          ? { success: true, message: `Key ${operation.key} held successfully for ${operation.duration}ms` }
-          : { success: true, message: `Key ${operation.key} released successfully` }
-      )
-    }
-  })
+          ? {
+              success: true,
+              message: `Key ${operation.key} held successfully for ${operation.duration}ms`,
+            }
+          : { success: true, message: `Key ${operation.key} released successfully` },
+      ),
+    },
+  }),
 }));
 
 describe('Keyboard Tools', () => {
@@ -36,10 +39,10 @@ describe('Keyboard Tools', () => {
     it('should successfully type text', () => {
       const input: KeyboardInput = { text: 'Hello World' };
       const result = typeText(input);
-      
+
       expect(result).toEqual({
         success: true,
-        message: 'Typed text successfully'
+        message: 'Typed text successfully',
       });
     });
 
@@ -50,7 +53,7 @@ describe('Keyboard Tools', () => {
       expect(result.success).toBe(false);
       expect(result.message).toContain('Text is required');
     });
-    
+
     it('should handle errors when text is too long', () => {
       // Create a string that's too long
       const longText = 'a'.repeat(1001);
@@ -68,7 +71,7 @@ describe('Keyboard Tools', () => {
 
       expect(result).toEqual({
         success: true,
-        message: 'Pressed key: a'
+        message: 'Pressed key: a',
       });
     });
 
@@ -87,7 +90,7 @@ describe('Keyboard Tools', () => {
 
       expect(result).toEqual({
         success: true,
-        message: 'Pressed key combination: control+c'
+        message: 'Pressed key combination: control+c',
       });
     });
 
@@ -108,18 +111,18 @@ describe('Keyboard Tools', () => {
       const operation: KeyHoldOperation = {
         key: 'shift',
         duration: 1000,
-        state: 'down'
+        state: 'down',
       };
 
       const holdPromise = holdKey(operation);
-      
+
       // Fast-forward through the duration
       await vi.runAllTimersAsync();
       const result = await holdPromise;
 
       expect(result).toEqual({
         success: true,
-        message: 'Key shift held successfully for 1000ms'
+        message: 'Key shift held successfully for 1000ms',
       });
     });
 
@@ -127,14 +130,14 @@ describe('Keyboard Tools', () => {
       const operation: KeyHoldOperation = {
         key: 'shift',
         duration: 0,
-        state: 'up'
+        state: 'up',
       };
 
       const result = await holdKey(operation);
 
       expect(result).toEqual({
         success: true,
-        message: 'Key shift released successfully'
+        message: 'Key shift released successfully',
       });
     });
 
@@ -143,7 +146,7 @@ describe('Keyboard Tools', () => {
         // @ts--error - Testing invalid input
         key: 'invalid_key',
         duration: 1000,
-        state: 'down'
+        state: 'down',
       };
 
       const result = await holdKey(operation);

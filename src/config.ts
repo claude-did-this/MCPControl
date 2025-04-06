@@ -2,8 +2,8 @@
  * Configuration interface for automation settings
  */
 export interface AutomationConfig {
-  /** 
-   * The provider to use for automation 
+  /**
+   * The provider to use for automation
    * Currently supported: 'keysender'
    */
   provider: string;
@@ -14,6 +14,6 @@ export interface AutomationConfig {
  */
 export function loadConfig(): AutomationConfig {
   return {
-    provider: process.env.AUTOMATION_PROVIDER || 'keysender'
+    provider: process.env.AUTOMATION_PROVIDER || 'keysender',
   };
 }

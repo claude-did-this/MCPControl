@@ -7,15 +7,15 @@ vi.mock('../providers/factory.js', () => ({
     mouse: {
       clickAt: vi.fn().mockImplementation((x, y, button) => ({
         success: true,
-        message: `Clicked ${button} button at position (${x}, ${y})`
+        message: `Clicked ${button} button at position (${x}, ${y})`,
       })),
       getCursorPosition: vi.fn().mockReturnValue({
         success: true,
         message: 'Current cursor position',
-        data: { x: 10, y: 20 }
-      })
-    }
-  })
+        data: { x: 10, y: 20 },
+      }),
+    },
+  }),
 }));
 
 describe('Mouse Tools', () => {

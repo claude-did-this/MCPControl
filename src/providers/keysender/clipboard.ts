@@ -5,7 +5,7 @@ import { ClipboardAutomation } from '../../interfaces/automation.js';
 
 /**
  * Keysender implementation of the ClipboardAutomation interface
- * 
+ *
  * Note: Since keysender doesn't provide direct clipboard functionality,
  * we use the clipboardy library (same as the NutJS implementation)
  */
@@ -16,12 +16,12 @@ export class KeysenderClipboardAutomation implements ClipboardAutomation {
       return {
         success: true,
         message: 'Clipboard content retrieved',
-        data: content
+        data: content,
       };
     } catch (error) {
       return {
         success: false,
-        message: `Failed to get clipboard content: ${error instanceof Error ? error.message : String(error)}`
+        message: `Failed to get clipboard content: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   }
@@ -31,12 +31,12 @@ export class KeysenderClipboardAutomation implements ClipboardAutomation {
       await clipboardy.write(input.text);
       return {
         success: true,
-        message: 'Clipboard content set'
+        message: 'Clipboard content set',
       };
     } catch (error) {
       return {
         success: false,
-        message: `Failed to set clipboard content: ${error instanceof Error ? error.message : String(error)}`
+        message: `Failed to set clipboard content: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   }
@@ -48,12 +48,12 @@ export class KeysenderClipboardAutomation implements ClipboardAutomation {
       return {
         success: true,
         message: `Clipboard ${hasText ? 'has' : 'does not have'} text`,
-        data: hasText
+        data: hasText,
       };
     } catch (error) {
       return {
         success: false,
-        message: `Failed to check clipboard: ${error instanceof Error ? error.message : String(error)}`
+        message: `Failed to check clipboard: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   }
@@ -63,12 +63,12 @@ export class KeysenderClipboardAutomation implements ClipboardAutomation {
       await clipboardy.write('');
       return {
         success: true,
-        message: 'Clipboard cleared'
+        message: 'Clipboard cleared',
       };
     } catch (error) {
       return {
         success: false,
-        message: `Failed to clear clipboard: ${error instanceof Error ? error.message : String(error)}`
+        message: `Failed to clear clipboard: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   }

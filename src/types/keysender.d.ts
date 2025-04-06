@@ -35,13 +35,13 @@ declare module 'keysender' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   class Hardware {
     constructor(windowHandle?: number);
-    
+
     keyboard: {
       printText(text: string): Promise<void>;
       sendKey(key: string): Promise<void>;
       toggleKey(key: string, down: boolean): Promise<void>;
     };
-    
+
     mouse: {
       moveTo(x: number, y: number): Promise<void>;
       click(button?: string): Promise<void>;
@@ -49,7 +49,7 @@ declare module 'keysender' {
       getPos(): MousePosition;
       scrollWheel(amount: number): Promise<void>;
     };
-    
+
     workwindow: {
       get(): WindowInfo;
       set(handle: number): boolean;
@@ -58,7 +58,10 @@ declare module 'keysender' {
       setForeground(): void;
       isForeground(): boolean;
       isOpen(): boolean;
-      capture(region?: { x: number; y: number; width: number; height: number }, format?: string): CaptureResult;
+      capture(
+        region?: { x: number; y: number; width: number; height: number },
+        format?: string,
+      ): CaptureResult;
       capture(format?: string): CaptureResult;
     };
   }
@@ -69,12 +72,12 @@ declare module 'keysender' {
   function getAllWindows(): WindowInfo[];
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function getWindowChildren(handle: number): WindowInfo[];
-  
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const KeyboardButton: { [key: string]: string };
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const MouseButton: { [key: string]: string };
-  
+
   const keysender: {
     Hardware: typeof Hardware;
     KeyboardButton: typeof KeyboardButton;
@@ -83,6 +86,6 @@ declare module 'keysender' {
     getAllWindows: typeof getAllWindows;
     getWindowChildren: typeof getWindowChildren;
   };
-  
+
   export default keysender;
 }
