@@ -29,7 +29,7 @@
     "mcp-control": "^0.1.15",
     "sharp": "^0.34.1",
     "uuid": "^11.1.0",
-    "zod": "^3.24.2"
+    "zod": "^3.24.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.24.0",
