@@ -65,9 +65,17 @@ jobs:
       
       - name: Verify package contents
         run: |
-          $package = npm pack
-          tar -xf $package
-          Get-Childitem -Force package/
+          # Just check what will be included in the package without actually extracting
+          $package = npm pack --dry-run
+          
+          # List the build directory to verify it exists and has content
+          Write-Host "`nVerifying build directory contents:"
+          if (Test-Path -Path "./build") {
+            Get-ChildItem -Path "./build" -Recurse -Depth 1 | Select-Object FullName
+          } else {
+            Write-Error "Build directory not found!"
+            exit 1
+          }
       
       - name: Publish to NPM
         run: npm publish
