@@ -17,9 +17,19 @@ vi.mock('../tools/mouse.js', () => ({
 vi.mock('../tools/keyboard.js', () => ({
   typeText: vi.fn(() => ({ success: true, message: 'Text typed' })),
   pressKey: vi.fn(() => ({ success: true, message: 'Key pressed' })),
-  pressKeyCombination: vi.fn().mockResolvedValue({
-    success: true,
-    message: 'Pressed key combination: control+c',
+  pressKeyCombination: vi.fn().mockImplementation((combination) => {
+    // Check if the combination includes control key
+    if (combination.keys.some((k) => k.toLowerCase() === 'control')) {
+      return Promise.resolve({
+        success: false,
+        message: 'Control key combinations are temporarily disabled due to stability issues',
+      });
+    } else {
+      return Promise.resolve({
+        success: true,
+        message: `Pressed key combination: ${combination.keys.join('+')}`,
+      });
+    }
   }),
   holdKey: vi.fn(),
 }));
@@ -40,9 +50,19 @@ vi.mock('../providers/factory.js', () => {
   const mockKeyboardAutomation = {
     typeText: vi.fn(() => ({ success: true, message: 'Text typed' })),
     pressKey: vi.fn(() => ({ success: true, message: 'Key pressed' })),
-    pressKeyCombination: vi.fn().mockResolvedValue({
-      success: true,
-      message: 'Pressed key combination: control+c',
+    pressKeyCombination: vi.fn().mockImplementation((combination) => {
+      // Check if the combination includes control key
+      if (combination.keys.some((k) => k.toLowerCase() === 'control')) {
+        return Promise.resolve({
+          success: false,
+          message: 'Control key combinations are temporarily disabled due to stability issues',
+        });
+      } else {
+        return Promise.resolve({
+          success: true,
+          message: `Pressed key combination: ${combination.keys.join('+')}`,
+        });
+      }
     }),
     holdKey: vi.fn(),
   };
@@ -318,16 +338,32 @@ describe('Tools Handler', () => {
     });
 
     it('should validate key combination arguments', async () => {
+      // Use alt+f4 instead of control+c since control combinations are now blocked
       const validResult = await callToolHandler({
+        params: {
+          name: 'press_key_combination',
+          arguments: { keys: ['alt', 'f4'] },
+        },
+      });
+      expect(JSON.parse(validResult.content[0].text)).toEqual({
+        success: true,
+        message: 'Pressed key combination: alt+f4',
+      });
+
+      // Control combinations should be rejected at the validation level
+      // This happens before the tool is even called, resulting in an error
+      const ctrlResult = await callToolHandler({
         params: {
           name: 'press_key_combination',
           arguments: { keys: ['control', 'c'] },
         },
       });
-      expect(JSON.parse(validResult.content[0].text)).toEqual({
-        success: true,
-        message: 'Pressed key combination: control+c',
-      });
+
+      // Should be an error response due to validation failure
+      expect(ctrlResult.isError).toBe(true);
+      expect(ctrlResult.content[0].text).toContain(
+        'Control key combinations are temporarily disabled',
+      );
 
       const invalidResult = await callToolHandler({
         params: {
