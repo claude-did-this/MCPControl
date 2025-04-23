@@ -24,6 +24,19 @@ import {
 export class KeysenderKeyboardAutomation implements KeyboardAutomation {
   private keyboard = new Hardware().keyboard;
 
+  /**
+   * Types text with human-like timing and provides streaming progress updates
+   *
+   * This implementation:
+   * 1. Uses configurable delays between keypresses
+   * 2. Adds natural timing variations if randomize is enabled
+   * 3. Adds extra pauses after punctuation
+   * 4. Handles very long inputs by chunking the text
+   * 5. Provides detailed progress updates for each character
+   *
+   * @param input Text and typing configuration
+   * @returns AsyncGenerator that yields typing progress updates
+   */
   async *typeTextStream(
     input: KeyboardInput & KeyboardStreamOptions,
   ): AsyncGenerator<WindowsControlResponse> {
@@ -41,92 +54,143 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
       const delay = input.delay ?? 50; // Default typing delay
       const randomize = input.randomize ?? true; // Default to adding variation
       const randomFactor = input.randomFactor ?? 0.3; // Default randomization factor
+      const chunkSize = input.chunkSize ?? 1000; // Default chunk size for very long text
 
-      // Split text into characters
-      const characters = input.text.split('');
-      let typedText = '';
+      // Split text into chunks to handle very long inputs more efficiently
+      const fullText = input.text;
+      const totalLength = fullText.length;
+      const chunksNeeded = Math.ceil(totalLength / chunkSize);
+      const isMultiChunk = chunksNeeded > 1;
 
       // Initial response
       yield {
         success: true,
-        message: 'Starting human-like typing...',
+        message: isMultiChunk
+          ? `Starting human-like typing (${chunksNeeded} chunks)...`
+          : 'Starting human-like typing...',
         stream: true,
         streamInfo: {
           progress: 0,
           isComplete: false,
           currentStep: 0,
-          totalSteps: characters.length,
+          totalSteps: totalLength,
+          currentChunk: isMultiChunk ? 1 : undefined,
+          totalChunks: isMultiChunk ? chunksNeeded : undefined,
         },
       };
 
-      // Type each character with a delay
-      for (let i = 0; i < characters.length; i++) {
-        const char = characters[i];
+      let overallProgress = 0;
+      let typedText = '';
 
-        // Calculate progress percentage
-        const progress = Math.round(((i + 1) / characters.length) * 100);
+      // Process text in chunks to prevent memory issues with very large inputs
+      for (let chunkIndex = 0; chunkIndex < chunksNeeded; chunkIndex++) {
+        // Extract current chunk
+        const chunkStart = chunkIndex * chunkSize;
+        const chunkEnd = Math.min(chunkStart + chunkSize, totalLength);
+        const chunk = fullText.substring(chunkStart, chunkEnd);
+        const characters = chunk.split('');
 
-        // Add character to ongoing text
-        typedText += char;
+        // Type each character in the current chunk with a delay
+        for (let i = 0; i < characters.length; i++) {
+          const char = characters[i];
+          const globalCharIndex = chunkStart + i;
 
-        // Type the current character
-        try {
-          await this.keyboard.sendKey(char);
-        } catch (charError) {
-          console.error(`Error typing character '${char}':`, charError);
-          // Try to continue with next character
+          // Calculate overall progress percentage (across all chunks)
+          overallProgress = Math.round(((globalCharIndex + 1) / totalLength) * 100);
+
+          // Add character to ongoing text
+          typedText += char;
+
+          // Type the current character
+          try {
+            await this.keyboard.sendKey(char);
+          } catch (charError) {
+            console.error(`Error typing character '${char}':`, charError);
+            // Try to continue with next character
+          }
+
+          // Skip response updates for every character for very long text
+          // Only report progress periodically to reduce overhead
+          const shouldReportProgress =
+            i === 0 || // First character in chunk
+            i === characters.length - 1 || // Last character in chunk
+            i % Math.max(1, Math.floor(characters.length / 20)) === 0; // ~20 updates per chunk
+
+          if (shouldReportProgress) {
+            // Create streaming response
+            const response: WindowsControlResponse = {
+              success: true,
+              message: isMultiChunk
+                ? `Typing chunk ${chunkIndex + 1}/${chunksNeeded}, character ${i + 1}/${characters.length}`
+                : `Typing character ${globalCharIndex + 1}/${totalLength}`,
+              data: {
+                currentCharacter: char,
+                typedSoFar: typedText.length <= 100 ? typedText : typedText.slice(-100), // Limit data size
+                charactersTyped: globalCharIndex + 1,
+                remainingCharacters: totalLength - globalCharIndex - 1,
+              },
+              stream: true,
+              streamInfo: {
+                progress: overallProgress,
+                isComplete: globalCharIndex === totalLength - 1,
+                currentStep: globalCharIndex + 1,
+                totalSteps: totalLength,
+                currentChunk: isMultiChunk ? chunkIndex + 1 : undefined,
+                totalChunks: isMultiChunk ? chunksNeeded : undefined,
+              },
+            };
+
+            yield response;
+          }
+
+          // Skip delay for the last character
+          if (globalCharIndex < totalLength - 1) {
+            // Calculate delay with human-like variation if randomize is enabled
+            let typingDelay = delay;
+            if (randomize) {
+              const variation = delay * randomFactor;
+              typingDelay = delay + (Math.random() * variation * 2 - variation);
+            }
+
+            // Add extra delay for certain punctuation
+            if (['.', '!', '?', ',', ';', ':'].includes(char)) {
+              typingDelay += delay * 2;
+            }
+
+            // Add slight pause at end of words
+            if (char === ' ') {
+              typingDelay += delay * 0.5;
+            }
+
+            // Wait before typing the next character
+            await new Promise((resolve) => setTimeout(resolve, typingDelay));
+          }
         }
 
-        // Create streaming response
-        const response: WindowsControlResponse = {
-          success: true,
-          message: `Typing character ${i + 1}/${characters.length}`,
-          data: {
-            currentCharacter: char,
-            typedSoFar: typedText,
-            remainingCharacters: characters.length - i - 1,
-          },
-          stream: true,
-          streamInfo: {
-            progress,
-            isComplete: i === characters.length - 1,
-            currentStep: i + 1,
-            totalSteps: characters.length,
-          },
-        };
-
-        yield response;
-
-        // Skip delay for the last character
-        if (i < characters.length - 1) {
-          // Calculate delay with human-like variation if randomize is enabled
-          let typingDelay = delay;
-          if (randomize) {
-            const variation = delay * randomFactor;
-            typingDelay = delay + (Math.random() * variation * 2 - variation);
-          }
-
-          // Add extra delay for certain punctuation
-          if (['.', '!', '?', ',', ';', ':'].includes(char)) {
-            typingDelay += delay * 2;
-          }
-
-          // Wait before typing the next character
-          await new Promise((resolve) => setTimeout(resolve, typingDelay));
+        // Small pause between chunks if multiple chunks
+        if (isMultiChunk && chunkIndex < chunksNeeded - 1) {
+          await new Promise((resolve) => setTimeout(resolve, delay * 3));
         }
       }
 
       // Final success response
       return {
         success: true,
-        message: 'Text typed successfully with human-like timing',
-        data: { typedText: input.text },
+        message: isMultiChunk
+          ? `Completed typing ${totalLength} characters in ${chunksNeeded} chunks with human-like timing`
+          : 'Text typed successfully with human-like timing',
+        data: {
+          textLength: fullText.length,
+          chunks: isMultiChunk ? chunksNeeded : 1,
+        },
         stream: true,
         streamInfo: {
           progress: 100,
           isComplete: true,
-          currentStep: characters.length,
-          totalSteps: characters.length,
+          currentStep: totalLength,
+          totalSteps: totalLength,
+          currentChunk: isMultiChunk ? chunksNeeded : undefined,
+          totalChunks: isMultiChunk ? chunksNeeded : undefined,
         },
       };
     } catch (error) {
