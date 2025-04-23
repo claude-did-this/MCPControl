@@ -193,6 +193,11 @@ export function setupTools(server: McpServer, provider: AutomationProvider): voi
             type: 'number',
             description: 'Factor for speed randomization, 0-1 (default: 0.3)',
           },
+          chunkSize: {
+            type: 'number',
+            description:
+              'Maximum chunk size for processing very long text (default: 1000 characters)',
+          },
         },
         required: ['text'],
       },
@@ -421,6 +426,7 @@ export function setupTools(server: McpServer, provider: AutomationProvider): voi
                 delay: typeof args.delay === 'number' ? args.delay : undefined,
                 randomize: typeof args.randomize === 'boolean' ? args.randomize : undefined,
                 randomFactor: typeof args.randomFactor === 'number' ? args.randomFactor : undefined,
+                chunkSize: typeof args.chunkSize === 'number' ? args.chunkSize : undefined,
               };
 
               const typeTextStream = await Promise.resolve(
