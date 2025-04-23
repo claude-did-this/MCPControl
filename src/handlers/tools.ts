@@ -1,4 +1,4 @@
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { setupTools as setupToolsWithZod } from './tools.zod.js';
 import { AutomationProvider } from '../interfaces/provider.js';
 
@@ -9,6 +9,6 @@ import { AutomationProvider } from '../interfaces/provider.js';
  * @param server The Model Context Protocol server instance
  * @param provider The automation provider implementation
  */
-export function setupTools(server: Server, provider: AutomationProvider): void {
+export function setupTools(server: McpServer, provider: AutomationProvider): void {
   setupToolsWithZod(server, provider);
 }
