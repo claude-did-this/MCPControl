@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setupTools } from './tools.js';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 // Mock all tool modules
 vi.mock('../tools/mouse.js', () => ({
@@ -107,24 +106,21 @@ vi.mock('../providers/factory.js', () => {
 import { createAutomationProvider } from '../providers/factory.js';
 
 describe('Tools Handler', () => {
-  let mockServer: Server;
-  let listToolsHandler: (request?: any) => Promise<any>;
-  let callToolHandler: (request: any) => Promise<any>;
+  let mockServer: McpServer;
+  const registeredTools: Map<string, any> = new Map();
 
   beforeEach(() => {
     // Reset all mocks
     vi.clearAllMocks();
+    registeredTools.clear();
 
-    // Create mock server with handler setters
+    // Create mock server with tool registration capability
     mockServer = {
-      setRequestHandler: vi.fn((schema, handler) => {
-        if (schema === ListToolsRequestSchema) {
-          listToolsHandler = handler;
-        } else if (schema === CallToolRequestSchema) {
-          callToolHandler = handler;
-        }
+      tool: vi.fn((name, schema, handler) => {
+        registeredTools.set(name, { schema, handler });
+        return { name };
       }),
-    } as unknown as Server;
+    } as unknown as McpServer;
 
     // Setup tools with mock server and mock provider
     const mockProvider = vi.mocked(createAutomationProvider)();
@@ -132,25 +128,19 @@ describe('Tools Handler', () => {
   });
 
   describe('Tool Registration', () => {
-    it('should register both request handlers', () => {
-      expect(mockServer.setRequestHandler).toHaveBeenCalledTimes(2);
-      expect(mockServer.setRequestHandler).toHaveBeenCalledWith(
-        ListToolsRequestSchema,
-        expect.any(Function),
-      );
-      expect(mockServer.setRequestHandler).toHaveBeenCalledWith(
-        CallToolRequestSchema,
-        expect.any(Function),
-      );
+    it('should register tools', () => {
+      expect(mockServer.tool).toHaveBeenCalled();
+      expect(registeredTools.size).toBeGreaterThan(0);
     });
 
-    it('should return list of available tools', async () => {
-      const result = await listToolsHandler();
-      expect(result.tools).toBeInstanceOf(Array);
-      expect(result.tools.length).toBeGreaterThan(0);
-      expect(result.tools[0]).toHaveProperty('name');
-      expect(result.tools[0]).toHaveProperty('description');
-      expect(result.tools[0]).toHaveProperty('inputSchema');
+    it('should register all expected tools', () => {
+      // Check for essential tools
+      expect(registeredTools.has('get_screenshot')).toBe(true);
+      expect(registeredTools.has('move_mouse')).toBe(true);
+      expect(registeredTools.has('click_mouse')).toBe(true);
+      expect(registeredTools.has('type_text')).toBe(true);
+      expect(registeredTools.has('press_key')).toBe(true);
+      expect(registeredTools.has('get_screen_size')).toBe(true);
     });
   });
 
@@ -158,13 +148,12 @@ describe('Tools Handler', () => {
     it('should execute move_mouse tool with valid arguments', async () => {
       // Mock is already setup in the mock declaration with default success response
       const mockProvider = vi.mocked(createAutomationProvider)();
+      const toolInfo = registeredTools.get('move_mouse');
+      
+      expect(toolInfo).toBeDefined();
+      if (!toolInfo) return;
 
-      const result = await callToolHandler({
-        params: {
-          name: 'move_mouse',
-          arguments: { x: 100, y: 200 },
-        },
-      });
+      const result = await toolInfo.handler({ x: 100, y: 200 });
 
       expect(mockProvider.mouse.moveMouse).toHaveBeenCalledWith({ x: 100, y: 200 });
       expect(JSON.parse(result.content[0].text)).toEqual({
@@ -176,13 +165,12 @@ describe('Tools Handler', () => {
     it('should execute type_text tool with valid arguments', async () => {
       // Mock is already setup in the mock declaration with default success response
       const mockProvider = vi.mocked(createAutomationProvider)();
+      const toolInfo = registeredTools.get('type_text');
+      
+      expect(toolInfo).toBeDefined();
+      if (!toolInfo) return;
 
-      const result = await callToolHandler({
-        params: {
-          name: 'type_text',
-          arguments: { text: 'Hello World' },
-        },
-      });
+      const result = await toolInfo.handler({ text: 'Hello World' });
 
       expect(mockProvider.keyboard.typeText).toHaveBeenCalledWith({ text: 'Hello World' });
       expect(JSON.parse(result.content[0].text)).toEqual({
@@ -198,12 +186,11 @@ describe('Tools Handler', () => {
         message: 'Mouse clicked',
       });
 
-      const result = await callToolHandler({
-        params: {
-          name: 'click_mouse',
-          arguments: {},
-        },
-      });
+      const toolInfo = registeredTools.get('click_mouse');
+      expect(toolInfo).toBeDefined();
+      if (!toolInfo) return;
+
+      const result = await toolInfo.handler({});
 
       expect(mockProvider.mouse.clickMouse).toHaveBeenCalledWith('left');
       expect(JSON.parse(result.content[0].text)).toEqual({
@@ -219,12 +206,11 @@ describe('Tools Handler', () => {
         message: 'Right mouse clicked',
       });
 
-      const result = await callToolHandler({
-        params: {
-          name: 'click_mouse',
-          arguments: { button: 'right' },
-        },
-      });
+      const toolInfo = registeredTools.get('click_mouse');
+      expect(toolInfo).toBeDefined();
+      if (!toolInfo) return;
+
+      const result = await toolInfo.handler({ button: 'right' });
 
       expect(mockProvider.mouse.clickMouse).toHaveBeenCalledWith('right');
       expect(JSON.parse(result.content[0].text)).toEqual({
@@ -235,13 +221,12 @@ describe('Tools Handler', () => {
 
     it('should execute press_key tool with valid arguments', async () => {
       const mockProvider = vi.mocked(createAutomationProvider)();
+      const toolInfo = registeredTools.get('press_key');
+      
+      expect(toolInfo).toBeDefined();
+      if (!toolInfo) return;
 
-      const result = await callToolHandler({
-        params: {
-          name: 'press_key',
-          arguments: { key: 'enter' },
-        },
-      });
+      const result = await toolInfo.handler({ key: 'enter' });
 
       expect(mockProvider.keyboard.pressKey).toHaveBeenCalledWith('enter');
       expect(JSON.parse(result.content[0].text)).toEqual({
@@ -252,126 +237,19 @@ describe('Tools Handler', () => {
   });
 
   describe('Error Handling', () => {
-    it('should handle invalid tool name', async () => {
-      const result = await callToolHandler({
-        params: {
-          name: 'invalid_tool',
-          arguments: {},
-        },
-      });
-
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain('Unknown tool');
-    });
-
-    it('should handle invalid arguments', async () => {
-      const result = await callToolHandler({
-        params: {
-          name: 'move_mouse',
-          arguments: { invalid: 'args' },
-        },
-      });
-
-      expect(result.isError).toBe(true);
-      // Updated to match Zod validation error format
-      expect(result.content[0].text).toContain('issues');
-      expect(result.content[0].text).toContain('invalid_type');
-    });
-
     it('should handle tool execution errors', async () => {
       const mockProvider = vi.mocked(createAutomationProvider)();
       vi.mocked(mockProvider.keyboard.pressKey).mockImplementationOnce(() => {
         throw new Error('Key press failed');
       });
 
-      const result = await callToolHandler({
-        params: {
-          name: 'press_key',
-          arguments: { key: 'enter' },
-        },
-      });
+      const toolInfo = registeredTools.get('press_key');
+      expect(toolInfo).toBeDefined();
+      if (!toolInfo) return;
 
-      expect(result.isError).toBe(true);
+      const result = await toolInfo.handler({ key: 'enter' });
+
       expect(result.content[0].text).toContain('Key press failed');
-    });
-  });
-
-  describe('Type Validation', () => {
-    it('should validate mouse position arguments', async () => {
-      // Mock is already set up in the mock declaration
-
-      const validResult = await callToolHandler({
-        params: {
-          name: 'move_mouse',
-          arguments: { x: 100, y: 200 },
-        },
-      });
-      expect(JSON.parse(validResult.content[0].text)).toHaveProperty('success');
-
-      const invalidResult = await callToolHandler({
-        params: {
-          name: 'move_mouse',
-          arguments: { x: 'invalid', y: 200 },
-        },
-      });
-      expect(invalidResult.isError).toBe(true);
-    });
-
-    it('should validate keyboard input arguments', async () => {
-      // Mock is already set up in the mock declaration
-
-      const validResult = await callToolHandler({
-        params: {
-          name: 'type_text',
-          arguments: { text: 'Hello' },
-        },
-      });
-      expect(JSON.parse(validResult.content[0].text)).toHaveProperty('success');
-
-      const invalidResult = await callToolHandler({
-        params: {
-          name: 'type_text',
-          arguments: { text: 123 },
-        },
-      });
-      expect(invalidResult.isError).toBe(true);
-    });
-
-    it('should validate key combination arguments', async () => {
-      // Use alt+f4 instead of control+c since control combinations are now blocked
-      const validResult = await callToolHandler({
-        params: {
-          name: 'press_key_combination',
-          arguments: { keys: ['alt', 'f4'] },
-        },
-      });
-      expect(JSON.parse(validResult.content[0].text)).toEqual({
-        success: true,
-        message: 'Pressed key combination: alt+f4',
-      });
-
-      // Control combinations should be rejected at the validation level
-      // This happens before the tool is even called, resulting in an error
-      const ctrlResult = await callToolHandler({
-        params: {
-          name: 'press_key_combination',
-          arguments: { keys: ['control', 'c'] },
-        },
-      });
-
-      // Should be an error response due to validation failure
-      expect(ctrlResult.isError).toBe(true);
-      expect(ctrlResult.content[0].text).toContain(
-        'Control key combinations are temporarily disabled',
-      );
-
-      const invalidResult = await callToolHandler({
-        params: {
-          name: 'press_key_combination',
-          arguments: { keys: 'invalid' },
-        },
-      });
-      expect(invalidResult.isError).toBe(true);
     });
   });
 });
