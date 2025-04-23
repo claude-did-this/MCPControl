@@ -19,7 +19,7 @@ vi.mock('../tools/keyboard.js', () => ({
   pressKey: vi.fn(() => ({ success: true, message: 'Key pressed' })),
   pressKeyCombination: vi.fn().mockImplementation((combination) => {
     // Check if the combination includes control key
-    if (combination.keys.some((k) => k.toLowerCase() === 'control')) {
+    if (combination.keys.some((k: string) => k.toLowerCase() === 'control')) {
       return Promise.resolve({
         success: false,
         message: 'Control key combinations are temporarily disabled due to stability issues',
@@ -52,7 +52,7 @@ vi.mock('../providers/factory.js', () => {
     pressKey: vi.fn(() => ({ success: true, message: 'Key pressed' })),
     pressKeyCombination: vi.fn().mockImplementation((combination) => {
       // Check if the combination includes control key
-      if (combination.keys.some((k) => k.toLowerCase() === 'control')) {
+      if (combination.keys.some((k: string) => k.toLowerCase() === 'control')) {
         return Promise.resolve({
           success: false,
           message: 'Control key combinations are temporarily disabled due to stability issues',
