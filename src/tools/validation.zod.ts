@@ -56,6 +56,7 @@ export const VALID_KEYS = [
   'shift',
   'right_shift',
   'command',
+  'windows',
   'enter',
   'return',
   'backspace',
@@ -172,10 +173,7 @@ function isDangerousKeyCombination(keys: string[]): string | null {
       return 'This combination can trigger system functions';
     }
 
-    // Windows key combinations
-    if (normalizedKeys.includes('command') && normalizedKeys.includes('r')) {
-      return 'This combination can open the Run dialog';
-    }
+    // Allow Windows+R (Run dialog)
 
     if (
       (normalizedKeys.includes('control') || normalizedKeys.includes('command')) &&
