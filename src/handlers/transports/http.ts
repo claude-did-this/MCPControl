@@ -19,6 +19,7 @@ export class HttpTransportManager {
   private app: express.Application;
   private sessions = new Map<string, Session>();
   private cleanupInterval?: NodeJS.Timeout;
+  private server?: ReturnType<typeof this.app.listen>;
 
   constructor() {
     // Initialize Express app
@@ -138,29 +139,53 @@ export class HttpTransportManager {
   ): ReturnType<typeof this.app.listen> {
     // Start the HTTP server
     const httpPort = port || 3000;
-    const server = this.app.listen(httpPort, () => {
+    this.server = this.app.listen(httpPort, () => {
       process.stderr.write(
         `MCP Control server running on HTTP at http://localhost:${httpPort}${endpoint} (using ${provider})\n`,
       );
     });
 
     // Handle server close event to clean up resources
-    server.on('close', () => {
+    this.server.on('close', () => {
       this.stopSessionCleanup();
     });
 
     // Handle process termination signals for clean shutdown
     process.on('SIGINT', () => {
-      this.stopSessionCleanup();
-      server.close();
+      void this.close();
     });
 
     process.on('SIGTERM', () => {
-      this.stopSessionCleanup();
-      server.close();
+      void this.close();
     });
 
-    return server;
+    return this.server;
+  }
+
+  /**
+   * Close the HTTP transport and clean up all resources
+   * This method:
+   * 1. Stops the session cleanup interval
+   * 2. Closes the HTTP server if it's running
+   * 3. Clears the sessions map
+   * @returns Promise that resolves when resources are cleaned up
+   */
+  async close(): Promise<void> {
+    // Stop the session cleanup interval
+    this.stopSessionCleanup();
+
+    // Clear all sessions
+    this.sessions.clear();
+
+    // Close the HTTP server if it exists
+    if (this.server) {
+      return new Promise((resolve) => {
+        this.server?.close(() => {
+          process.stderr.write('HTTP server closed and all resources cleaned up\n');
+          resolve();
+        });
+      });
+    }
   }
 
   /**
@@ -254,36 +279,32 @@ export class HttpTransportManager {
     // Validate API key strength
     this.validateApiKey(apiKey);
 
-    // Create authentication middleware
-    const authMiddleware = (
-      req: express.Request,
-      res: express.Response,
-      next: express.NextFunction,
-    ) => {
-      // Skip authentication for OPTIONS requests (CORS preflight)
-      if (req.method === 'OPTIONS') {
-        return next();
-      }
-
-      const requestApiKey = req.headers['x-api-key'];
-
-      if (!requestApiKey || requestApiKey !== apiKey) {
-        return res.status(401).json({
-          jsonrpc: '2.0',
-          error: {
-            code: -32000,
-            message: 'Unauthorized - Invalid API key',
-          },
-          id: null,
-        });
-      }
-
-      next();
-    };
-
-    // Apply middleware to all routes
+    // Apply authentication to the application
+    // The Express 5 typings can be difficult to work with
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any
-    (this.app.use as any)(authMiddleware);
+    (this.app.use as any)(
+      (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        // Skip authentication for OPTIONS requests (CORS preflight)
+        if (req.method === 'OPTIONS') {
+          return next();
+        }
+
+        const requestApiKey = req.headers['x-api-key'];
+
+        if (!requestApiKey || requestApiKey !== apiKey) {
+          return res.status(401).json({
+            jsonrpc: '2.0',
+            error: {
+              code: -32000,
+              message: 'Unauthorized - Invalid API key',
+            },
+            id: null,
+          });
+        }
+
+        next();
+      },
+    );
   }
 
   /**

@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { HttpTransportManager } from './http';
 import express from 'express';
-// Commented out supertest import to make build pass
-// import request from 'supertest';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 
 // Mock external dependencies
@@ -119,5 +117,30 @@ describe('HttpTransportManager', () => {
 
     // Just verify the transport was created and authentication was configured
     expect(processSpy).toHaveBeenCalled();
+  });
+
+  it('properly cleans up resources when close() is called', async () => {
+    // Mock stopSessionCleanup
+    const stopSessionCleanupSpy = vi.spyOn(transportManager as any, 'stopSessionCleanup');
+
+    // Setup mock server
+    transportManager['server'] = {
+      close: vi.fn((callback) => callback()),
+    } as any;
+
+    // Mock sessions data by accessing actual instance's map and adding a mock session
+    const sessionsMap = transportManager['sessions'];
+    sessionsMap.set('test-session', {
+      id: 'test-session',
+      createdAt: new Date(),
+      lastActiveAt: new Date(),
+    });
+
+    // Execute
+    await transportManager.close();
+
+    // Verify
+    expect(stopSessionCleanupSpy).toHaveBeenCalled();
+    expect(sessionsMap.size).toBe(0); // Sessions should be cleared
   });
 });
