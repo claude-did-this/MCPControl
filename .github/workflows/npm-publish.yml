@@ -50,8 +50,18 @@ jobs:
         run: echo "VERSION=$($env:GITHUB_REF -replace 'refs/tags/v', '')" >> $env:GITHUB_OUTPUT
         shell: pwsh
       
-      - name: Update package version
-        run: npm version ${{ steps.extract_version.outputs.VERSION }} --no-git-tag-version
+      - name: Update package version if needed
+        run: |
+          $current_version = $(node -p "require('./package.json').version")
+          $tag_version = "${{ steps.extract_version.outputs.VERSION }}"
+          
+          if ($current_version -ne $tag_version) {
+            npm version $tag_version --no-git-tag-version
+            Write-Host "Updated version from $current_version to $tag_version"
+          } else {
+            Write-Host "Version already set to $current_version, skipping update"
+          }
+        shell: pwsh
       
       - name: Verify package contents
         run: |
