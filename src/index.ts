@@ -40,7 +40,7 @@ class MCPControlServer {
       this.server = new Server(
         {
           name: 'mcp-control',
-          version: '0.1.17',
+          version: '0.1.20',
         },
         {
           capabilities: {
