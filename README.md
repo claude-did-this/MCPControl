@@ -2,9 +2,25 @@
 
 Windows control server for the Model Context Protocol, providing programmatic control over system operations including mouse, keyboard, window management, and screen capture functionality.
 
-I developed this project as an experiment a few months ago, wanting to see if Claude could play some video games. After seeing it work, I was impressed but set it aside. Recently, it's gained attention from the community, prompting me to resume development. While currently in pre-release state, I'm actively working toward a stable version. If you encounter any issues, please submit them through the issue tracker.
-
 > **Note**: This project currently supports Windows only.
+
+## Quick Demo (30-Second Wow Demo)
+
+Want to see what MCPControl can do in 30 seconds? Try our interactive demo:
+
+```bash
+# Run the demo with just one command
+node demo.cjs
+```
+
+The demo will:
+1. Show you available MCPControl tools
+2. Display your screen size
+3. Track your cursor position
+4. Identify active window information
+5. Optionally take a screenshot and save it to your desktop
+
+No need to run anything else - the demo manages the MCPControl server for you!
 
 ## ⚠️ IMPORTANT DISCLAIMER
 
@@ -57,39 +73,49 @@ By using this software, you acknowledge and accept that:
 
 ## Usage
 
-Simply configure your Claude MCP settings to use MCPControl as shown in the [MCP Server Configuration](#mcp-server-configuration) section. No installation needed!
+### Quick Start
 
-### Building From Source
+The simplest way to use MCPControl is through JSON-RPC:
 
-If you're interested in contributing or building from source, please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed instructions.
+```javascript
+// In a Node.js script
+const { spawn } = require("child_process");
+const readline = require("readline");
 
-#### Development Requirements
+// Start the MCP Control server as a child process
+const proc = spawn("npx", ["-y", "mcp-control"], {
+  shell: true,
+  stdio: ["pipe", "pipe", "inherit"],
+});
 
-To build this project for development, you'll need:
+// Read responses
+const rl = readline.createInterface({ input: proc.stdout });
+rl.on("line", (line) => {
+  try {
+    const response = JSON.parse(line);
+    console.log("Response:", response);
+  } catch (e) {
+    console.log("←", line);
+  }
+});
 
-1. Windows operating system (required for the keysender dependency)
-2. Node.js 18 or later (install using the official Windows installer which includes build tools)
-3. npm package manager
-4. Native build tools:
-   - node-gyp: `npm install -g node-gyp`
-   - cmake-js: `npm install -g cmake-js`
-
-The keysender dependency relies on Windows-specific native modules that require these build tools.
-
-## MCP Server Configuration
-
-To use this project, you'll need the necessary build tools:
-
-1. Install Node.js using the official Windows installer, which includes necessary build tools
-2. Install additional required tools:
-
+// Send a command
+proc.stdin.write(
+  JSON.stringify({
+    jsonrpc: "2.0",
+    id: 1,
+    method: "tools/call",
+    params: {
+      name: "get_screen_size",
+      arguments: {}
+    },
+  }) + "\n"
+);
 ```
-npm install -g node-gyp
-npm install -g cmake-js
-```
 
-Then, add the following configuration to your MCP settings:
+### MCP Server Configuration
 
+To use with Claude MCP, add the following configuration to your MCP settings:
 
 ```json
 {
@@ -106,30 +132,42 @@ Then, add the following configuration to your MCP settings:
 }
 ```
 
-After configuring your MCP settings, restart your client to see the MCPControl service in the menu.
+## Building From Source
 
-## Project Structure
+If you're interested in contributing or building from source, please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed instructions.
 
-- `/src`
-  - `/handlers` - Request handlers and tool management
-  - `/tools` - Core functionality implementations
-  - `/types` - TypeScript type definitions
-  - `index.ts` - Main application entry point
+### Development Requirements
 
-## Dependencies
+To build this project for development, you'll need:
 
-- [@modelcontextprotocol/sdk](https://www.npmjs.com/package/@modelcontextprotocol/sdk) - MCP SDK for protocol implementation
-- [keysender](https://www.npmjs.com/package/keysender) - Windows-only UI automation library
-- [clipboardy](https://www.npmjs.com/package/clipboardy) - Clipboard handling
-- [sharp](https://www.npmjs.com/package/sharp) - Image processing
-- [uuid](https://www.npmjs.com/package/uuid) - UUID generation
+1. Windows operating system (required for the keysender dependency)
+2. Node.js 18 or later (install using the official Windows installer which includes build tools)
+3. npm package manager
+4. Native build tools:
+   - node-gyp: `npm install -g node-gyp`
+   - cmake-js: `npm install -g cmake-js`
 
-## Testing
+## Available Tools
 
-The project currently includes unit tests for core functionality. The following test areas are planned for future development:
-- Integration tests for cross-module functionality
-- Performance testing
-- Error handling validation
+MCPControl provides the following tools:
+
+- `get_screenshot`: Capture a screenshot
+- `click_at`: Click at specific coordinates
+- `move_mouse`: Move the mouse cursor
+- `click_mouse`: Click at the current position
+- `drag_mouse`: Drag from one position to another
+- `scroll_mouse`: Scroll the mouse wheel
+- `type_text`: Type text using the keyboard
+- `press_key`: Press a keyboard key
+- `press_key_combination`: Press multiple keys simultaneously
+- `hold_key`: Hold or release a key
+- `get_screen_size`: Get screen dimensions
+- `get_cursor_position`: Get current cursor position
+- `get_active_window`: Get info about the active window
+- `get_clipboard_content`: Get clipboard text
+- `set_clipboard_content`: Set clipboard text
+
+And many more!
 
 ## Known Limitations
 
@@ -138,6 +176,7 @@ The project currently includes unit tests for core functionality. The following 
 - The get_screenshot utility does not work with the VS Code Extension Cline. See [GitHub issue #1865](https://github.com/cline/cline/issues/1865)
 - Some operations may require elevated permissions depending on the target application
 - Only Windows is supported
+- Ctrl key combinations (Ctrl+C, Ctrl+V, etc.) may cause the server to crash due to stdio handling issues. This will be fixed in an upcoming release using the new Streaming HTTP transport protocol from the MCP specification. See [GitHub issue #120](https://github.com/Cheffromspace/MCPControl/issues/120)
 
 ## Contributing
 
