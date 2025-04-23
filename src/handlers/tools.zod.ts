@@ -4,7 +4,7 @@ import { AutomationProvider } from '../interfaces/provider.js';
 import {
   MouseButtonSchema,
   MousePositionSchema,
-  KeyboardInputSchema,
+  // KeyboardInputSchema is removed as it's not used
   KeyCombinationSchema,
   KeyHoldOperationSchema,
   ScrollAmountSchema,
@@ -171,11 +171,28 @@ export function setupTools(server: McpServer, provider: AutomationProvider): voi
     },
     {
       name: 'type_text',
-      description: 'Type text using the keyboard',
+      description:
+        'Type text using the keyboard. Add "humanlike: true" for natural typing with character-by-character streaming.',
       inputSchema: {
         type: 'object',
         properties: {
           text: { type: 'string', description: 'Text to type' },
+          humanlike: {
+            type: 'boolean',
+            description: 'Enable human-like typing with streaming progress',
+          },
+          delay: {
+            type: 'number',
+            description: 'Delay between keystrokes in milliseconds (default: 50)',
+          },
+          randomize: {
+            type: 'boolean',
+            description: 'Add random variations to the typing speed (default: true)',
+          },
+          randomFactor: {
+            type: 'number',
+            description: 'Factor for speed randomization, 0-1 (default: 0.3)',
+          },
         },
         required: ['text'],
       },
@@ -368,12 +385,106 @@ export function setupTools(server: McpServer, provider: AutomationProvider): voi
     const name = toolDefinition.name as string;
     const description = toolDefinition.description as string;
 
+    // Define a proper type for the stream context
+    interface StreamContext {
+      createStream: () => {
+        sendProgress: (progress: number) => void;
+        sendResult: (result: { content: Array<{ type: string; text: string }> }) => void;
+        send: (message: { content: Array<{ type: string; text: string }> }) => void;
+        sendError: (message: string) => void;
+        end: () => void;
+      };
+    }
+
     // Using any type here to bypass the TypeScript errors with the SDK
     // This is a temporary workaround until we can properly fix the type issues
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const toolFn: any = async (args: Record<string, unknown>, _context: unknown) => {
       try {
         let response;
+
+        // Special handling for streaming tools
+        if (name === 'type_text' && args.humanlike === true) {
+          // Create a stream for this request - properly typed
+          const context = _context as StreamContext;
+          const stream = context.createStream();
+
+          // Process the streaming typing in the background
+          (async () => {
+            try {
+              // Start the streaming text typing
+              // Safely handle text input
+              const inputText = typeof args.text === 'string' ? args.text : '';
+
+              const streamOptions = {
+                text: inputText,
+                delay: typeof args.delay === 'number' ? args.delay : undefined,
+                randomize: typeof args.randomize === 'boolean' ? args.randomize : undefined,
+                randomFactor: typeof args.randomFactor === 'number' ? args.randomFactor : undefined,
+              };
+
+              const typeTextStream = await Promise.resolve(
+                provider.keyboard.typeTextStream(streamOptions),
+              );
+
+              // Process each update from the stream
+              for await (const update of typeTextStream) {
+                // Send progress updates
+                if (update.streamInfo?.progress !== undefined) {
+                  stream.sendProgress(update.streamInfo.progress);
+                }
+
+                if (update.streamInfo?.isComplete) {
+                  // Final update
+                  stream.sendResult({
+                    content: [
+                      {
+                        type: 'text',
+                        text: `Completed typing: "${inputText}"`,
+                      },
+                    ],
+                  });
+                  stream.end();
+                } else {
+                  // Progress update
+                  const progress = update.streamInfo?.progress || 0;
+                  // Safely handle data
+                  const data = update.data ? (update.data as { currentCharacter?: string }) : {};
+                  const character = data.currentCharacter || '';
+
+                  stream.send({
+                    content: [
+                      {
+                        type: 'text',
+                        text: `Typing: ${character} (${progress}% complete)`,
+                      },
+                    ],
+                  });
+                }
+              }
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+              stream.sendError(`Error while typing: ${errorMessage}`);
+              stream.end();
+            }
+          })().catch((error) => {
+            console.error('Error in streaming background task:', error);
+          });
+
+          // Safely handle text input for the initial response
+          const displayText = typeof args.text === 'string' ? args.text : '';
+
+          // Return the initial response to start the stream
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Starting human-like typing of "${displayText}"...`,
+              },
+            ],
+            stream: true,
+          };
+        }
 
         switch (name) {
           case 'get_screenshot': {
@@ -472,8 +583,18 @@ export function setupTools(server: McpServer, provider: AutomationProvider): voi
           }
 
           case 'type_text': {
-            const validatedArgs = KeyboardInputSchema.parse(args);
-            response = provider.keyboard.typeText(validatedArgs);
+            // Define schema for standard typing (streaming is handled above)
+            const typeTextSchema = z.object({
+              text: z.string(),
+              humanlike: z.boolean().optional(),
+            });
+
+            const validatedArgs = typeTextSchema.parse(args);
+
+            // Only handle non-streaming case here (streaming is handled above)
+            if (!validatedArgs.humanlike) {
+              response = provider.keyboard.typeText(validatedArgs);
+            }
             break;
           }
 
@@ -630,19 +751,19 @@ export function setupTools(server: McpServer, provider: AutomationProvider): voi
         }
 
         // Handle special case for screenshot which returns content with image data
-        const typedResponse = response;
         if (
-          'content' in typedResponse &&
-          typedResponse.content &&
-          Array.isArray(typedResponse.content) &&
-          typedResponse.content.length > 0 &&
-          typedResponse.content[0] &&
-          typeof typedResponse.content[0] === 'object' &&
-          'type' in typedResponse.content[0] &&
-          typedResponse.content[0].type === 'image'
+          response &&
+          'content' in response &&
+          response.content &&
+          Array.isArray(response.content) &&
+          response.content.length > 0 &&
+          response.content[0] &&
+          typeof response.content[0] === 'object' &&
+          'type' in response.content[0] &&
+          response.content[0].type === 'image'
         ) {
           return {
-            content: typedResponse.content,
+            content: response.content,
           };
         }
 

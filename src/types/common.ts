@@ -7,6 +7,13 @@ export interface KeyboardInput {
   text: string;
 }
 
+export interface KeyboardStreamOptions {
+  delay?: number; // Delay between keystrokes in milliseconds
+  randomize?: boolean; // Add random variations to the delay
+  randomFactor?: number; // Factor for randomization (0-1)
+  streamProgress?: boolean; // Whether to stream progress updates
+}
+
 export interface KeyCombination {
   keys: string[]; // Array of keys to be pressed together, e.g. ["control", "c"]
 }

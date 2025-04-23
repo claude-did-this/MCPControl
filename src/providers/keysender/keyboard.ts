@@ -3,7 +3,12 @@ const { Hardware } = pkg;
 
 // Define keyboard button type directly
 type KeyboardButtonType = string;
-import { KeyboardInput, KeyCombination, KeyHoldOperation } from '../../types/common.js';
+import {
+  KeyboardInput,
+  KeyCombination,
+  KeyHoldOperation,
+  KeyboardStreamOptions,
+} from '../../types/common.js';
 import { WindowsControlResponse } from '../../types/responses.js';
 import { KeyboardAutomation } from '../../interfaces/automation.js';
 import {
@@ -18,6 +23,125 @@ import {
  */
 export class KeysenderKeyboardAutomation implements KeyboardAutomation {
   private keyboard = new Hardware().keyboard;
+
+  async *typeTextStream(
+    input: KeyboardInput & KeyboardStreamOptions,
+  ): AsyncGenerator<WindowsControlResponse> {
+    try {
+      // Validate text
+      if (!input.text) {
+        throw new Error('Text is required');
+      }
+
+      if (input.text.length > MAX_TEXT_LENGTH) {
+        throw new Error(`Text too long: ${input.text.length} characters (max ${MAX_TEXT_LENGTH})`);
+      }
+
+      // Default options
+      const delay = input.delay ?? 50; // Default typing delay
+      const randomize = input.randomize ?? true; // Default to adding variation
+      const randomFactor = input.randomFactor ?? 0.3; // Default randomization factor
+
+      // Split text into characters
+      const characters = input.text.split('');
+      let typedText = '';
+
+      // Initial response
+      yield {
+        success: true,
+        message: 'Starting human-like typing...',
+        stream: true,
+        streamInfo: {
+          progress: 0,
+          isComplete: false,
+          currentStep: 0,
+          totalSteps: characters.length,
+        },
+      };
+
+      // Type each character with a delay
+      for (let i = 0; i < characters.length; i++) {
+        const char = characters[i];
+
+        // Calculate progress percentage
+        const progress = Math.round(((i + 1) / characters.length) * 100);
+
+        // Add character to ongoing text
+        typedText += char;
+
+        // Type the current character
+        try {
+          await this.keyboard.sendKey(char);
+        } catch (charError) {
+          console.error(`Error typing character '${char}':`, charError);
+          // Try to continue with next character
+        }
+
+        // Create streaming response
+        const response: WindowsControlResponse = {
+          success: true,
+          message: `Typing character ${i + 1}/${characters.length}`,
+          data: {
+            currentCharacter: char,
+            typedSoFar: typedText,
+            remainingCharacters: characters.length - i - 1,
+          },
+          stream: true,
+          streamInfo: {
+            progress,
+            isComplete: i === characters.length - 1,
+            currentStep: i + 1,
+            totalSteps: characters.length,
+          },
+        };
+
+        yield response;
+
+        // Skip delay for the last character
+        if (i < characters.length - 1) {
+          // Calculate delay with human-like variation if randomize is enabled
+          let typingDelay = delay;
+          if (randomize) {
+            const variation = delay * randomFactor;
+            typingDelay = delay + (Math.random() * variation * 2 - variation);
+          }
+
+          // Add extra delay for certain punctuation
+          if (['.', '!', '?', ',', ';', ':'].includes(char)) {
+            typingDelay += delay * 2;
+          }
+
+          // Wait before typing the next character
+          await new Promise((resolve) => setTimeout(resolve, typingDelay));
+        }
+      }
+
+      // Final success response
+      return {
+        success: true,
+        message: 'Text typed successfully with human-like timing',
+        data: { typedText: input.text },
+        stream: true,
+        streamInfo: {
+          progress: 100,
+          isComplete: true,
+          currentStep: characters.length,
+          totalSteps: characters.length,
+        },
+      };
+    } catch (error) {
+      // Error response
+      return {
+        success: false,
+        message: `Failed to type text: ${error instanceof Error ? error.message : String(error)}`,
+        stream: true,
+        streamInfo: {
+          progress: 0,
+          isComplete: true,
+        },
+      };
+    }
+  }
 
   typeText(input: KeyboardInput): WindowsControlResponse {
     try {
