@@ -1,6 +1,7 @@
 import {
   MousePosition,
   KeyboardInput,
+  KeyboardStreamOptions,
   KeyCombination,
   KeyHoldOperation,
   ScreenshotOptions,
@@ -10,6 +11,9 @@ import { WindowsControlResponse } from '../types/responses.js';
 
 export interface KeyboardAutomation {
   typeText(input: KeyboardInput): WindowsControlResponse;
+  typeTextStream(
+    input: KeyboardInput & KeyboardStreamOptions,
+  ): AsyncGenerator<WindowsControlResponse>;
   pressKey(key: string): WindowsControlResponse;
   pressKeyCombination(combination: KeyCombination): Promise<WindowsControlResponse>;
   holdKey(operation: KeyHoldOperation): Promise<WindowsControlResponse>;
