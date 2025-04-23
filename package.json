@@ -1,6 +1,6 @@
 {
   "name": "mcp-control",
-  "version": "0.1.21",
+  "version": "0.1.22",
   "description": "Windows control server for the Model Context Protocol",
   "license": "MIT",
   "type": "module",
@@ -21,7 +21,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.10.1",
+    "@modelcontextprotocol/sdk": "^1.10.2",
     "clipboardy": "^4.0.0",
     "express": "^5.1.0",
     "jimp": "^1.6.0",
