@@ -86,6 +86,15 @@ describe('Zod Validation Schemas', () => {
       );
     });
 
+    it('should reject windows key combinations', () => {
+      expect(() => KeyCombinationSchema.parse({ keys: ['windows', 's'] })).toThrow(
+        /Windows key combinations are temporarily disabled/,
+      );
+      expect(() => KeyCombinationSchema.parse({ keys: ['windows', 'r'] })).toThrow(
+        /Windows key combinations are temporarily disabled/,
+      );
+    });
+
     it('should reject invalid key combinations', () => {
       expect(() => KeyCombinationSchema.parse({ keys: [] })).toThrow();
       expect(() => KeyCombinationSchema.parse({ keys: ['control', 'alt', 'delete'] })).toThrow();

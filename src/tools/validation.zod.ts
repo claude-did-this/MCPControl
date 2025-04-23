@@ -156,6 +156,12 @@ function isDangerousKeyCombination(keys: string[]): string | null {
     return 'Control key combinations are temporarily disabled due to stability issues';
   }
 
+  // Temporary restriction: Block ALL Windows key combinations to prevent server crashes
+  // This is due to stdio handling issues. Will be fixed in future version with HTTP transport
+  if (normalizedKeys.includes('windows')) {
+    return 'Windows key combinations are temporarily disabled due to stability issues';
+  }
+
   // Check for OS-level dangerous combinations
   if (normalizedKeys.includes('command') || normalizedKeys.includes('control')) {
     // Control+Alt+Delete or Command+Option+Esc (Force Quit on Mac)
