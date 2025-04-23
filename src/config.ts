@@ -54,9 +54,11 @@ export interface HttpServerConfig {
 export interface CorsConfig {
   /**
    * Allowed origins
-   * Default: ['*']
+   * Default: 'localhost' for security
+   * SECURITY WARNING: Using '*' will allow any origin to access the API,
+   * which is a security risk in production environments.
    */
-  origins?: string[];
+  origins?: string[] | string;
 
   /**
    * Allowed HTTP methods
@@ -83,11 +85,11 @@ export interface CorsConfig {
 export function loadConfig(): AutomationConfig {
   // Parse HTTP port from environment if available
   const httpPort = process.env.HTTP_PORT ? parseInt(process.env.HTTP_PORT, 10) : undefined;
-  
+
   // Determine transport type from command line arguments
   const useHttp = process.argv.includes('--http');
   const transportType = useHttp ? 'http' : 'stdio';
-  
+
   return {
     provider: process.env.AUTOMATION_PROVIDER || 'keysender',
     transport: transportType,
@@ -96,18 +98,18 @@ export function loadConfig(): AutomationConfig {
       path: process.env.HTTP_PATH || '/mcp',
       apiKey: process.env.API_KEY,
       cors: {
-        origins: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['*'],
+        origins: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : 'localhost',
         methods: ['GET', 'POST', 'OPTIONS', 'DELETE'],
         headers: [
-          'Content-Type', 
-          'Accept', 
-          'Authorization', 
-          'x-api-key', 
-          'Mcp-Session-Id', 
-          'Last-Event-ID'
+          'Content-Type',
+          'Accept',
+          'Authorization',
+          'x-api-key',
+          'Mcp-Session-Id',
+          'Last-Event-ID',
         ],
-        credentials: true
-      }
-    }
+        credentials: true,
+      },
+    },
   };
 }

@@ -81,7 +81,7 @@ For the MCPControl server implementation, we'll create a server that can control
 // src/index.ts
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { HttpStreamServerTransport } from "@modelcontextprotocol/sdk/server/http.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
 
 // Create server instance
@@ -120,7 +120,7 @@ async function main() {
     if (transportType === "http") {
       // HTTP Stream transport setup
       const port = parseInt(process.env.PORT || "3000");
-      const httpTransport = new HttpStreamServerTransport({
+      const httpTransport = new StreamableHTTPServerTransport({
         port,
         cors: {
           origins: ["*"],
@@ -293,6 +293,31 @@ To use MCPControl with Claude, you need to configure your Claude MCP settings as
 }
 ```
 
+### Security Best Practices
+
+When implementing the HTTP Stream transport, consider these security best practices:
+
+1. **Always use API key authentication:**
+   ```
+   # Set a strong API key (minimum 16 characters)
+   export API_KEY="$(openssl rand -base64 32)"
+   ```
+
+2. **Restrict CORS origins to known domains:**
+   ```
+   # For local development
+   export CORS_ORIGINS="localhost"
+   
+   # For production with multiple domains
+   export CORS_ORIGINS="https://example.com,https://admin.example.com"
+   ```
+
+3. **Use HTTPS in production environments:**
+   When exposing your MCP server publicly, always use HTTPS with a valid SSL certificate.
+
+4. **Implement proper input validation:**
+   Validate all inputs using Zod or similar validation libraries.
+
 For a locally built server, you would modify this to point to your build:
 
 ```json
@@ -456,7 +481,7 @@ Here's a more comprehensive implementation for the MCPControl server:
 // src/index.ts
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { HttpStreamServerTransport } from "@modelcontextprotocol/sdk/server/http.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import express from 'express';
 import cors from 'cors';
 import { z } from "zod";
@@ -604,7 +629,7 @@ async function main() {
     if (transportType === "http") {
       // HTTP Stream transport setup
       const port = parseInt(process.env.PORT || "3000");
-      const httpTransport = new HttpStreamServerTransport({
+      const httpTransport = new StreamableHTTPServerTransport({
         port,
         app,
         path: '/mcp',
