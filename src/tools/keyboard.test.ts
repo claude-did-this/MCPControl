@@ -84,14 +84,22 @@ describe('Keyboard Tools', () => {
   });
 
   describe('pressKeyCombination', () => {
-    it('should successfully press a key combination', async () => {
-      const combination: KeyCombination = { keys: ['control', 'c'] };
+    it('should successfully press a valid key combination', async () => {
+      const combination: KeyCombination = { keys: ['alt', 'f4'] };
       const result = await pressKeyCombination(combination);
 
       expect(result).toEqual({
         success: true,
-        message: 'Pressed key combination: control+c',
+        message: 'Pressed key combination: alt+f4',
       });
+    });
+
+    it('should reject Control key combinations', async () => {
+      const combination: KeyCombination = { keys: ['control', 'c'] };
+      const result = await pressKeyCombination(combination);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Control key combinations are temporarily disabled');
     });
 
     it('should handle errors when combination is invalid', async () => {

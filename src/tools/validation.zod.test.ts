@@ -70,9 +70,29 @@ describe('Zod Validation Schemas', () => {
 
   describe('KeyCombinationSchema', () => {
     it('should validate valid key combinations', () => {
-      expect(() => KeyCombinationSchema.parse({ keys: ['control', 'c'] })).not.toThrow();
-      expect(() => KeyCombinationSchema.parse({ keys: ['control', 'shift', 'a'] })).not.toThrow();
+      // With our new implementation, control key combinations are blocked
+      // Valid combinations would be without control key
+      expect(() => KeyCombinationSchema.parse({ keys: ['alt', 'f4'] })).not.toThrow();
+      expect(() => KeyCombinationSchema.parse({ keys: ['shift', 'a'] })).not.toThrow();
       expect(() => KeyCombinationSchema.parse({ keys: ['a'] })).not.toThrow();
+    });
+
+    it('should reject control key combinations', () => {
+      expect(() => KeyCombinationSchema.parse({ keys: ['control', 'c'] })).toThrow(
+        /Control key combinations are temporarily disabled/,
+      );
+      expect(() => KeyCombinationSchema.parse({ keys: ['control', 'shift', 'a'] })).toThrow(
+        /Control key combinations are temporarily disabled/,
+      );
+    });
+
+    it('should reject windows key combinations', () => {
+      expect(() => KeyCombinationSchema.parse({ keys: ['windows', 's'] })).toThrow(
+        /Windows key combinations are temporarily disabled/,
+      );
+      expect(() => KeyCombinationSchema.parse({ keys: ['windows', 'r'] })).toThrow(
+        /Windows key combinations are temporarily disabled/,
+      );
     });
 
     it('should reject invalid key combinations', () => {

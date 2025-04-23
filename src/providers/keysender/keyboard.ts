@@ -79,6 +79,16 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
 
       // Store original keys for the message
       const keysForMessage = [...combination.keys];
+
+      // Additional safety check: Block ALL Ctrl combinations at implementation level
+      // This prevents server crashes that could occur even if validation passes
+      if (combination.keys.some((k) => k.toLowerCase() === 'control')) {
+        return {
+          success: false,
+          message: 'Control key combinations are temporarily disabled due to stability issues',
+        };
+      }
+
       const pressPromises: Promise<void>[] = [];
 
       // Validate each key and collect press promises

@@ -150,13 +150,16 @@ export const KeySchema = z.string().refine(
 function isDangerousKeyCombination(keys: string[]): string | null {
   const normalizedKeys = keys.map((k) => k.toLowerCase());
 
-  // Explicitly allow common copy/paste shortcuts
-  if (
-    normalizedKeys.length === 2 &&
-    normalizedKeys.includes('control') &&
-    (normalizedKeys.includes('c') || normalizedKeys.includes('v') || normalizedKeys.includes('x'))
-  ) {
-    return null;
+  // Temporary restriction: Block ALL Ctrl key combinations to prevent server crashes
+  // This is due to stdio handling issues. Will be fixed in future version with HTTP transport
+  if (normalizedKeys.includes('control')) {
+    return 'Control key combinations are temporarily disabled due to stability issues';
+  }
+
+  // Temporary restriction: Block ALL Windows key combinations to prevent server crashes
+  // This is due to stdio handling issues. Will be fixed in future version with HTTP transport
+  if (normalizedKeys.includes('windows')) {
+    return 'Windows key combinations are temporarily disabled due to stability issues';
   }
 
   // Check for OS-level dangerous combinations
@@ -173,8 +176,7 @@ function isDangerousKeyCombination(keys: string[]): string | null {
       return 'This combination can trigger system functions';
     }
 
-    // Allow Windows+R (Run dialog)
-
+    // Block combinations that can open a terminal
     if (
       (normalizedKeys.includes('control') || normalizedKeys.includes('command')) &&
       (normalizedKeys.includes('alt') || normalizedKeys.includes('option')) &&
