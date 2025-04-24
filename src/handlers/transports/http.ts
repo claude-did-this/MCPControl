@@ -63,8 +63,11 @@ export class InMemoryEventStore implements EventStore {
   private maxEventAge: number;
   // Cleanup interval reference
   private cleanupInterval?: NodeJS.Timeout;
-  // Mutex for handling concurrent storeEvent operations
-  private isStoringEvent = false;
+  // Event queue for handling concurrent operations
+  private eventQueue: Promise<unknown> = Promise.resolve();
+  // Memory usage tracking
+  private lastMemoryReport = 0;
+  private memoryReportInterval = 15 * 60 * 1000; // 15 minutes
 
   constructor(maxEvents = 10000, maxEventAgeInMinutes = 30) {
     this.maxEvents = maxEvents;
@@ -80,33 +83,64 @@ export class InMemoryEventStore implements EventStore {
    * @returns The generated event ID for the stored event
    */
   async storeEvent(streamId: StreamId, message: JSONRPCMessage): Promise<EventId> {
-    // Wait for any existing operation to complete to prevent race conditions
-    while (this.isStoringEvent) {
-      await new Promise((resolve) => setTimeout(resolve, 10));
-    }
+    // Add this operation to our queue and wait for our turn
+    return new Promise<EventId>((resolve, reject) => {
+      this.eventQueue = this.eventQueue
+        .then(() => {
+          try {
+            // Generate a unique event ID that includes the stream ID for easy lookup
+            const timestamp = Date.now();
+            const eventId = `${streamId}-${timestamp}-${Math.floor(Math.random() * 10000)}`;
 
+            // Store the event with its stream ID and timestamp
+            this.events.set(eventId, {
+              streamId,
+              message,
+              timestamp,
+            });
+
+            // Prune old events if we're over the limit
+            if (this.events.size > this.maxEvents) {
+              this.pruneOldestEvents(this.events.size - this.maxEvents);
+            }
+
+            // Report memory usage periodically
+            const now = Date.now();
+            if (now - this.lastMemoryReport > this.memoryReportInterval) {
+              this.reportMemoryUsage();
+              this.lastMemoryReport = now;
+            }
+
+            resolve(eventId);
+          } catch (error) {
+            // Ensure we reject with an Error object
+            reject(error instanceof Error ? error : new Error(String(error)));
+          }
+        })
+        .catch((error) => {
+          // Ensure we reject with an Error object
+          reject(error instanceof Error ? error : new Error(String(error)));
+        }); // Make sure we propagate any errors in the chain
+    });
+  }
+
+  /**
+   * Report memory usage of the event store
+   */
+  private reportMemoryUsage(): void {
     try {
-      this.isStoringEvent = true;
+      // Get process memory usage
+      const memoryUsage = process.memoryUsage();
+      const eventCount = this.events.size;
 
-      // Generate a unique event ID that includes the stream ID for easy lookup
-      const timestamp = Date.now();
-      const eventId = `${streamId}-${timestamp}-${Math.floor(Math.random() * 10000)}`;
-
-      // Store the event with its stream ID and timestamp
-      this.events.set(eventId, {
-        streamId,
-        message,
-        timestamp,
-      });
-
-      // Prune old events if we're over the limit
-      if (this.events.size > this.maxEvents) {
-        this.pruneOldestEvents(this.events.size - this.maxEvents);
-      }
-
-      return eventId;
-    } finally {
-      this.isStoringEvent = false;
+      process.stderr.write(
+        `EventStore memory stats: ${eventCount} events, ` +
+          `RSS: ${Math.round(memoryUsage.rss / 1024 / 1024)}MB, ` +
+          `Heap: ${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB/${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB\n`,
+      );
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      process.stderr.write(`Failed to report memory usage: ${errorMessage}\n`);
     }
   }
 
@@ -131,37 +165,57 @@ export class InMemoryEventStore implements EventStore {
 
     // Get the stream ID from the event ID
     const streamId = this.getStreamIdFromEventId(lastEventId);
-    if (!streamId || !this.events.has(lastEventId)) {
+    if (!streamId) {
+      process.stderr.write(`Unable to determine stream ID from event ID: ${lastEventId}\n`);
       return '';
     }
 
-    // Get all events for this stream (can be optimized if needed)
-    // Sort them by timestamp to maintain chronological order
-    const allEvents = Array.from(this.events.entries())
-      .filter(([_eventId, event]) => event.streamId === streamId)
-      .sort(([_idA, eventA], [_idB, eventB]) => eventA.timestamp - eventB.timestamp);
-
-    // Find the index of the last event
-    const lastEventIndex = allEvents.findIndex(([eventId]) => eventId === lastEventId);
-    if (lastEventIndex === -1) {
+    // Check if the event exists in our store
+    if (!this.events.has(lastEventId)) {
+      process.stderr.write(`Event ${lastEventId} not found in event store\n`);
       return '';
     }
 
-    // Send all events that came after the last event
-    for (let i = lastEventIndex + 1; i < allEvents.length; i++) {
-      const [eventId, event] = allEvents[i];
-      try {
-        await send(eventId, event.message);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        process.stderr.write(
-          `Error replaying event ${eventId} for stream ${streamId}: ${errorMessage}\n`,
-        );
-        // Continue with other events even if one fails
+    try {
+      // Find the timestamp of the last event to determine when to start replaying
+      const lastEvent = this.events.get(lastEventId);
+      if (!lastEvent) {
+        process.stderr.write(`Event ${lastEventId} found in map but could not be retrieved\n`);
+        return '';
       }
-    }
 
-    return streamId;
+      const lastEventTimestamp = lastEvent.timestamp;
+
+      // Get all events for this stream that are newer than the last event
+      // This ensures we don't miss any events and maintains strict chronological order
+      const eventsToReplay = Array.from(this.events.entries())
+        .filter(
+          ([_eventId, event]) =>
+            event.streamId === streamId && event.timestamp > lastEventTimestamp,
+        )
+        .sort(([_idA, eventA], [_idB, eventB]) => eventA.timestamp - eventB.timestamp);
+
+      process.stderr.write(`Replaying ${eventsToReplay.length} events for stream ${streamId}\n`);
+
+      // Send all events that came after the last event
+      for (const [eventId, event] of eventsToReplay) {
+        try {
+          await send(eventId, event.message);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          process.stderr.write(
+            `Error replaying event ${eventId} for stream ${streamId}: ${errorMessage}\n`,
+          );
+          // Continue with other events even if one fails
+        }
+      }
+
+      return streamId;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      process.stderr.write(`Error during event replay for stream ${streamId}: ${errorMessage}\n`);
+      return streamId; // Still return the stream ID even if replay failed
+    }
   }
 
   /**
@@ -676,13 +730,18 @@ export class HttpTransportManager {
             this.sessions.delete(sessionId);
 
             // Also clean up any events for this stream (using sessionId as streamId)
-            // Use proper async error handling
-            this.eventStore.clearEventsForStream(sessionId).catch((error) => {
-              const errorMessage = error instanceof Error ? error.message : String(error);
-              process.stderr.write(
-                `Error clearing events for session ${sessionId}: ${errorMessage}\n`,
-              );
-            });
+            // Use Promise-based approach since we can't use await in a non-async callback
+            this.eventStore
+              .clearEventsForStream(sessionId)
+              .then(() => {
+                process.stderr.write(`Events cleared for expired session ${sessionId}\n`);
+              })
+              .catch((error) => {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                process.stderr.write(
+                  `Error clearing events for session ${sessionId}: ${errorMessage}\n`,
+                );
+              });
 
             // Get the overall event count, we don't need per-session count now
             try {
