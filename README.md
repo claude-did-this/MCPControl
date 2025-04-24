@@ -4,24 +4,6 @@ Windows control server for the Model Context Protocol, providing programmatic co
 
 > **Note**: This project currently supports Windows only.
 
-## Quick Demo (30-Second Wow Demo)
-
-Want to see what MCPControl can do in 30 seconds? Try our interactive demo:
-
-```bash
-# Run the demo with just one command
-node demo.cjs
-```
-
-The demo will:
-1. Show you available MCPControl tools
-2. Display your screen size
-3. Track your cursor position
-4. Identify active window information
-5. Optionally take a screenshot and save it to your desktop
-
-No need to run anything else - the demo manages the MCPControl server for you!
-
 ## ⚠️ IMPORTANT DISCLAIMER
 
 **THIS SOFTWARE IS EXPERIMENTAL AND POTENTIALLY DANGEROUS**
@@ -72,46 +54,6 @@ By using this software, you acknowledge and accept that:
   - Check clipboard state
 
 ## Usage
-
-### Quick Start
-
-The simplest way to use MCPControl is through JSON-RPC:
-
-```javascript
-// In a Node.js script
-const { spawn } = require("child_process");
-const readline = require("readline");
-
-// Start the MCP Control server as a child process
-const proc = spawn("npx", ["-y", "mcp-control"], {
-  shell: true,
-  stdio: ["pipe", "pipe", "inherit"],
-});
-
-// Read responses
-const rl = readline.createInterface({ input: proc.stdout });
-rl.on("line", (line) => {
-  try {
-    const response = JSON.parse(line);
-    console.log("Response:", response);
-  } catch (e) {
-    console.log("←", line);
-  }
-});
-
-// Send a command
-proc.stdin.write(
-  JSON.stringify({
-    jsonrpc: "2.0",
-    id: 1,
-    method: "tools/call",
-    params: {
-      name: "get_screen_size",
-      arguments: {}
-    },
-  }) + "\n"
-);
-```
 
 ### MCP Server Configuration
 
