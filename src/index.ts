@@ -6,6 +6,8 @@ import { loadConfig } from './config.js';
 import { createAutomationProvider } from './providers/factory.js';
 import { AutomationProvider } from './interfaces/provider.js';
 import { HttpTransportManager } from './handlers/transports/http.js';
+import logger, { requestContext, type LoggerContext } from './logger.js';
+import { v4 as uuidv4 } from 'uuid';
 
 class MCPControlServer {
   private server!: McpServer; // Using definite assignment assertion
@@ -77,12 +79,14 @@ class MCPControlServer {
         // Promise resolves successfully
         resolve();
       } catch (error) {
-        // Using process.stderr.write to avoid affecting the JSON-RPC stream
-        process.stderr.write(
-          `Failed to initialize MCP Control Server: ${error instanceof Error ? error.message : String(error)}\n`,
+        // Using logger to avoid affecting the JSON-RPC stream
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error(
+          { error: errorMessage },
+          `Failed to initialize MCP Control Server: ${errorMessage}`,
         );
         // Log additional shutdown information
-        process.stderr.write('Server initialization failed. Application will now exit.\n');
+        logger.error('Server initialization failed. Application will now exit.');
 
         // Reject the promise with the error
         reject(error instanceof Error ? error : new Error(String(error)));
@@ -100,9 +104,8 @@ class MCPControlServer {
     process.on('uncaughtException', (error: Error) => {
       // Filter for MCP-specific errors to avoid capturing unrelated errors
       if (error.message.includes('MCP') || error.stack?.includes('mcp-control')) {
-        process.stderr.write(
-          `[MCP Server Error] ${error instanceof Error ? error.message : String(error)}\n`,
-        );
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error({ error: errorMessage }, `[MCP Server Error] ${errorMessage}`);
       }
     });
 
@@ -120,21 +123,44 @@ class MCPControlServer {
    * Shut down the server and clean up resources
    */
   private async shutdown(): Promise<void> {
+    // Generate a shutdown ID for correlating shutdown logs
+    const shutdownId = uuidv4();
+
     try {
-      // Close the MCP server first
-      await this.server.close();
+      // Use the requestContext for shutdown logging
+      await requestContext.run({ shutdownId } as LoggerContext, async () => {
+        logger.info({ shutdownId }, 'Starting graceful shutdown');
 
-      // Close HTTP transport if it exists
-      if (this.httpTransport) {
-        await this.httpTransport.close();
-      }
+        // Close the MCP server first
+        await this.server.close();
+        logger.info({ shutdownId }, 'MCP server closed');
 
-      process.stderr.write('MCP Control server shut down gracefully\n');
+        // Close HTTP transport if it exists
+        if (this.httpTransport) {
+          await this.httpTransport.close();
+          logger.info({ shutdownId }, 'HTTP transport closed');
+        }
+
+        // Final log message before flushing
+        logger.info({ shutdownId }, 'MCP Control server shut down gracefully');
+
+        // Ensure all logs are flushed to destination
+        await logger.flush();
+      });
+
+      // Exit with success code after flushing logs
       process.exit(0);
     } catch (error) {
-      process.stderr.write(
-        `Error during shutdown: ${error instanceof Error ? error.message : String(error)}\n`,
-      );
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      // Log the error with correlation ID
+      await requestContext.run({ shutdownId, error: errorMessage } as LoggerContext, async () => {
+        logger.error(`Error during shutdown: ${errorMessage}`);
+
+        // Ensure error logs are flushed
+        await logger.flush();
+      });
+
       process.exit(1);
     }
   }
@@ -161,9 +187,10 @@ class MCPControlServer {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
 
-    // Using process.stderr.write to avoid affecting the JSON-RPC stream
-    process.stderr.write(
-      `MCP Control server running on stdio (using ${this.provider.constructor.name})\n`,
+    // Using logger to avoid affecting the JSON-RPC stream
+    logger.info(
+      { provider: this.provider.constructor.name },
+      `MCP Control server running on stdio (using ${this.provider.constructor.name})`,
     );
   }
 
@@ -197,15 +224,26 @@ const initAndRun = async () => {
     await server.init();
     await server.run();
   } catch (err) {
-    // Using process.stderr.write to avoid affecting the JSON-RPC stream
-    process.stderr.write(
-      `Error starting server: ${err instanceof Error ? err.message : String(err)}\n`,
-    );
+    // Using logger to avoid affecting the JSON-RPC stream
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    logger.error({ error: errorMessage }, `Error starting server: ${errorMessage}`);
   }
 };
 
 // Start the server
-initAndRun().catch((err) => {
-  process.stderr.write(`Fatal error: ${err instanceof Error ? err.message : String(err)}\n`);
+initAndRun().catch(async (err) => {
+  const errorMessage = err instanceof Error ? err.message : String(err);
+
+  // Log the fatal error
+  logger.fatal({ error: errorMessage }, `Fatal error: ${errorMessage}`);
+
+  // Ensure logs are flushed before exiting
+  try {
+    await logger.flush();
+  } catch (flushError) {
+    // If flushing fails, we still need to exit
+    console.error('Failed to flush logs:', flushError);
+  }
+
   process.exit(1);
 });

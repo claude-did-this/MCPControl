@@ -9,6 +9,8 @@ import express from 'express';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
 import { HttpServerConfig } from '../../config.js';
+import logger, { baseLogger, requestContext, type LoggerContext } from '../../logger.js';
+import pinoHttp from 'pino-http';
 
 // Define session type
 interface Session {
@@ -92,26 +94,46 @@ export class InMemoryEventStore implements EventStore {
             const timestamp = Date.now();
             const eventId = `${streamId}-${timestamp}-${Math.floor(Math.random() * 10000)}`;
 
-            // Store the event with its stream ID and timestamp
-            this.events.set(eventId, {
-              streamId,
-              message,
-              timestamp,
+            // Create context with event ID for correlated logging
+            requestContext.run({ eventId, sessionId: streamId }, () => {
+              // Log the stored event with correlation ID
+              logger.debug(
+                {
+                  eventId,
+                  streamId,
+                  messageId:
+                    typeof message === 'object' && message !== null && 'id' in message
+                      ? message.id
+                      : undefined,
+                  method:
+                    typeof message === 'object' && message !== null && 'method' in message
+                      ? message.method
+                      : undefined,
+                },
+                `Storing event ${eventId} for stream ${streamId}`,
+              );
+
+              // Store the event with its stream ID and timestamp
+              this.events.set(eventId, {
+                streamId,
+                message,
+                timestamp,
+              });
+
+              // Prune old events if we're over the limit
+              if (this.events.size > this.maxEvents) {
+                this.pruneOldestEvents(this.events.size - this.maxEvents);
+              }
+
+              // Report memory usage periodically
+              const now = Date.now();
+              if (now - this.lastMemoryReport > this.memoryReportInterval) {
+                this.reportMemoryUsage();
+                this.lastMemoryReport = now;
+              }
+
+              resolve(eventId);
             });
-
-            // Prune old events if we're over the limit
-            if (this.events.size > this.maxEvents) {
-              this.pruneOldestEvents(this.events.size - this.maxEvents);
-            }
-
-            // Report memory usage periodically
-            const now = Date.now();
-            if (now - this.lastMemoryReport > this.memoryReportInterval) {
-              this.reportMemoryUsage();
-              this.lastMemoryReport = now;
-            }
-
-            resolve(eventId);
           } catch (error) {
             // Ensure we reject with an Error object
             reject(error instanceof Error ? error : new Error(String(error)));
@@ -133,14 +155,18 @@ export class InMemoryEventStore implements EventStore {
       const memoryUsage = process.memoryUsage();
       const eventCount = this.events.size;
 
-      process.stderr.write(
-        `EventStore memory stats: ${eventCount} events, ` +
-          `RSS: ${Math.round(memoryUsage.rss / 1024 / 1024)}MB, ` +
-          `Heap: ${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB/${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB\n`,
+      logger.info(
+        {
+          eventCount,
+          rss: Math.round(memoryUsage.rss / 1024 / 1024),
+          heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024),
+          heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024),
+        },
+        `EventStore memory stats: ${eventCount} events, RSS: ${Math.round(memoryUsage.rss / 1024 / 1024)}MB, Heap: ${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB/${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`,
       );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      process.stderr.write(`Failed to report memory usage: ${errorMessage}\n`);
+      logger.error({ error: errorMessage }, `Failed to report memory usage: ${errorMessage}`);
     }
   }
 
@@ -158,64 +184,117 @@ export class InMemoryEventStore implements EventStore {
       send: (eventId: EventId, message: JSONRPCMessage) => Promise<void>;
     },
   ): Promise<StreamId> {
-    // If no lastEventId, nothing to replay
-    if (!lastEventId) {
-      return '';
-    }
+    // Create a replay correlation ID to trace this entire replay operation
+    const replayId = uuidv4();
 
-    // Get the stream ID from the event ID
-    const streamId = this.getStreamIdFromEventId(lastEventId);
-    if (!streamId) {
-      process.stderr.write(`Unable to determine stream ID from event ID: ${lastEventId}\n`);
-      return '';
-    }
-
-    // Check if the event exists in our store
-    if (!this.events.has(lastEventId)) {
-      process.stderr.write(`Event ${lastEventId} not found in event store\n`);
-      return '';
-    }
-
-    try {
-      // Find the timestamp of the last event to determine when to start replaying
-      const lastEvent = this.events.get(lastEventId);
-      if (!lastEvent) {
-        process.stderr.write(`Event ${lastEventId} found in map but could not be retrieved\n`);
+    // Run in context of this replay operation
+    return await requestContext.run({ replayId } as LoggerContext, async () => {
+      // If no lastEventId, nothing to replay
+      if (!lastEventId) {
+        logger.debug({ replayId }, 'No lastEventId provided, nothing to replay');
         return '';
       }
 
-      const lastEventTimestamp = lastEvent.timestamp;
-
-      // Get all events for this stream that are newer than the last event
-      // This ensures we don't miss any events and maintains strict chronological order
-      const eventsToReplay = Array.from(this.events.entries())
-        .filter(
-          ([_eventId, event]) =>
-            event.streamId === streamId && event.timestamp > lastEventTimestamp,
-        )
-        .sort(([_idA, eventA], [_idB, eventB]) => eventA.timestamp - eventB.timestamp);
-
-      process.stderr.write(`Replaying ${eventsToReplay.length} events for stream ${streamId}\n`);
-
-      // Send all events that came after the last event
-      for (const [eventId, event] of eventsToReplay) {
-        try {
-          await send(eventId, event.message);
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          process.stderr.write(
-            `Error replaying event ${eventId} for stream ${streamId}: ${errorMessage}\n`,
-          );
-          // Continue with other events even if one fails
-        }
+      // Get the stream ID from the event ID
+      const streamId = this.getStreamIdFromEventId(lastEventId);
+      if (!streamId) {
+        logger.warn(
+          { lastEventId, replayId },
+          `Unable to determine stream ID from event ID: ${lastEventId}`,
+        );
+        return '';
       }
 
-      return streamId;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      process.stderr.write(`Error during event replay for stream ${streamId}: ${errorMessage}\n`);
-      return streamId; // Still return the stream ID even if replay failed
-    }
+      // Check if the event exists in our store
+      if (!this.events.has(lastEventId)) {
+        logger.warn(
+          { lastEventId, streamId, replayId },
+          `Event ${lastEventId} not found in event store`,
+        );
+        return '';
+      }
+
+      try {
+        // Find the timestamp of the last event to determine when to start replaying
+        const lastEvent = this.events.get(lastEventId);
+        if (!lastEvent) {
+          logger.warn(
+            { lastEventId, streamId, replayId },
+            `Event ${lastEventId} found in map but could not be retrieved`,
+          );
+          return '';
+        }
+
+        const lastEventTimestamp = lastEvent.timestamp;
+
+        // Get all events for this stream that are newer than the last event
+        // This ensures we don't miss any events and maintains strict chronological order
+        const eventsToReplay = Array.from(this.events.entries())
+          .filter(
+            ([_eventId, event]) =>
+              event.streamId === streamId && event.timestamp > lastEventTimestamp,
+          )
+          .sort(([_idA, eventA], [_idB, eventB]) => eventA.timestamp - eventB.timestamp);
+
+        logger.info(
+          {
+            count: eventsToReplay.length,
+            streamId,
+            replayId,
+            lastEventId,
+            lastEventTimestamp,
+          },
+          `Replaying ${eventsToReplay.length} events for stream ${streamId}`,
+        );
+
+        // Send all events that came after the last event
+        for (const [eventId, event] of eventsToReplay) {
+          try {
+            // Log within context of this specific event
+            await requestContext.run(
+              { eventId, sessionId: streamId, replayId } as LoggerContext,
+              async () => {
+                logger.debug(
+                  {
+                    messageId:
+                      typeof event.message === 'object' &&
+                      event.message !== null &&
+                      'id' in event.message
+                        ? event.message.id
+                        : undefined,
+                    method:
+                      typeof event.message === 'object' &&
+                      event.message !== null &&
+                      'method' in event.message
+                        ? event.message.method
+                        : undefined,
+                  },
+                  `Replaying event ${eventId}`,
+                );
+
+                await send(eventId, event.message);
+              },
+            );
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            logger.error(
+              { eventId, streamId, replayId, error: errorMessage },
+              `Error replaying event ${eventId} for stream ${streamId}: ${errorMessage}`,
+            );
+            // Continue with other events even if one fails
+          }
+        }
+
+        return streamId;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error(
+          { streamId, replayId, error: errorMessage },
+          `Error during event replay for stream ${streamId}: ${errorMessage}`,
+        );
+        return streamId; // Still return the stream ID even if replay failed
+      }
+    });
   }
 
   /**
@@ -240,7 +319,10 @@ export class InMemoryEventStore implements EventStore {
     }
 
     if (eventsToRemove > 0) {
-      process.stderr.write(`Pruned ${eventsToRemove} oldest events to stay within event limit\n`);
+      logger.info(
+        { count: eventsToRemove },
+        `Pruned ${eventsToRemove} oldest events to stay within event limit`,
+      );
     }
   }
 
@@ -262,7 +344,7 @@ export class InMemoryEventStore implements EventStore {
     }
 
     if (eventsRemoved > 0) {
-      process.stderr.write(`Cleaned up ${eventsRemoved} expired events\n`);
+      logger.info({ count: eventsRemoved }, `Cleaned up ${eventsRemoved} expired events`);
     }
   }
 
@@ -359,6 +441,40 @@ export class HttpTransportManager {
   constructor() {
     // Initialize Express app
     this.app = express();
+
+    // Add request ID and correlation middleware
+    this.app.use((req, res, next) => {
+      // Generate a request ID if not provided
+      const requestId = (req.headers['x-request-id'] as string) || uuidv4();
+      const sessionId = req.headers['mcp-session-id'] as string;
+
+      // Set the request ID on the response headers
+      res.setHeader('x-request-id', requestId);
+
+      // Store context for logging
+      requestContext.run({ requestId, sessionId }, () => {
+        next();
+      });
+    });
+
+    // Add request logging middleware
+    const httpLogger = pinoHttp({
+      // Use base pino logger instance for HTTP logging to avoid compatibility issues
+      logger: baseLogger,
+      genReqId: (req) => (req.headers['x-request-id'] as string) || uuidv4(),
+      customLogLevel: (req, res, err) => {
+        if (res.statusCode >= 500 || err) return 'error';
+        if (res.statusCode >= 400) return 'warn';
+        return 'info';
+      },
+      customProps: (req) => {
+        return {
+          sessionId: req.headers['mcp-session-id'],
+        };
+      },
+    });
+    this.app.use(httpLogger);
+
     this.app.use(express.json());
 
     // Initialize event store for session resumability
@@ -379,8 +495,8 @@ export class HttpTransportManager {
       this.configureAuthentication(config.apiKey);
     } else {
       // Log a warning about missing authentication
-      process.stderr.write(
-        'WARNING: No API key configured for HTTP transport. This is a security risk in production environments.\n',
+      logger.warn(
+        'WARNING: No API key configured for HTTP transport. This is a security risk in production environments.',
       );
     }
 
@@ -407,13 +523,13 @@ export class HttpTransportManager {
         };
 
         this.sessions.set(sessionId, session);
-        process.stderr.write(`Creating new session with ID: ${sessionId}\n`);
+        logger.info({ sessionId }, `Creating new session with ID: ${sessionId}`);
         return sessionId;
       },
 
       // Configure session initialization handler
       onsessioninitialized: (sessionId: string) => {
-        process.stderr.write(`Session initialized with ID: ${sessionId}\n`);
+        logger.info({ sessionId }, `Session initialized with ID: ${sessionId}`);
       },
 
       // Event store for resumable connections
@@ -432,7 +548,7 @@ export class HttpTransportManager {
         await httpTransport.handleRequest(req, res, req.body);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-        process.stderr.write(`Error handling POST request: ${errorMessage}\n`);
+        logger.error({ error: errorMessage }, `Error handling POST request: ${errorMessage}`);
 
         if (!res.headersSent) {
           res.status(500).json({
@@ -453,7 +569,7 @@ export class HttpTransportManager {
         await httpTransport.handleRequest(req, res);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-        process.stderr.write(`Error handling GET request: ${errorMessage}\n`);
+        logger.error({ error: errorMessage }, `Error handling GET request: ${errorMessage}`);
 
         if (!res.headersSent) {
           res.status(500).send('Internal server error');
@@ -467,7 +583,7 @@ export class HttpTransportManager {
         await httpTransport.handleRequest(req, res);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-        process.stderr.write(`Error handling DELETE request: ${errorMessage}\n`);
+        logger.error({ error: errorMessage }, `Error handling DELETE request: ${errorMessage}`);
 
         if (!res.headersSent) {
           res.status(500).send('Error closing session');
@@ -496,8 +612,9 @@ export class HttpTransportManager {
     // Start the HTTP server
     const httpPort = port || 3000;
     this.server = this.app.listen(httpPort, () => {
-      process.stderr.write(
-        `MCP Control server running on HTTP at http://localhost:${httpPort}${endpoint} (using ${provider})\n`,
+      logger.info(
+        { port: httpPort, endpoint, provider },
+        `MCP Control server running on HTTP at http://localhost:${httpPort}${endpoint} (using ${provider})`,
       );
     });
 
@@ -541,7 +658,7 @@ export class HttpTransportManager {
     if (this.server) {
       return new Promise((resolve) => {
         this.server?.close(() => {
-          process.stderr.write('HTTP server closed and all resources cleaned up\n');
+          logger.info('HTTP server closed and all resources cleaned up');
           resolve();
         });
       });
@@ -582,27 +699,15 @@ export class HttpTransportManager {
   private validateCorsSettings(origin: string | string[]): void {
     // Check for wildcard origins
     if (origin === '*') {
-      process.stderr.write(
-        '\x1b[33m⚠️  SECURITY WARNING: CORS is configured to allow ALL origins (*). \x1b[0m\n',
-      );
-      process.stderr.write(
-        '\x1b[33m   This allows any website to make requests to this API, which is a significant security risk.\x1b[0m\n',
-      );
-      process.stderr.write(
-        '\x1b[33m   → Production Recommendation: Specify exact origins using CORS_ORIGINS env variable.\x1b[0m\n',
-      );
-      process.stderr.write(
-        '\x1b[33m   → Example: CORS_ORIGINS=https://example.com,https://admin.example.com\x1b[0m\n',
+      logger.warn(
+        '⚠️  SECURITY WARNING: CORS is configured to allow ALL origins (*). This allows any website to make requests to this API, which is a significant security risk. → Production Recommendation: Specify exact origins using CORS_ORIGINS env variable. → Example: CORS_ORIGINS=https://example.com,https://admin.example.com',
       );
     }
 
     // Check for overly permissive array of origins
     if (Array.isArray(origin) && origin.includes('*')) {
-      process.stderr.write(
-        '\x1b[33m⚠️  SECURITY WARNING: CORS includes wildcard (*) in origins list.\x1b[0m\n',
-      );
-      process.stderr.write(
-        '\x1b[33m   → Production Recommendation: Remove wildcard and specify exact origins.\x1b[0m\n',
+      logger.warn(
+        '⚠️  SECURITY WARNING: CORS includes wildcard (*) in origins list. → Production Recommendation: Remove wildcard and specify exact origins.',
       );
     }
 
@@ -618,14 +723,10 @@ export class HttpTransportManager {
       );
 
       if (nonHttpsOrigins.length > 0) {
-        process.stderr.write(
-          '\x1b[33m⚠️  SECURITY WARNING: Non-HTTPS origins detected in production environment:\x1b[0m\n',
-        );
-        nonHttpsOrigins.forEach((o) => {
-          process.stderr.write(`\x1b[33m   - ${o}\x1b[0m\n`);
-        });
-        process.stderr.write(
-          '\x1b[33m   → Recommendation: Use HTTPS for all origins in production.\x1b[0m\n',
+        const origins = nonHttpsOrigins.join(', ');
+        logger.warn(
+          { nonHttpsOrigins },
+          `⚠️  SECURITY WARNING: Non-HTTPS origins detected in production environment: ${origins}. → Recommendation: Use HTTPS for all origins in production.`,
         );
       }
     }
@@ -673,39 +774,24 @@ export class HttpTransportManager {
    */
   private validateApiKey(apiKey: string): void {
     if (!apiKey) {
-      process.stderr.write(
-        '\x1b[31m🛑 CRITICAL SECURITY WARNING: API key is empty or undefined.\x1b[0m\n',
-      );
-      process.stderr.write(
-        '\x1b[31m   Authentication is effectively disabled! Anyone can access and control this computer.\x1b[0m\n',
-      );
-      process.stderr.write(
-        '\x1b[31m   → Set API_KEY environment variable with a strong secret key.\x1b[0m\n',
+      logger.error(
+        '🛑 CRITICAL SECURITY WARNING: API key is empty or undefined. Authentication is effectively disabled! Anyone can access and control this computer. → Set API_KEY environment variable with a strong secret key.',
       );
       return;
     }
 
     // Check API key strength
     if (apiKey.length < 16) {
-      process.stderr.write(
-        '\x1b[33m⚠️  SECURITY WARNING: API key is too short (less than 16 characters).\x1b[0m\n',
-      );
-      process.stderr.write(
-        '\x1b[33m   → Recommendation: Use a longer, randomly generated key.\x1b[0m\n',
+      logger.warn(
+        '⚠️  SECURITY WARNING: API key is too short (less than 16 characters). → Recommendation: Use a longer, randomly generated key.',
       );
     }
 
     // Check if API key is a common test value
     const commonTestKeys = ['test', 'apikey', 'secret', 'key', '1234', 'password'];
     if (commonTestKeys.some((testKey) => apiKey.toLowerCase().includes(testKey))) {
-      process.stderr.write(
-        '\x1b[33m⚠️  SECURITY WARNING: API key contains common test values.\x1b[0m\n',
-      );
-      process.stderr.write(
-        '\x1b[33m   → Recommendation: Use a random, unique key for production.\x1b[0m\n',
-      );
-      process.stderr.write(
-        '\x1b[33m   → Example: Run "openssl rand -base64 32" to generate a secure key.\x1b[0m\n',
+      logger.warn(
+        '⚠️  SECURITY WARNING: API key contains common test values. → Recommendation: Use a random, unique key for production. → Example: Run "openssl rand -base64 32" to generate a secure key.',
       );
     }
   }
@@ -734,25 +820,27 @@ export class HttpTransportManager {
             this.eventStore
               .clearEventsForStream(sessionId)
               .then(() => {
-                process.stderr.write(`Events cleared for expired session ${sessionId}\n`);
+                logger.info({ sessionId }, `Events cleared for expired session ${sessionId}`);
               })
               .catch((error) => {
                 const errorMessage = error instanceof Error ? error.message : String(error);
-                process.stderr.write(
-                  `Error clearing events for session ${sessionId}: ${errorMessage}\n`,
+                logger.error(
+                  { sessionId, error: errorMessage },
+                  `Error clearing events for session ${sessionId}: ${errorMessage}`,
                 );
               });
 
             // Get the overall event count, we don't need per-session count now
             try {
               const totalEventCount = this.eventStore.getEventCount();
-              process.stderr.write(
-                `Session ${sessionId} expired and was removed (${totalEventCount} total events remain)\n`,
+              logger.info(
+                { sessionId, totalEventCount },
+                `Session ${sessionId} expired and was removed (${totalEventCount} total events remain)`,
               );
             } catch (error) {
               const errorMessage = error instanceof Error ? error.message : String(error);
-              process.stderr.write(`Error getting event count: ${errorMessage}\n`);
-              process.stderr.write(`Session ${sessionId} expired and was removed\n`);
+              logger.error({ error: errorMessage }, `Error getting event count: ${errorMessage}`);
+              logger.info({ sessionId }, `Session ${sessionId} expired and was removed`);
             }
           }
         }
@@ -761,11 +849,11 @@ export class HttpTransportManager {
         try {
           const eventCount = this.eventStore.getEventCount();
           if (eventCount > 0) {
-            process.stderr.write(`Event store stats: ${eventCount} events stored\n`);
+            logger.info({ eventCount }, `Event store stats: ${eventCount} events stored`);
           }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
-          process.stderr.write(`Error getting event store stats: ${errorMessage}\n`);
+          logger.error({ error: errorMessage }, `Error getting event store stats: ${errorMessage}`);
         }
       },
       60 * 60 * 1000,

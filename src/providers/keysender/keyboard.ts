@@ -14,6 +14,7 @@ import { KeyboardAutomation } from '../../interfaces/automation.js';
 import {
   MAX_TEXT_LENGTH,
   KeySchema,
+  VALID_KEYS,
   KeyCombinationSchema,
   KeyHoldOperationSchema,
 } from '../../tools/validation.zod.js';
@@ -236,11 +237,21 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
     }
   }
 
+  /**
+   * Helper function to find case-insensitive matching key string
+   * This improves compatibility with various keyboard layouts and user input
+   */
+  _findMatchingString(A: KeyboardButtonType, ButtonList: KeyboardButtonType[]): KeyboardButtonType {
+    const lowerA = A.toLowerCase();
+    return ButtonList.filter((item) => lowerA === item.toLowerCase())[0] || A;
+  }
+
   pressKey(key: string): WindowsControlResponse {
     try {
       // Validate the key using Zod schema
       KeySchema.parse(key);
-      const keyboardKey = key;
+      // Find matching key with correct casing from valid keys list
+      const keyboardKey = this._findMatchingString(key, VALID_KEYS);
 
       // Start the asynchronous operation and handle errors properly
       this.keyboard.sendKey(keyboardKey).catch((err) => {
@@ -268,55 +279,47 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
       // Store original keys for the message
       const keysForMessage = [...combination.keys];
 
-      // Additional safety check: Block ALL Ctrl combinations at implementation level
+      // Additional safety check: Block ALL Ctrl/Control combinations at implementation level
       // This prevents server crashes that could occur even if validation passes
-      if (combination.keys.some((k) => k.toLowerCase() === 'control')) {
+      if (
+        combination.keys.some((k) => k.toLowerCase() === 'control' || k.toLowerCase() === 'ctrl')
+      ) {
         return {
           success: false,
           message: 'Control key combinations are temporarily disabled due to stability issues',
         };
       }
 
-      const pressPromises: Promise<void>[] = [];
+      // Additional safety check: Block ALL Windows key combinations at implementation level
+      if (
+        combination.keys.some((k) => k.toLowerCase() === 'windows' || k.toLowerCase() === 'win')
+      ) {
+        return {
+          success: false,
+          message: 'Windows key combinations are temporarily disabled due to stability issues',
+        };
+      }
 
-      // Validate each key and collect press promises
+      // Validate each key and collect keys for batch press
       const validatedKeys: KeyboardButtonType[] = [];
       for (const key of combination.keys) {
         KeySchema.parse(key);
-        const keyboardKey = key;
+        // Find matching key with correct casing from valid keys list
+        const keyboardKey = this._findMatchingString(key, VALID_KEYS);
         validatedKeys.push(keyboardKey);
-
-        // Collect all promises to handle them properly
-        pressPromises.push(
-          this.keyboard.toggleKey(keyboardKey, true).catch((err) => {
-            console.error(`Error pressing key ${key}:`, err);
-            throw err; // Re-throw to be caught by the outer try/catch
-          }),
-        );
       }
 
-      // Wait for all keys to be pressed
-      await Promise.all(pressPromises);
+      // Use the array form of toggleKey to press and release all keys at once
+      // This is more efficient than individual key presses
+      await this.keyboard.toggleKey(validatedKeys, true, 50).catch((err) => {
+        console.error('Error pressing keys:', err);
+        throw err; // Re-throw to be caught by the outer try/catch
+      });
 
-      // Small delay to ensure all keys are pressed
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      // Release all keys in reverse order
-      const releasePromises: Promise<void>[] = [];
-      for (let i = validatedKeys.length - 1; i >= 0; i--) {
-        const keyboardKey = validatedKeys[i];
-        const originalKey = combination.keys[i];
-
-        releasePromises.push(
-          this.keyboard.toggleKey(keyboardKey, false).catch((err) => {
-            console.error(`Error releasing key ${originalKey}:`, err);
-            throw err; // Re-throw to be caught by the outer try/catch
-          }),
-        );
-      }
-
-      // Wait for all keys to be released
-      await Promise.all(releasePromises);
+      await this.keyboard.toggleKey(validatedKeys, false, 50).catch((err) => {
+        console.error('Error releasing keys:', err);
+        throw err; // Re-throw to be caught by the outer try/catch
+      });
 
       return {
         success: true,
@@ -329,7 +332,7 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
         for (const key of combination.keys) {
           try {
             KeySchema.parse(key);
-            const keyboardKey = key;
+            const keyboardKey = this._findMatchingString(key, VALID_KEYS);
             cleanupPromises.push(
               this.keyboard.toggleKey(keyboardKey, false).catch((err) => {
                 console.error(`Error releasing key ${key} during cleanup:`, err);
@@ -358,13 +361,16 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
       // Validate key hold operation using Zod schema
       KeyHoldOperationSchema.parse(operation);
 
+      // Find matching key with correct casing
+      const keyboardKey = this._findMatchingString(operation.key, VALID_KEYS);
+
       // Toggle the key state (down/up)
-      await this.keyboard.toggleKey(operation.key, operation.state === 'down');
+      await this.keyboard.toggleKey(keyboardKey, operation.state === 'down');
 
       // If it's a key press (down) with duration, wait for the specified duration then release
       if (operation.state === 'down' && operation.duration) {
         await new Promise((resolve) => setTimeout(resolve, operation.duration));
-        await this.keyboard.toggleKey(operation.key, false);
+        await this.keyboard.toggleKey(keyboardKey, false);
       }
 
       return {
@@ -377,7 +383,8 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
       // Ensure key is released in case of error during hold
       if (operation.state === 'down') {
         try {
-          await this.keyboard.toggleKey(operation.key, false);
+          const keyboardKey = this._findMatchingString(operation.key, VALID_KEYS);
+          await this.keyboard.toggleKey(keyboardKey, false);
         } catch (releaseError) {
           console.error(`Error releasing key ${operation.key} during cleanup:`, releaseError);
           // Ignore errors during cleanup

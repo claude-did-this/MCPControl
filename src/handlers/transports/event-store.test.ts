@@ -2,15 +2,53 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { InMemoryEventStore } from './http';
 import { type JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 
+// Mock the logger module
+vi.mock('../../logger.js', () => {
+  const loggerInstance = {
+    trace: vi.fn(),
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    fatal: vi.fn(),
+    flush: vi.fn().mockResolvedValue(undefined),
+    child: vi.fn().mockReturnThis(),
+  };
+
+  const baseLoggerInstance = {
+    trace: vi.fn(),
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    fatal: vi.fn(),
+    child: vi.fn().mockReturnThis(),
+  };
+
+  return {
+    default: loggerInstance,
+    baseLogger: baseLoggerInstance,
+    requestContext: {
+      run: vi.fn().mockImplementation((context, callback) => callback()),
+    },
+  };
+});
+
+// Import logger mock after mocking it
+import logger from '../../logger.js';
+
 describe('InMemoryEventStore', () => {
   let eventStore: InMemoryEventStore;
   let clock: ReturnType<typeof vi.useFakeTimers>;
+  let loggerErrorSpy: any;
 
   beforeEach(() => {
     // Use fake timers to control time
     clock = vi.useFakeTimers();
     // Initialize a new event store for each test
     eventStore = new InMemoryEventStore(5, 10); // smaller limits for testing
+    // Set up the logger error spy
+    loggerErrorSpy = vi.spyOn(logger, 'error');
   });
 
   afterEach(() => {
@@ -114,9 +152,6 @@ describe('InMemoryEventStore', () => {
   });
 
   it('should handle errors during event replay', async () => {
-    // Create spy to monitor stderr.write
-    const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
-
     // Store a test event
     const streamId = 'test-stream';
     const message: JSONRPCMessage = { jsonrpc: '2.0', method: 'test', id: 1 };
@@ -133,7 +168,15 @@ describe('InMemoryEventStore', () => {
     // Verify error was logged but operation continued
     expect(resultStreamId).toBe(streamId);
     expect(send).toHaveBeenCalledTimes(1);
-    expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining('Error replaying event'));
+    expect(loggerErrorSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventId: expect.any(String),
+        streamId,
+        replayId: expect.any(String),
+        error: expect.any(String),
+      }),
+      expect.stringContaining('Error replaying event'),
+    );
   });
 
   it('should handle concurrent event storage properly', async () => {
