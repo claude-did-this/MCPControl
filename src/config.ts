@@ -46,6 +46,23 @@ export interface HttpServerConfig {
    * CORS configuration
    */
   cors?: CorsConfig;
+
+  /**
+   * Event store configuration for SSE resumability
+   */
+  eventStore?: {
+    /**
+     * Maximum number of events to store in memory
+     * Default: 10000
+     */
+    maxEvents?: number;
+
+    /**
+     * Maximum age of events in minutes before they're removed
+     * Default: 30
+     */
+    maxEventAgeInMinutes?: number;
+  };
 }
 
 /**
@@ -109,6 +126,12 @@ export function loadConfig(): AutomationConfig {
           'Last-Event-ID',
         ],
         credentials: true,
+      },
+      eventStore: {
+        maxEvents: process.env.MAX_EVENTS ? parseInt(process.env.MAX_EVENTS, 10) : 10000,
+        maxEventAgeInMinutes: process.env.MAX_EVENT_AGE_MINUTES
+          ? parseInt(process.env.MAX_EVENT_AGE_MINUTES, 10)
+          : 30,
       },
     },
   };
