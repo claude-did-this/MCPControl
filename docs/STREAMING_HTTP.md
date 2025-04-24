@@ -726,10 +726,119 @@ interface StreamableHTTPClientTransportOptions {
 }
 ```
 
+## Implementing Resumable Connections with Last-Event-ID
+
+Server-Sent Events (SSE) provide native support for resumable connections through the `Last-Event-ID` header. This allows clients to reconnect and continue receiving events after a connection interruption without missing any events that occurred during the disconnection period.
+
+### Client-Side Implementation
+
+To implement resumable connections in your client application:
+
+1. **Track the last event ID received**:
+   ```javascript
+   let lastEventId = '';
+   
+   eventSource.addEventListener('message', (event) => {
+     // Store the latest event ID when processing each message
+     if (event.lastEventId) {
+       lastEventId = event.lastEventId;
+     }
+     
+     // Process the event data
+     const data = JSON.parse(event.data);
+     // Handle the event...
+   });
+   ```
+
+2. **Reconnect with Last-Event-ID header**:
+   ```javascript
+   function createEventSource(url, sessionId) {
+     // Close existing EventSource if it exists
+     if (eventSource && eventSource.readyState !== EventSource.CLOSED) {
+       eventSource.close();
+     }
+     
+     // Create headers object for EventSource
+     const headers = {
+       'x-api-key': apiKey,
+       'Mcp-Session-Id': sessionId
+     };
+     
+     // Add Last-Event-ID if we have one from previous connection
+     if (lastEventId) {
+       headers['Last-Event-ID'] = lastEventId;
+     }
+     
+     // Create new EventSource with headers
+     const eventSource = new EventSourceWithAuth(url, {
+       headers: headers
+     });
+     
+     return eventSource;
+   }
+   ```
+
+3. **Handle reconnection logic**:
+   ```javascript
+   function setupEventSource() {
+     const eventSource = createEventSource(mcpUrl, sessionId);
+     
+     // Set up error handling for reconnection
+     eventSource.onerror = (error) => {
+       console.error('EventSource error:', error);
+       
+       // Wait before attempting to reconnect
+       setTimeout(() => {
+         console.log('Reconnecting with last event ID:', lastEventId);
+         setupEventSource();
+       }, 5000); // 5 second delay before reconnect
+     };
+     
+     return eventSource;
+   }
+   ```
+
+### Testing Resumable Connections
+
+To test your implementation of resumable connections:
+
+1. Start your client application and establish an SSE connection
+2. Monitor the events being received
+3. Forcibly disconnect the connection (e.g., by stopping the server temporarily)
+4. Restart the server and observe the client behavior
+5. Verify that the client reconnects with the `Last-Event-ID` header
+6. Confirm that any events missed during the disconnection are replayed
+
+### Browser and Network Considerations
+
+Some important details to consider for robust implementation:
+
+1. **Browser Support**: Most modern browsers support the EventSource API and Last-Event-ID header.
+
+2. **Proxies and Load Balancers**: Some proxies may strip or modify HTTP headers. Ensure your infrastructure preserves the Last-Event-ID header.
+
+3. **Connection Timeouts**: Configure appropriate timeouts for your EventSource connections. Some networks might have aggressive timeout policies.
+
+4. **EventSource Polyfills**: For environments without native EventSource support, you can use polyfills that implement the Last-Event-ID functionality.
+
+5. **Event ID Structure**: The MCPControl implementation uses a format of `streamId-timestamp-random` for event IDs. This allows for efficient retrieval of events for a specific stream.
+
+### Event Store Configuration
+
+The MCPControl EventStore can be configured to control memory usage and event retention:
+
+```javascript
+// Set environment variables to configure the event store
+process.env.MAX_EVENTS = "20000";            // Maximum events to store in memory
+process.env.MAX_EVENT_AGE_MINUTES = "60";    // Maximum age in minutes before events are removed
+```
+
+These settings help balance between having enough event history for resumability while preventing excessive memory usage.
+
 ## Conclusion
 
 The MCP Protocol 1.10.2 with Streaming HTTP support provides a robust and flexible way to build servers that can be controlled by AI assistants like Claude. The MCPControl implementation allows for programmatic control of the computer while maintaining security and scalability.
 
-By leveraging the Streaming HTTP transport, you can build more responsive and feature-rich MCP servers that can handle long-running operations, provide real-time updates, and maintain persistent connections with clients.
+By leveraging the Streaming HTTP transport with resumable connections, you can build more responsive and fault-tolerant MCP servers that can handle connection interruptions, provide seamless recovery, and maintain persistent connections with clients even in unstable network environments.
 
 When implementing HTTP streaming, it's important to use the correct class names and API structures as documented here, as the API may differ from earlier documentation.

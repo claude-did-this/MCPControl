@@ -12,6 +12,9 @@ vi.mock('@modelcontextprotocol/sdk/server/streamableHttp.js', () => {
         close: vi.fn().mockResolvedValue(undefined),
       };
     }),
+    // Mock Event and EventStore types for tests
+    Event: undefined,
+    EventStore: undefined,
   };
 });
 
@@ -58,12 +61,14 @@ describe('HttpTransportManager', () => {
   it('creates a transport with proper configuration', () => {
     const transport = transportManager.createTransport(mockHttpConfig);
 
-    // Verify StreamableHTTPServerTransport was created with session management
+    // Verify StreamableHTTPServerTransport was created with session management and event store
     expect(StreamableHTTPServerTransport).toHaveBeenCalledTimes(1);
     expect(StreamableHTTPServerTransport).toHaveBeenCalledWith(
       expect.objectContaining({
         sessionIdGenerator: expect.any(Function),
         onsessioninitialized: expect.any(Function),
+        eventStore: expect.any(Object),
+        enableJsonResponse: true,
       }),
     );
 
@@ -123,6 +128,18 @@ describe('HttpTransportManager', () => {
     // Mock stopSessionCleanup
     const stopSessionCleanupSpy = vi.spyOn(transportManager as any, 'stopSessionCleanup');
 
+    // Mock eventStore methods with EventStore compatible interface
+    const mockClearAllEvents = vi.fn().mockResolvedValue(undefined);
+    const mockDispose = vi.fn();
+    transportManager['eventStore'] = {
+      clearAllEvents: mockClearAllEvents,
+      dispose: mockDispose,
+      // Add the required methods to satisfy the EventStore interface
+      storeEvent: vi.fn().mockResolvedValue('mock-event-id'),
+      replayEventsAfter: vi.fn().mockResolvedValue('mock-stream-id'),
+      getEventCount: vi.fn().mockReturnValue(0),
+    } as any;
+
     // Setup mock server
     transportManager['server'] = {
       close: vi.fn((callback) => callback()),
@@ -142,5 +159,30 @@ describe('HttpTransportManager', () => {
     // Verify
     expect(stopSessionCleanupSpy).toHaveBeenCalled();
     expect(sessionsMap.size).toBe(0); // Sessions should be cleared
+    expect(mockClearAllEvents).toHaveBeenCalled(); // Event store should be cleared
+    expect(mockDispose).toHaveBeenCalled(); // Event store should be disposed
+  });
+
+  it('initializes event store when creating transport', () => {
+    // Prepare - mock the StreamableHTTPServerTransport to capture the options
+    let capturedOptions: any;
+    const mockImplementation = StreamableHTTPServerTransport as unknown as {
+      mockImplementationOnce: (fn: (options: any) => any) => void;
+    };
+    mockImplementation.mockImplementationOnce((options) => {
+      capturedOptions = options;
+      return {
+        handleRequest: vi.fn().mockResolvedValue(undefined),
+        close: vi.fn().mockResolvedValue(undefined),
+      };
+    });
+
+    // Act
+    transportManager.createTransport(mockHttpConfig);
+
+    // Assert - check that event store was initialized and passed to the transport
+    expect(capturedOptions).toBeDefined();
+    expect(capturedOptions.eventStore).toBeDefined();
+    expect(capturedOptions.enableJsonResponse).toBe(true);
   });
 });

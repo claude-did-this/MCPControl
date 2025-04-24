@@ -46,6 +46,23 @@ export interface HttpServerConfig {
    * CORS configuration
    */
   cors?: CorsConfig;
+
+  /**
+   * Event store configuration for SSE resumability
+   */
+  eventStore?: {
+    /**
+     * Maximum number of events to store in memory
+     * Default: 10000
+     */
+    maxEvents?: number;
+
+    /**
+     * Maximum age of events in minutes before they're removed
+     * Default: 30
+     */
+    maxEventAgeInMinutes?: number;
+  };
 }
 
 /**
@@ -82,9 +99,64 @@ export interface CorsConfig {
 /**
  * Load configuration from environment variables
  */
+/**
+ * Validates a numeric environment variable, ensuring it's within acceptable bounds
+ * @param envVarName The name of the environment variable
+ * @param defaultValue Default value to use if environment variable is not set
+ * @param minValue Minimum acceptable value
+ * @param maxValue Maximum acceptable value
+ * @returns The validated value
+ */
+function validateNumberEnvVar(
+  envVarName: string,
+  defaultValue: number,
+  minValue: number,
+  maxValue: number,
+): number {
+  const envVar = process.env[envVarName];
+  if (!envVar) {
+    return defaultValue;
+  }
+
+  try {
+    const parsedValue = parseInt(envVar, 10);
+
+    // Check for NaN
+    if (isNaN(parsedValue)) {
+      process.stderr.write(
+        `WARNING: Invalid value for ${envVarName} "${envVar}". Using default value ${defaultValue}.\n`,
+      );
+      return defaultValue;
+    }
+
+    // Ensure the value is within bounds
+    if (parsedValue < minValue) {
+      process.stderr.write(
+        `WARNING: ${envVarName} value ${parsedValue} is too low. Using minimum value ${minValue}.\n`,
+      );
+      return minValue;
+    }
+
+    if (parsedValue > maxValue) {
+      process.stderr.write(
+        `WARNING: ${envVarName} value ${parsedValue} is too high. Using maximum value ${maxValue}.\n`,
+      );
+      return maxValue;
+    }
+
+    return parsedValue;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    process.stderr.write(
+      `WARNING: Error parsing ${envVarName}: ${errorMessage}. Using default value ${defaultValue}.\n`,
+    );
+    return defaultValue;
+  }
+}
+
 export function loadConfig(): AutomationConfig {
   // Parse HTTP port from environment if available
-  const httpPort = process.env.HTTP_PORT ? parseInt(process.env.HTTP_PORT, 10) : undefined;
+  const httpPort = validateNumberEnvVar('HTTP_PORT', 3000, 1024, 65535);
 
   // Determine transport type from command line arguments
   const useHttp = process.argv.includes('--http');
@@ -94,7 +166,7 @@ export function loadConfig(): AutomationConfig {
     provider: process.env.AUTOMATION_PROVIDER || 'keysender',
     transport: transportType,
     http: {
-      port: httpPort || 3000,
+      port: httpPort,
       path: process.env.HTTP_PATH || '/mcp',
       apiKey: process.env.API_KEY,
       cors: {
@@ -109,6 +181,10 @@ export function loadConfig(): AutomationConfig {
           'Last-Event-ID',
         ],
         credentials: true,
+      },
+      eventStore: {
+        maxEvents: validateNumberEnvVar('MAX_EVENTS', 10000, 1, 1000000),
+        maxEventAgeInMinutes: validateNumberEnvVar('MAX_EVENT_AGE_MINUTES', 30, 1, 1440), // Max 24 hours
       },
     },
   };
