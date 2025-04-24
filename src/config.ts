@@ -1,3 +1,5 @@
+import logger from './logger.js';
+
 /**
  * Configuration interface for automation settings
  */
@@ -123,23 +125,26 @@ function validateNumberEnvVar(
 
     // Check for NaN
     if (isNaN(parsedValue)) {
-      process.stderr.write(
-        `WARNING: Invalid value for ${envVarName} "${envVar}". Using default value ${defaultValue}.\n`,
+      logger.warn(
+        { envVar: envVarName, value: envVar, default: defaultValue },
+        `WARNING: Invalid value for ${envVarName} "${envVar}". Using default value ${defaultValue}.`,
       );
       return defaultValue;
     }
 
     // Ensure the value is within bounds
     if (parsedValue < minValue) {
-      process.stderr.write(
-        `WARNING: ${envVarName} value ${parsedValue} is too low. Using minimum value ${minValue}.\n`,
+      logger.warn(
+        { envVar: envVarName, value: parsedValue, min: minValue },
+        `WARNING: ${envVarName} value ${parsedValue} is too low. Using minimum value ${minValue}.`,
       );
       return minValue;
     }
 
     if (parsedValue > maxValue) {
-      process.stderr.write(
-        `WARNING: ${envVarName} value ${parsedValue} is too high. Using maximum value ${maxValue}.\n`,
+      logger.warn(
+        { envVar: envVarName, value: parsedValue, max: maxValue },
+        `WARNING: ${envVarName} value ${parsedValue} is too high. Using maximum value ${maxValue}.`,
       );
       return maxValue;
     }
@@ -147,8 +152,9 @@ function validateNumberEnvVar(
     return parsedValue;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    process.stderr.write(
-      `WARNING: Error parsing ${envVarName}: ${errorMessage}. Using default value ${defaultValue}.\n`,
+    logger.warn(
+      { envVar: envVarName, error: errorMessage, default: defaultValue },
+      `WARNING: Error parsing ${envVarName}: ${errorMessage}. Using default value ${defaultValue}.`,
     );
     return defaultValue;
   }

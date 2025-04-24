@@ -90,6 +90,58 @@ Please be respectful and considerate of others when contributing to this project
 - For errors, return `{ success: false, message: string }`
 - For success, return `{ success: true, data?: any }`
 
+### Logging Standards
+
+The project uses [pino](https://getpino.io/) for structured logging:
+
+- Import the logger from `src/logger.js`
+- Use appropriate log levels: `logger.info()`, `logger.warn()`, `logger.error()`, `logger.debug()`
+- Include structured data when possible:
+  ```typescript
+  logger.info(
+    { userId: '123', action: 'login' }, // structured data object
+    'User logged in successfully'        // log message
+  );
+  ```
+- NEVER use `console.log()` or `process.stderr.write()` directly for logging
+- Default log level is controlled via the `LOG_LEVEL` environment variable
+- In development, pretty-printed logs are enabled automatically
+
+#### Correlation IDs and Request Tracking
+
+Logs are correlated using:
+
+- `requestId`: Unique ID for each HTTP request (set in HTTP requests header)
+- `sessionId`: User session identifier from MCP session
+- `eventId`: Event identifier for streaming events
+- `replayId`: Correlation ID for event replay operations
+- `shutdownId`: Identifier for server shutdown sequence
+
+Use the `requestContext` for correlation:
+
+```typescript
+import logger, { requestContext } from '../../logger.js';
+
+// Run code with correlation context
+requestContext.run({ operationId: 'abc-123' }, () => {
+  // All logs within this context will include operationId: 'abc-123'
+  logger.info('Operation starting');
+  
+  // ... your code here ...
+  
+  logger.info('Operation completed');
+});
+```
+
+#### Log Flushing on Shutdown
+
+All logs are automatically flushed to disk during the server shutdown sequence:
+
+```typescript
+// Ensure logs are flushed before exiting
+await logger.flush();
+```
+
 ## Testing
 
 - Place tests in the same directory as implementation with `.test.ts` suffix
