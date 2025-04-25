@@ -7,6 +7,45 @@ export interface KeyboardInput {
   text: string;
 }
 
+/**
+ * Configuration options for human-like typing with streaming support
+ */
+export interface KeyboardStreamOptions {
+  /**
+   * Base delay between keystrokes in milliseconds
+   * Smaller values result in faster typing, larger values in slower typing
+   * Default: 50ms
+   */
+  delay?: number;
+
+  /**
+   * Whether to add random variations to the typing delay
+   * Adds human-like irregularity to typing rhythm
+   * Default: true
+   */
+  randomize?: boolean;
+
+  /**
+   * Factor for randomization, controls how much variation is added (0-1)
+   * 0 = no variation, 1 = up to 100% variation in either direction
+   * Default: 0.3 (±30% variation)
+   */
+  randomFactor?: number;
+
+  /**
+   * Whether to stream progress updates during typing
+   * Default: true
+   */
+  streamProgress?: boolean;
+
+  /**
+   * Maximum chunk size when typing very long text
+   * Longer text will be broken into chunks of this size
+   * Default: 1000 characters
+   */
+  chunkSize?: number;
+}
+
 export interface KeyCombination {
   keys: string[]; // Array of keys to be pressed together, e.g. ["control", "c"]
 }

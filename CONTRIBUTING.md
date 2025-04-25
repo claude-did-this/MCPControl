@@ -54,8 +54,8 @@ Please be respectful and considerate of others when contributing to this project
 
 ### Branching Strategy
 
-- `master` branch contains the latest stable code
-- Create feature branches from `master` using the naming convention:
+- `main` branch contains the latest stable code
+- Create feature branches from `main` using the naming convention:
   - `feature/feature-name` for new features
   - `bugfix/issue-description` for bug fixes
   - `docs/description` for documentation changes
@@ -89,6 +89,58 @@ Please be respectful and considerate of others when contributing to this project
 - Use 2-space indentation and semicolons
 - For errors, return `{ success: false, message: string }`
 - For success, return `{ success: true, data?: any }`
+
+### Logging Standards
+
+The project uses [pino](https://getpino.io/) for structured logging:
+
+- Import the logger from `src/logger.js`
+- Use appropriate log levels: `logger.info()`, `logger.warn()`, `logger.error()`, `logger.debug()`
+- Include structured data when possible:
+  ```typescript
+  logger.info(
+    { userId: '123', action: 'login' }, // structured data object
+    'User logged in successfully'        // log message
+  );
+  ```
+- NEVER use `console.log()` or `process.stderr.write()` directly for logging
+- Default log level is controlled via the `LOG_LEVEL` environment variable
+- In development, pretty-printed logs are enabled automatically
+
+#### Correlation IDs and Request Tracking
+
+Logs are correlated using:
+
+- `requestId`: Unique ID for each HTTP request (set in HTTP requests header)
+- `sessionId`: User session identifier from MCP session
+- `eventId`: Event identifier for streaming events
+- `replayId`: Correlation ID for event replay operations
+- `shutdownId`: Identifier for server shutdown sequence
+
+Use the `requestContext` for correlation:
+
+```typescript
+import logger, { requestContext } from '../../logger.js';
+
+// Run code with correlation context
+requestContext.run({ operationId: 'abc-123' }, () => {
+  // All logs within this context will include operationId: 'abc-123'
+  logger.info('Operation starting');
+  
+  // ... your code here ...
+  
+  logger.info('Operation completed');
+});
+```
+
+#### Log Flushing on Shutdown
+
+All logs are automatically flushed to disk during the server shutdown sequence:
+
+```typescript
+// Ensure logs are flushed before exiting
+await logger.flush();
+```
 
 ## Testing
 
@@ -141,9 +193,9 @@ See the [TASKS.md](./TASKS.md) file for the current roadmap and planned features
 
 ## Publishing
 
-This project uses GitHub Actions to automatically publish to npm when a version tag is pushed to master:
+This project uses GitHub Actions to automatically publish to npm when a version tag is pushed to main:
 
-1. Ensure changes are merged to master
+1. Ensure changes are merged to main
 2. Create and push a tag with the version number:
    ```bash
    git tag v1.2.3
