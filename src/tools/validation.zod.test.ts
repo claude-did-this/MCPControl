@@ -71,13 +71,20 @@ describe('Zod Validation Schemas', () => {
   describe('KeyCombinationSchema', () => {
     it('should validate valid key combinations', () => {
       expect(() => KeyCombinationSchema.parse({ keys: ['ctrl', 'c'] })).not.toThrow();
+      expect(() => KeyCombinationSchema.parse({ keys: ['ctrl', 'v'] })).not.toThrow();
+      expect(() => KeyCombinationSchema.parse({ keys: ['ctrl', 'x'] })).not.toThrow();
       expect(() => KeyCombinationSchema.parse({ keys: ['ctrl', 'shift', 'a'] })).not.toThrow();
       expect(() => KeyCombinationSchema.parse({ keys: ['a'] })).not.toThrow();
     });
 
+    it('should reject dangerous key combinations', () => {
+      expect(() => KeyCombinationSchema.parse({ keys: ['ctrl', 'alt', 'delete'] })).toThrow();
+      expect(() => KeyCombinationSchema.parse({ keys: ['windows', 'r'] })).toThrow();
+      expect(() => KeyCombinationSchema.parse({ keys: ['lwin', 'd'] })).toThrow();
+    });
+
     it('should reject invalid key combinations', () => {
       expect(() => KeyCombinationSchema.parse({ keys: [] })).toThrow();
-      expect(() => KeyCombinationSchema.parse({ keys: ['ctrl', 'alt', 'delete'] })).toThrow();
       expect(() => KeyCombinationSchema.parse({ keys: ['a', 'b', 'c', 'd', 'e', 'f'] })).toThrow();
       expect(() => KeyCombinationSchema.parse({ keys: ['invalid_key'] })).toThrow();
       expect(() => KeyCombinationSchema.parse({ keys: 'ctrl+c' })).toThrow();

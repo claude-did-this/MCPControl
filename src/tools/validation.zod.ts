@@ -200,6 +200,15 @@ function isDangerousKeyCombination(keys: string[]): string | null {
     }
   }
 
+  // Block Windows key combinations to prevent server crashes
+  if (
+    normalizedKeys.includes('windows') ||
+    normalizedKeys.includes('lwin') ||
+    normalizedKeys.includes('rwin')
+  ) {
+    return 'Windows key combinations are temporarily disabled due to stability issues';
+  }
+
   return null;
 }
 
