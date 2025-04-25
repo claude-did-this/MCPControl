@@ -53,7 +53,7 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
     try {
       // Validate the key using Zod schema
       KeySchema.parse(key);
-      const keyboardKey = this._findMatchingString(key,  VALID_KEYS);
+      const keyboardKey = this._findMatchingString(key, VALID_KEYS);
 
       // Start the asynchronous operation and handle errors properly
       this.keyboard.sendKey(keyboardKey).catch((err) => {
@@ -73,9 +73,9 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
     }
   }
 
-  _findMatchingString(A:KeyboardButtonType, ButtonList: KeyboardButtonType[]): KeyboardButtonType {
+  _findMatchingString(A: KeyboardButtonType, ButtonList: KeyboardButtonType[]): KeyboardButtonType {
     const lowerA = A.toLowerCase();
-    return ButtonList.filter(item => lowerA == item.toLowerCase())[0];
+    return ButtonList.filter((item) => lowerA == item.toLowerCase())[0];
   }
 
   async pressKeyCombination(combination: KeyCombination): Promise<WindowsControlResponse> {
@@ -90,16 +90,16 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
       const validatedKeys: KeyboardButtonType[] = [];
       for (const key of combination.keys) {
         KeySchema.parse(key);
-        const keyboardKey = this._findMatchingString(key,  VALID_KEYS);
+        const keyboardKey = this._findMatchingString(key, VALID_KEYS);
         validatedKeys.push(keyboardKey);
       }
       await this.keyboard.toggleKey(validatedKeys, true, 50).catch((err) => {
-          console.error(`Error pressing key ${validatedKeys}:`, err);
-          throw err; // Re-throw to be caught by the outer try/catch
+        console.error(`Error pressing keys:`, err);
+        throw err; // Re-throw to be caught by the outer try/catch
       });
       await this.keyboard.toggleKey(validatedKeys, false, 50).catch((err) => {
-          console.error(`Error releasing key ${validatedKeys}:`, err);
-          throw err; // Re-throw to be caught by the outer try/catch
+        console.error(`Error releasing keys:`, err);
+        throw err; // Re-throw to be caught by the outer try/catch
       });
       return {
         success: true,
@@ -112,7 +112,7 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
         for (const key of combination.keys) {
           try {
             KeySchema.parse(key);
-            const keyboardKey = this._findMatchingString(key,  VALID_KEYS);
+            const keyboardKey = this._findMatchingString(key, VALID_KEYS);
             cleanupPromises.push(
               this.keyboard.toggleKey(keyboardKey, false).catch((err) => {
                 console.error(`Error releasing key ${key} during cleanup:`, err);
@@ -140,7 +140,7 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
     try {
       // Validate key hold operation using Zod schema
       KeyHoldOperationSchema.parse(operation);
-    
+
       // Toggle the key state (down/up)
       await this.keyboard.toggleKey(operation.key, operation.state === 'down');
 
