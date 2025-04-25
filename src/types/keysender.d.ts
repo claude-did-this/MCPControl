@@ -39,7 +39,7 @@ declare module 'keysender' {
     keyboard: {
       printText(text: string): Promise<void>;
       sendKey(key: string): Promise<void>;
-      toggleKey(key: string, down: boolean): Promise<void>;
+      toggleKey(key: string | string[], down: boolean, delay?: Delay): Promise<void>;
     };
 
     mouse: {

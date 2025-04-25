@@ -85,12 +85,12 @@ describe('Keyboard Tools', () => {
 
   describe('pressKeyCombination', () => {
     it('should successfully press a key combination', async () => {
-      const combination: KeyCombination = { keys: ['control', 'c'] };
+      const combination: KeyCombination = { keys: ['ctrl', 'c'] };
       const result = await pressKeyCombination(combination);
 
       expect(result).toEqual({
         success: true,
-        message: 'Pressed key combination: control+c',
+        message: 'Pressed key combination: ctrl+c',
       });
     });
 

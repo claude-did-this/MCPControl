@@ -19,7 +19,7 @@ vi.mock('../tools/keyboard.js', () => ({
   pressKey: vi.fn(() => ({ success: true, message: 'Key pressed' })),
   pressKeyCombination: vi.fn().mockResolvedValue({
     success: true,
-    message: 'Pressed key combination: control+c',
+    message: 'Pressed key combination: ctrl+c',
   }),
   holdKey: vi.fn(),
 }));
@@ -42,7 +42,7 @@ vi.mock('../providers/factory.js', () => {
     pressKey: vi.fn(() => ({ success: true, message: 'Key pressed' })),
     pressKeyCombination: vi.fn().mockResolvedValue({
       success: true,
-      message: 'Pressed key combination: control+c',
+      message: 'Pressed key combination: ctrl+c',
     }),
     holdKey: vi.fn(),
   };
@@ -321,12 +321,12 @@ describe('Tools Handler', () => {
       const validResult = await callToolHandler({
         params: {
           name: 'press_key_combination',
-          arguments: { keys: ['control', 'c'] },
+          arguments: { keys: ['ctrl', 'c'] },
         },
       });
       expect(JSON.parse(validResult.content[0].text)).toEqual({
         success: true,
-        message: 'Pressed key combination: control+c',
+        message: 'Pressed key combination: ctrl+c',
       });
 
       const invalidResult = await callToolHandler({
