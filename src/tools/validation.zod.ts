@@ -7,9 +7,38 @@ export const MAX_SCROLL_AMOUNT = 1000;
 
 /**
  * List of allowed keyboard keys for validation
+ * Copied directly from keysender for maximum compatibility
  */
 export const VALID_KEYS = [
-  // Letters
+  // copied from keysender
+  'backspace',
+  'tab',
+  'enter',
+  'pause',
+  'capsLock',
+  'escape',
+  'space',
+  'pageUp',
+  'pageDown',
+  'end',
+  'home',
+  'left',
+  'up',
+  'right',
+  'down',
+  'printScreen',
+  'insert',
+  'delete',
+  '0',
+  '1',
+  '2',
+  '3',
+  '4',
+  '5',
+  '6',
+  '7',
+  '8',
+  '9',
   'a',
   'b',
   'c',
@@ -36,40 +65,22 @@ export const VALID_KEYS = [
   'x',
   'y',
   'z',
-  // Numbers
-  '0',
-  '1',
-  '2',
-  '3',
-  '4',
-  '5',
-  '6',
-  '7',
-  '8',
-  '9',
-  // Special keys
-  'space',
-  'escape',
-  'tab',
-  'alt',
-  'control',
-  'shift',
-  'right_shift',
-  'command',
-  'windows',
-  'enter',
-  'return',
-  'backspace',
-  'delete',
-  'home',
-  'end',
-  'page_up',
-  'page_down',
-  'left',
-  'up',
-  'right',
-  'down',
-  // Function keys
+  'num0',
+  'num1',
+  'num2',
+  'num3',
+  'num4',
+  'num5',
+  'num6',
+  'num7',
+  'num8',
+  'num9',
+  'num*',
+  'num+',
+  'num,',
+  'num-',
+  'num.',
+  'num/',
   'f1',
   'f2',
   'f3',
@@ -82,24 +93,57 @@ export const VALID_KEYS = [
   'f10',
   'f11',
   'f12',
-  // Symbols
-  '.',
+  'f13',
+  'f14',
+  'f15',
+  'f16',
+  'f17',
+  'f18',
+  'f19',
+  'f20',
+  'f21',
+  'f22',
+  'f23',
+  'f24',
+  'numLock',
+  'scrollLock',
+  ';',
+  '=',
   ',',
+  '-',
+  '.',
   '/',
-  '\\',
+  '`',
   '[',
+  '\\',
   ']',
+  "'",
+  'alt',
+  'ctrl',
+  'shift',
+  'lShift',
+  'rShift',
+  'lCtrl',
+  'rCtrl',
+  'lAlt',
+  'rAlt',
+  'lWin',
+  'rWin',
+  // Legacy support for older key names
+  'control',
+  'windows',
+  'return',
+  'page_up',
+  'page_down',
+  'right_shift',
+  'command',
+  // More symbols for backward compatibility
   '{',
   '}',
   '(',
   ')',
-  ';',
   ':',
-  "'",
   '"',
-  '`',
-  '-',
-  '=',
   'plus',
   '?',
   '!',
@@ -114,6 +158,9 @@ export const VALID_KEYS = [
   '<',
   '>',
 ];
+
+// Create lowercase version for case-insensitive matching
+export const VALID_KEYS_lowercase = VALID_KEYS.map((element) => element.toLowerCase());
 
 /**
  * Zod schema for mouse position validation
@@ -140,7 +187,7 @@ export const MouseButtonSchema = z.enum(['left', 'right', 'middle']);
  * Zod schema for keyboard key validation
  */
 export const KeySchema = z.string().refine(
-  (key) => VALID_KEYS.includes(key.toLowerCase()),
+  (key) => VALID_KEYS_lowercase.includes(key.toLowerCase()),
   (key) => ({ message: `Invalid key: "${key}". Must be one of the allowed keys.` }),
 );
 
@@ -150,39 +197,36 @@ export const KeySchema = z.string().refine(
 function isDangerousKeyCombination(keys: string[]): string | null {
   const normalizedKeys = keys.map((k) => k.toLowerCase());
 
-  // Temporary restriction: Block ALL Ctrl key combinations to prevent server crashes
-  // This is due to stdio handling issues. Will be fixed in future version with HTTP transport
-  if (normalizedKeys.includes('control')) {
-    return 'Control key combinations are temporarily disabled due to stability issues';
-  }
+  // Normalize key names for consistent checking
+  const hasCtrl = normalizedKeys.some(
+    (k) => k === 'control' || k === 'ctrl' || k === 'lctrl' || k === 'rctrl',
+  );
+  const hasWin = normalizedKeys.some((k) => k === 'windows' || k === 'lwin' || k === 'rwin');
 
-  // Temporary restriction: Block ALL Windows key combinations to prevent server crashes
-  // This is due to stdio handling issues. Will be fixed in future version with HTTP transport
-  if (normalizedKeys.includes('windows')) {
-    return 'Windows key combinations are temporarily disabled due to stability issues';
-  }
-
-  // Check for OS-level dangerous combinations
-  if (normalizedKeys.includes('command') || normalizedKeys.includes('control')) {
-    // Control+Alt+Delete or Command+Option+Esc (Force Quit on Mac)
-    if (
-      (normalizedKeys.includes('control') &&
-        normalizedKeys.includes('alt') &&
-        normalizedKeys.includes('delete')) ||
-      (normalizedKeys.includes('command') &&
-        normalizedKeys.includes('alt') &&
-        normalizedKeys.includes('escape'))
-    ) {
+  // Allow all Ctrl key combinations
+  if (hasCtrl) {
+    // Only restrict specific potentially dangerous combinations
+    if (normalizedKeys.includes('alt') && normalizedKeys.includes('delete')) {
       return 'This combination can trigger system functions';
     }
 
-    // Block combinations that can open a terminal
-    if (
-      (normalizedKeys.includes('control') || normalizedKeys.includes('command')) &&
-      (normalizedKeys.includes('alt') || normalizedKeys.includes('option')) &&
-      normalizedKeys.includes('t')
-    ) {
-      return 'This combination can open a terminal';
+    if (normalizedKeys.includes('shift') && normalizedKeys.includes('escape')) {
+      return 'This combination can trigger system functions';
+    }
+
+    return null; // All other Ctrl combinations are allowed
+  }
+
+  // Allow all Windows key combinations
+  if (hasWin) {
+    return null; // All Windows key combinations are now allowed
+  }
+
+  // Check for OS-level dangerous combinations with command key (Mac)
+  if (normalizedKeys.includes('command')) {
+    // Command+Option+Esc (Force Quit on Mac)
+    if (normalizedKeys.includes('alt') && normalizedKeys.includes('escape')) {
+      return 'This combination can trigger system functions';
     }
   }
 

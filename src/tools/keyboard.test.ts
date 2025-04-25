@@ -94,12 +94,66 @@ describe('Keyboard Tools', () => {
       });
     });
 
-    it('should reject Control key combinations', async () => {
-      const combination: KeyCombination = { keys: ['control', 'c'] };
-      const result = await pressKeyCombination(combination);
+    it('should allow all Ctrl key combinations', async () => {
+      // Test various combinations including previously restricted ones
+      const allowedCombinations = [
+        { keys: ['control', 'c'] },
+        { keys: ['control', 'v'] },
+        { keys: ['control', 'x'] },
+        { keys: ['ctrl', 'c'] },
+        { keys: ['ctrl', 'v'] },
+        { keys: ['ctrl', 'x'] },
+        { keys: ['lCtrl', 'c'] },
+        { keys: ['rCtrl', 'v'] },
+        // Now also these
+        { keys: ['control', 'a'] },
+        { keys: ['ctrl', 'z'] },
+        { keys: ['ctrl', 's'] },
+        { keys: ['control', 'f'] },
+        { keys: ['control', 'shift', 'n'] },
+      ];
 
-      expect(result.success).toBe(false);
-      expect(result.message).toContain('Control key combinations are temporarily disabled');
+      for (const combination of allowedCombinations) {
+        const result = await pressKeyCombination(combination);
+        expect(result.success).toBe(true);
+        expect(result.message).toContain(`Pressed key combination: ${combination.keys.join('+')}`);
+      }
+    });
+
+    it('should allow all Windows key combinations', async () => {
+      const allowedCombinations = [
+        { keys: ['windows', 'r'] }, // Run dialog
+        { keys: ['lWin', 'r'] }, // Run dialog (left win)
+        { keys: ['rWin', 'r'] }, // Run dialog (right win)
+        { keys: ['windows', 'e'] }, // Explorer
+        { keys: ['windows', 's'] }, // Search
+        { keys: ['windows', 'd'] }, // Show Desktop
+        { keys: ['lWin', 'tab'] }, // Task View
+      ];
+
+      for (const combination of allowedCombinations) {
+        const result = await pressKeyCombination(combination);
+        expect(result.success).toBe(true);
+        expect(result.message).toContain(`Pressed key combination: ${combination.keys.join('+')}`);
+      }
+    });
+
+    it('should reject dangerous control key combinations', async () => {
+      const dangerousCombinations = [
+        { keys: ['control', 'alt', 'delete'] },
+        { keys: ['ctrl', 'shift', 'escape'] },
+      ];
+
+      for (const combination of dangerousCombinations) {
+        const result = await pressKeyCombination(combination);
+        expect(result.success).toBe(false);
+        expect(result.message).toContain('This combination can trigger system functions');
+      }
+
+      // Terminal combination should now be allowed
+      const terminalCombination: KeyCombination = { keys: ['ctrl', 'alt', 't'] };
+      const result = await pressKeyCombination(terminalCombination);
+      expect(result.success).toBe(true);
     });
 
     it('should handle errors when combination is invalid', async () => {

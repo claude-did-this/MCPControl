@@ -70,29 +70,46 @@ describe('Zod Validation Schemas', () => {
 
   describe('KeyCombinationSchema', () => {
     it('should validate valid key combinations', () => {
-      // With our new implementation, control key combinations are blocked
-      // Valid combinations would be without control key
       expect(() => KeyCombinationSchema.parse({ keys: ['alt', 'f4'] })).not.toThrow();
       expect(() => KeyCombinationSchema.parse({ keys: ['shift', 'a'] })).not.toThrow();
       expect(() => KeyCombinationSchema.parse({ keys: ['a'] })).not.toThrow();
     });
 
-    it('should reject control key combinations', () => {
-      expect(() => KeyCombinationSchema.parse({ keys: ['control', 'c'] })).toThrow(
-        /Control key combinations are temporarily disabled/,
-      );
-      expect(() => KeyCombinationSchema.parse({ keys: ['control', 'shift', 'a'] })).toThrow(
-        /Control key combinations are temporarily disabled/,
-      );
+    it('should allow all control key combinations', () => {
+      // Common operations
+      expect(() => KeyCombinationSchema.parse({ keys: ['control', 'c'] })).not.toThrow();
+      expect(() => KeyCombinationSchema.parse({ keys: ['ctrl', 'v'] })).not.toThrow();
+      expect(() => KeyCombinationSchema.parse({ keys: ['lCtrl', 'x'] })).not.toThrow();
+
+      // Now also allowing these
+      expect(() => KeyCombinationSchema.parse({ keys: ['control', 'a'] })).not.toThrow();
+      expect(() => KeyCombinationSchema.parse({ keys: ['ctrl', 'z'] })).not.toThrow();
+      expect(() => KeyCombinationSchema.parse({ keys: ['rCtrl', 's'] })).not.toThrow();
+      expect(() => KeyCombinationSchema.parse({ keys: ['control', 'f'] })).not.toThrow();
+      expect(() => KeyCombinationSchema.parse({ keys: ['control', 'shift', 'a'] })).not.toThrow();
     });
 
-    it('should reject windows key combinations', () => {
-      expect(() => KeyCombinationSchema.parse({ keys: ['windows', 's'] })).toThrow(
-        /Windows key combinations are temporarily disabled/,
+    it('should allow all windows key combinations', () => {
+      // Various Windows key combinations
+      expect(() => KeyCombinationSchema.parse({ keys: ['windows', 'r'] })).not.toThrow(); // Run dialog
+      expect(() => KeyCombinationSchema.parse({ keys: ['lWin', 'r'] })).not.toThrow(); // Run dialog (left win)
+      expect(() => KeyCombinationSchema.parse({ keys: ['rWin', 'r'] })).not.toThrow(); // Run dialog (right win)
+      expect(() => KeyCombinationSchema.parse({ keys: ['windows', 'e'] })).not.toThrow(); // Explorer
+      expect(() => KeyCombinationSchema.parse({ keys: ['windows', 's'] })).not.toThrow(); // Search
+      expect(() => KeyCombinationSchema.parse({ keys: ['windows', 'd'] })).not.toThrow(); // Show Desktop
+      expect(() => KeyCombinationSchema.parse({ keys: ['lWin', 'tab'] })).not.toThrow(); // Task View
+    });
+
+    it('should reject dangerous control key combinations', () => {
+      expect(() => KeyCombinationSchema.parse({ keys: ['control', 'alt', 'delete'] })).toThrow(
+        /This combination can trigger system functions/,
       );
-      expect(() => KeyCombinationSchema.parse({ keys: ['windows', 'r'] })).toThrow(
-        /Windows key combinations are temporarily disabled/,
+      expect(() => KeyCombinationSchema.parse({ keys: ['ctrl', 'shift', 'escape'] })).toThrow(
+        /This combination can trigger system functions/,
       );
+
+      // Terminal combinations should now be allowed
+      expect(() => KeyCombinationSchema.parse({ keys: ['ctrl', 'alt', 't'] })).not.toThrow();
     });
 
     it('should reject invalid key combinations', () => {
