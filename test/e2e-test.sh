@@ -176,18 +176,6 @@ EOL
 
   echo -e "\n"
   
-  # Claude should be done by now, but give it a moment for any final tool calls
-  echo -e "${YELLOW}⏳ Finalizing test...${RESET}"
-  echo ""
-  sleep 5
-
-  # Allow time for operations to complete
-  for i in {1..5}; do
-    echo -n "."
-    sleep 1
-  done
-  echo ""
-  
   # Kill Chrome
   if [ -n "$CHROME_PID" ]; then
     kill $CHROME_PID 2>/dev/null
