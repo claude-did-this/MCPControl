@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; media-src data:; script-src 'self' 'unsafe-inline';">
+    <title>MCPControl Test Panel</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&display=swap');
+        
+        body {
+            font-family: 'Fira Code', monospace;
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1b26;
+            color: #c0caf5;
+            min-height: 100vh;
+            display: flex;
+        }
+        
+        .main-content {
+            flex: 3;
+            padding-right: 20px;
+        }
+        
+        .sidebar {
+            flex: 1;
+            padding-left: 20px;
+            border-left: 1px solid #414868;
+            max-width: 300px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .button {
+            height: 90px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            background-color: #24283b;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5), inset 0 1px rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            border: 2px solid #414868;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.05);
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .button:hover::before {
+            opacity: 1;
+        }
+        
+        .button:nth-child(4n+1) { border-color: #bb9af7; }
+        .button:nth-child(4n+2) { border-color: #7aa2f7; }
+        .button:nth-child(4n+3) { border-color: #9ece6a; }
+        .button:nth-child(4n+4) { border-color: #f7768e; }
+        
+        .button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6), inset 0 1px rgba(255, 255, 255, 0.1);
+        }
+        
+        .button.active {
+            transform: scale(0.95);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+        }
+        
+        .counter {
+            font-size: 24px;
+            margin-top: 5px;
+            font-weight: bold;
+            color: #a9b1d6;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        
+        .stats {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #1e202e;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+            border-left: 3px solid #7aa2f7;
+        }
+        
+        h1, h2 {
+            text-align: center;
+            color: #c0caf5;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+        
+        h1 {
+            font-size: 2.2em;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #414868;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            cursor: pointer;
+            background-color: #24283b;
+            border: 2px solid #414868;
+            border-radius: 8px;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            color: #c0caf5;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+            background-color: #2a2e42;
+        }
+        
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+        }
+        
+        .background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        .background-animation::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(67, 70, 90, 0.05) 0px,
+                rgba(67, 70, 90, 0.05) 1px,
+                transparent 1px,
+                transparent 4px
+            );
+            z-index: -1;
+        }
+        
+        @keyframes fadeBack {
+            0% { filter: brightness(1.5); }
+            100% { filter: brightness(1); }
+        }
+        
+        .log-container {
+            height: calc(100vh - 100px);
+            padding: 15px;
+            background-color: #1e202e;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+            border-left: 3px solid #e0af68;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #414868;
+        }
+        
+        .log-entries {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        
+        .log-entry {
+            margin: 5px 0;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            color: #a9b1d6;
+            padding: 4px 0;
+            border-bottom: 1px solid #414868;
+        }
+        
+        .log-timestamp {
+            color: #7aa2f7;
+            margin-right: 8px;
+        }
+        
+        .log-button {
+            color: #9ece6a;
+            margin-right: 8px;
+        }
+        
+        @media (max-width: 1100px) {
+            body {
+                flex-direction: column;
+            }
+            
+            .main-content {
+                max-width: 100%;
+                padding-right: 0;
+                flex: initial;
+            }
+            
+            .sidebar {
+                width: 100%;
+                padding-left: 0;
+                border-left: none;
+                margin-top: 20px;
+                border-top: 1px solid #414868;
+                padding-top: 20px;
+                max-width: none;
+                flex: initial;
+            }
+            
+            .log-container {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-content">
+        <h1>Chalkboard Button Panel</h1>
+        <div class="controls">
+            <button id="resetAll">Reset All Counters</button>
+            <button id="randomButton">Click Random Button</button>
+        </div>
+        <div class="grid" id="buttonGrid"></div>
+        <div class="stats">
+            <h2>Test Statistics</h2>
+            <p>Total Clicks: <span id="totalClicks">0</span></p>
+            <p>Last Button Clicked: <span id="lastClicked">None</span></p>
+            <p>Most Clicked Button: <span id="mostClicked">None</span></p>
+        </div>
+    </div>
+    
+    <div class="sidebar">
+        <div class="log-container">
+            <div class="log-header">
+                <h2>Activity Log</h2>
+                <button id="clearLog">Clear Log</button>
+            </div>
+            <div class="log-entries" id="log-entries"></div>
+        </div>
+    </div>
+    
+    <!-- Animated background -->
+    <div class="background-animation"></div>
+
+    <script>
+        // Configuration
+        const GRID_SIZE = 16; // 4x4 grid
+        const ACTIVE_DURATION = 500; // ms to show active state
+        const FADE_DURATION = 1000; // ms for fade back animation
+        const MAX_LOG_ENTRIES = 100; // Maximum number of log entries to keep
+
+        // State
+        let totalClicks = 0;
+        let buttonCounts = {};
+        let mostClickedButton = null;
+        let mostClickedCount = 0;
+
+        // Create buttons
+        const grid = document.getElementById('buttonGrid');
+        const logEntries = document.getElementById('log-entries');
+
+        // Debounce function to prevent rapid-fire clicking
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), wait);
+            };
+        }
+        
+        // Create debounce function once, outside the loop
+        const handleButtonClickDebounced = debounce(handleButtonClick, 100);
+
+        for (let i = 1; i <= GRID_SIZE; i++) {
+            const button = document.createElement('div');
+            button.className = 'button';
+            button.id = `button-${i}`;
+            button.setAttribute('data-id', i);
+            button.setAttribute('role', 'button');
+            button.setAttribute('tabindex', '0');
+            button.setAttribute('aria-label', `Button ${i}`);
+            
+            const label = document.createElement('div');
+            label.textContent = `Button ${i}`;
+            
+            const counter = document.createElement('div');
+            counter.className = 'counter';
+            counter.textContent = '0';
+            
+            button.appendChild(label);
+            button.appendChild(counter);
+            grid.appendChild(button);
+            
+            // Initialize counter
+            buttonCounts[i] = 0;
+            
+            // Add click event with debouncing (100ms)
+            button.addEventListener('click', function() {
+                handleButtonClickDebounced(i);
+            });
+
+            // Add keyboard accessibility
+            button.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleButtonClick(i);
+                }
+            });
+        }
+
+        // Handle visual animation efficiently
+        function animateButton(button) {
+            // Show active state
+            button.classList.add('active');
+            button.style.filter = 'brightness(1.5)';
+            
+            // Use requestAnimationFrame for better performance
+            requestAnimationFrame(() => {
+                // Schedule removal of active class
+                setTimeout(() => {
+                    button.classList.remove('active');
+                    
+                    // Start fade animation
+                    button.style.animation = `fadeBack ${FADE_DURATION}ms ease forwards`;
+                    
+                    // Clean up after animation completes
+                    setTimeout(() => {
+                        button.style.animation = '';
+                        button.style.filter = '';
+                    }, FADE_DURATION);
+                }, ACTIVE_DURATION);
+            });
+        }
+
+        function handleButtonClick(buttonId) {
+            // Update counter
+            buttonCounts[buttonId]++;
+            totalClicks++;
+            
+            // Update UI
+            const button = document.getElementById(`button-${buttonId}`);
+            const counter = button.querySelector('.counter');
+            counter.textContent = buttonCounts[buttonId];
+            
+            // Log the action
+            addLogEntry(`Button ${buttonId} clicked (count: ${buttonCounts[buttonId]})`);
+            
+            // Audio removed
+            
+            // Handle animations
+            animateButton(button);
+            
+            // Update stats
+            document.getElementById('totalClicks').textContent = totalClicks;
+            document.getElementById('lastClicked').textContent = `Button ${buttonId}`;
+            
+            // Check if this is the most clicked button
+            if (buttonCounts[buttonId] > mostClickedCount) {
+                mostClickedButton = buttonId;
+                mostClickedCount = buttonCounts[buttonId];
+                document.getElementById('mostClicked').textContent = `Button ${buttonId} (${mostClickedCount} clicks)`;
+            }
+        }
+        
+        function addLogEntry(message) {
+            const now = new Date();
+            const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}.${now.getMilliseconds().toString().padStart(3, '0')}`;
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            
+            const timestampSpan = document.createElement('span');
+            timestampSpan.className = 'log-timestamp';
+            timestampSpan.textContent = timestamp;
+            
+            logEntry.appendChild(timestampSpan);
+            logEntry.appendChild(document.createTextNode(message));
+            
+            logEntries.appendChild(logEntry);
+            
+            // Trim log if it gets too long
+            while (logEntries.children.length > MAX_LOG_ENTRIES) {
+                logEntries.removeChild(logEntries.firstChild);
+            }
+            
+            // Auto-scroll to bottom
+            logEntries.scrollTop = logEntries.scrollHeight;
+        }
+        
+        // Reset all counters
+        document.getElementById('resetAll').addEventListener('click', function() {
+            totalClicks = 0;
+            mostClickedButton = null;
+            mostClickedCount = 0;
+            
+            for (let i = 1; i <= GRID_SIZE; i++) {
+                buttonCounts[i] = 0;
+                const counter = document.querySelector(`#button-${i} .counter`);
+                counter.textContent = '0';
+            }
+            
+            document.getElementById('totalClicks').textContent = '0';
+            document.getElementById('lastClicked').textContent = 'None';
+            document.getElementById('mostClicked').textContent = 'None';
+            
+            addLogEntry('All counters reset');
+        });
+        
+        // Click random button (useful for testing)
+        document.getElementById('randomButton').addEventListener('click', function() {
+            const randomId = Math.floor(Math.random() * GRID_SIZE) + 1;
+            const button = document.getElementById(`button-${randomId}`);
+            addLogEntry(`Random click triggered for Button ${randomId}`);
+            button.click();
+        });
+        
+        // Clear log
+        document.getElementById('clearLog').addEventListener('click', function() {
+            logEntries.innerHTML = '';
+            addLogEntry('Log cleared');
+        });
+        
+        // Initial log entry
+        addLogEntry('Test panel initialized');
+    </script>
+</body>
+</html>
