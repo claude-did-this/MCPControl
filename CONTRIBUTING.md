@@ -129,8 +129,9 @@ When creating a new issue:
 
 ## Future Roadmap
 
-See the [TASKS.md](./TASKS.md) file for the current roadmap and planned features, which include:
+Current roadmap and planned features include:
 
+- Fixing click accuracy issues with different resolutions and multi-screen setups
 - Security implementation improvements
 - Comprehensive testing
 - Error handling enhancements
