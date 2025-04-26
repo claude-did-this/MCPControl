@@ -1,41 +1,61 @@
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
-export default tseslint.config(
-  // Add explicit ignore for the config file itself to avoid type-checking it
+export default [
+  // Ignore patterns for all configs
   {
-    ignores: ['eslint.config.js'],
+    ignores: [
+      'build/**',
+      'coverage/**',
+      '*.html',
+      'mcpcontrol-wrapper.sh',
+      'eslint.config.js',
+      '.github/**'
+    ]
   },
-  eslint.configs.recommended,
-  ...tseslint.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
+
+  // Base config for all JavaScript files
   {
-    languageOptions: {
-      parserOptions: {
-        project: true,
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
+    files: ['**/*.js'],
+    ...eslint.configs.recommended,
     rules: {
       'no-console': 'off',
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/explicit-module-boundary-types': 'error',
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-    },
-    ignores: ['build/**', 'coverage/**', 'test/**', '*.html', 'mcpcontrol-wrapper.sh'],
+    }
   },
-  {
-    // Test files specific configuration
-    files: ['**/*.test.ts', '**/*.spec.ts', '**/tests/**'],
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-non-null-assertion': 'off',
-      '@typescript-eslint/no-unsafe-assignment': 'off',
-      '@typescript-eslint/no-unsafe-member-access': 'off',
-      '@typescript-eslint/no-unsafe-call': 'off',
-      '@typescript-eslint/no-unsafe-return': 'off',
-      '@typescript-eslint/no-unsafe-argument': 'off',
-      '@typescript-eslint/unbound-method': 'off',
+
+  // TypeScript-specific configs
+  ...tseslint.config(
+    eslint.configs.recommended,
+    ...tseslint.configs.recommended,
+    ...tseslint.configs.recommendedTypeChecked,
+    {
+      files: ['**/*.ts'],
+      languageOptions: {
+        parserOptions: {
+          project: true,
+          tsconfigRootDir: import.meta.dirname,
+        },
+      },
+      rules: {
+        'no-console': 'off',
+        '@typescript-eslint/no-explicit-any': 'warn',
+        '@typescript-eslint/explicit-module-boundary-types': 'error',
+        '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      }
     },
-  }
-);
+    {
+      // Test files specific configuration
+      files: ['**/*.test.ts', '**/*.spec.ts', '**/tests/**/*.ts'],
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'off',
+        '@typescript-eslint/no-non-null-assertion': 'off',
+        '@typescript-eslint/no-unsafe-assignment': 'off',
+        '@typescript-eslint/no-unsafe-member-access': 'off',
+        '@typescript-eslint/no-unsafe-call': 'off',
+        '@typescript-eslint/no-unsafe-return': 'off',
+        '@typescript-eslint/no-unsafe-argument': 'off',
+        '@typescript-eslint/unbound-method': 'off',
+      },
+    }
+  )
+];

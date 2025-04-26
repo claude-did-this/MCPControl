@@ -14,10 +14,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix",
-    "format": "prettier --write \"src/**/*.{ts,js}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,js}\"",
+    "lint": "eslint . --ext .ts,.js",
+    "lint:fix": "eslint . --ext .ts,.js --fix",
+    "format": "prettier --write \"src/**/*.{ts,js}\" \"test/**/*.js\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js}\" \"test/**/*.js\"",
     "prepare": "husky"
   },
   "dependencies": {
