@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; media-src data:; script-src 'self' 'unsafe-inline';">
     <title>MCPControl Test Panel</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&display=swap');
@@ -291,14 +292,6 @@
         const FADE_DURATION = 1000; // ms for fade back animation
         const MAX_LOG_ENTRIES = 100; // Maximum number of log entries to keep
         
-        // Tokyo Night colors
-        const TOKYO_COLORS = [
-            '#bb9af7', // Purple
-            '#7aa2f7', // Blue
-            '#9ece6a', // Green
-            '#f7768e'  // Red
-        ];
-        
         const CLICK_SOUNDS = [
             'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAyMjIyMjIyMjIyMjIyMjIyMjIyMjI+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+P////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAWr/+MYxAAAAANIAAAAAExBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV/+MYxDsAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV',
             'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAyMjIyMjIyMjIyMjIyMjIyMjIyMjI+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+P////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAVw/+MYxAAAAANIAAAAAExBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV/+MYxDsAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV'
@@ -321,11 +314,24 @@
         const grid = document.getElementById('buttonGrid');
         const logEntries = document.getElementById('log-entries');
 
+        // Debounce function to prevent rapid-fire clicking
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), wait);
+            };
+        }
+
         for (let i = 1; i <= GRID_SIZE; i++) {
             const button = document.createElement('div');
             button.className = 'button';
             button.id = `button-${i}`;
             button.setAttribute('data-id', i);
+            button.setAttribute('role', 'button');
+            button.setAttribute('tabindex', '0');
+            button.setAttribute('aria-label', `Button ${i}`);
             
             const label = document.createElement('div');
             label.textContent = `Button ${i}`;
@@ -341,9 +347,41 @@
             // Initialize counter
             buttonCounts[i] = 0;
             
-            // Add click event
-            button.addEventListener('click', function() {
+            // Add click event with debouncing (100ms)
+            button.addEventListener('click', debounce(function() {
                 handleButtonClick(i);
+            }, 100));
+
+            // Add keyboard accessibility
+            button.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleButtonClick(i);
+                }
+            });
+        }
+
+        // Handle visual animation efficiently
+        function animateButton(button) {
+            // Show active state
+            button.classList.add('active');
+            button.style.filter = 'brightness(1.5)';
+            
+            // Use requestAnimationFrame for better performance
+            requestAnimationFrame(() => {
+                // Schedule removal of active class
+                setTimeout(() => {
+                    button.classList.remove('active');
+                    
+                    // Start fade animation
+                    button.style.animation = `fadeBack ${FADE_DURATION}ms ease forwards`;
+                    
+                    // Clean up after animation completes
+                    setTimeout(() => {
+                        button.style.animation = '';
+                        button.style.filter = '';
+                    }, FADE_DURATION);
+                }, ACTIVE_DURATION);
             });
         }
 
@@ -366,27 +404,8 @@
             sound.currentTime = 0;
             sound.play().catch(e => console.log("Audio playback failed:", e));
             
-            // Show active state
-            button.classList.add('active');
-            
-            // Make button lighter when clicked
-            button.style.filter = 'brightness(1.5)';
-            
-            // Remove active class after ACTIVE_DURATION
-            setTimeout(() => {
-                button.classList.remove('active');
-            }, ACTIVE_DURATION);
-            
-            // Animate fade back to original brightness
-            setTimeout(() => {
-                button.style.animation = `fadeBack ${FADE_DURATION}ms ease forwards`;
-                
-                // Remove the animation after it completes
-                setTimeout(() => {
-                    button.style.animation = '';
-                    button.style.filter = '';
-                }, FADE_DURATION);
-            }, ACTIVE_DURATION);
+            // Handle animations
+            animateButton(button);
             
             // Update stats
             document.getElementById('totalClicks').textContent = totalClicks;
