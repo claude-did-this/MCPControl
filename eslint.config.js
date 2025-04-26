@@ -22,7 +22,7 @@ export default tseslint.config(
       '@typescript-eslint/explicit-module-boundary-types': 'error',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
-    ignores: ['build/**', 'coverage/**'],
+    ignores: ['build/**', 'coverage/**', 'test/**', '*.html', 'mcpcontrol-wrapper.sh'],
   },
   {
     // Test files specific configuration

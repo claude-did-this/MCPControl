@@ -1,0 +1,54 @@
+{
+  "buttonClicks": [
+    {
+      "timestamp": "2025-04-26T21:17:33.438Z",
+      "buttonId": "9",
+      "count": 1
+    },
+    {
+      "timestamp": "2025-04-26T21:17:41.629Z",
+      "buttonId": "9",
+      "count": 2
+    },
+    {
+      "timestamp": "2025-04-26T21:17:51.596Z",
+      "buttonId": "9",
+      "count": 3
+    },
+    {
+      "timestamp": "2025-04-26T21:18:00.354Z",
+      "buttonId": "9",
+      "count": 4
+    },
+    {
+      "timestamp": "2025-04-26T21:18:09.985Z",
+      "buttonId": "9",
+      "count": 5
+    }
+  ],
+  "sequences": [
+    {
+      "timestamp": "2025-04-26T21:17:33.439Z",
+      "sequence": "9"
+    },
+    {
+      "timestamp": "2025-04-26T21:17:41.635Z",
+      "sequence": "99"
+    },
+    {
+      "timestamp": "2025-04-26T21:17:51.597Z",
+      "sequence": "999"
+    },
+    {
+      "timestamp": "2025-04-26T21:18:00.354Z",
+      "sequence": "9999"
+    },
+    {
+      "timestamp": "2025-04-26T21:18:09.986Z",
+      "sequence": "99999"
+    }
+  ],
+  "finalSequence": "99999",
+  "startTime": "2025-04-26T21:16:25.657Z",
+  "endTime": "2025-04-26T21:18:09.987Z"
+}
