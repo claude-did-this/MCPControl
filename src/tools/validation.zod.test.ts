@@ -70,17 +70,17 @@ describe('Zod Validation Schemas', () => {
 
   describe('KeyCombinationSchema', () => {
     it('should validate valid key combinations', () => {
-      expect(() => KeyCombinationSchema.parse({ keys: ['control', 'c'] })).not.toThrow();
-      expect(() => KeyCombinationSchema.parse({ keys: ['control', 'shift', 'a'] })).not.toThrow();
+      expect(() => KeyCombinationSchema.parse({ keys: ['ctrl', 'c'] })).not.toThrow();
+      expect(() => KeyCombinationSchema.parse({ keys: ['ctrl', 'shift', 'a'] })).not.toThrow();
       expect(() => KeyCombinationSchema.parse({ keys: ['a'] })).not.toThrow();
     });
 
     it('should reject invalid key combinations', () => {
       expect(() => KeyCombinationSchema.parse({ keys: [] })).toThrow();
-      expect(() => KeyCombinationSchema.parse({ keys: ['control', 'alt', 'delete'] })).toThrow();
+      expect(() => KeyCombinationSchema.parse({ keys: ['ctrl', 'alt', 'delete'] })).toThrow();
       expect(() => KeyCombinationSchema.parse({ keys: ['a', 'b', 'c', 'd', 'e', 'f'] })).toThrow();
       expect(() => KeyCombinationSchema.parse({ keys: ['invalid_key'] })).toThrow();
-      expect(() => KeyCombinationSchema.parse({ keys: 'control+c' })).toThrow();
+      expect(() => KeyCombinationSchema.parse({ keys: 'ctrl+c' })).toThrow();
       expect(() => KeyCombinationSchema.parse({})).toThrow();
     });
   });

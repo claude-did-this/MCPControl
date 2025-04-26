@@ -208,7 +208,7 @@ export function setupTools(server: Server, provider: AutomationProvider): void {
           properties: {
             key: {
               type: 'string',
-              description: "Key to hold/release (e.g., 'shift', 'control')",
+              description: "Key to hold/release (e.g., 'shift', 'ctrl')",
             },
             duration: {
               type: 'number',
@@ -232,7 +232,7 @@ export function setupTools(server: Server, provider: AutomationProvider): void {
             keys: {
               type: 'array',
               items: { type: 'string' },
-              description: "Array of keys to press simultaneously (e.g., ['control', 'c'])",
+              description: "Array of keys to press simultaneously (e.g., ['ctrl', 'c'])",
             },
           },
           required: ['keys'],
