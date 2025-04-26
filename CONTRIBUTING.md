@@ -54,8 +54,8 @@ Please be respectful and considerate of others when contributing to this project
 
 ### Branching Strategy
 
-- `master` branch contains the latest stable code
-- Create feature branches from `master` using the naming convention:
+- `main` branch contains the latest stable code
+- Create feature branches from `main` using the naming convention:
   - `feature/feature-name` for new features
   - `bugfix/issue-description` for bug fixes
   - `docs/description` for documentation changes
@@ -141,9 +141,9 @@ See the [TASKS.md](./TASKS.md) file for the current roadmap and planned features
 
 ## Publishing
 
-This project uses GitHub Actions to automatically publish to npm when a version tag is pushed to master:
+This project uses GitHub Actions to automatically publish to npm when a version tag is pushed to main:
 
-1. Ensure changes are merged to master
+1. Ensure changes are merged to main
 2. Create and push a tag with the version number:
    ```bash
    git tag v1.2.3
