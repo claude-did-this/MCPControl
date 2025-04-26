@@ -8,10 +8,10 @@ const { spawn } = require('child_process');
 const open = require('open');
 const express = require('express');
 
-// Configuration
-const TEST_DURATION = process.env.TEST_DURATION || 60000; // 1 minute test by default
-const CLICK_INTERVAL = process.env.CLICK_INTERVAL || 1000; // Click every second
-const SERVER_PORT = process.env.SERVER_PORT || 3000;
+// Configuration with validation
+const TEST_DURATION = Math.min(parseInt(process.env.TEST_DURATION) || 60000, 3600000); // Max 1 hour
+const CLICK_INTERVAL = Math.max(parseInt(process.env.CLICK_INTERVAL) || 1000, 100); // Min 100ms
+const SERVER_PORT = parseInt(process.env.SERVER_PORT) || 3000;
 
 // Start a simple server to host the test panel
 function startServer() {
@@ -61,6 +61,8 @@ async function runAccuracyTest() {
     
     // Start server
     const server = startServer();
+    let mcpControl = null;
+    let cleanupTimeout = null;
     
     try {
         // Open test panel in browser
@@ -70,7 +72,7 @@ async function runAccuracyTest() {
         await new Promise(resolve => setTimeout(resolve, 3000));
         
         // Start MCPControl
-        const mcpControl = startMCPControl();
+        mcpControl = startMCPControl();
         
         // Wait for MCPControl to initialize
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -80,30 +82,39 @@ async function runAccuracyTest() {
         // Here you would add code to send commands to MCPControl
         // For demonstration, we're just showing the structure
         
-        // Example (pseudo-code):
-        // for each click interval:
-        //   1. Get random button position
-        //   2. Send mouse click command to MCPControl
-        //   3. Log results
+        // TODO: Implement actual click commands using MCPControl's API
+        // Example (when implemented):
+        // setInterval(() => {
+        //     const row = Math.floor(Math.random() * 4);
+        //     const col = Math.floor(Math.random() * 4);
+        //     mcpControl.click(TEST_PANEL_BUTTON_POSITIONS[row][col]);
+        // }, CLICK_INTERVAL);
         
-        // Clean up after test duration
-        setTimeout(() => {
+        // Set up cleanup timeout
+        cleanupTimeout = setTimeout(() => {
             console.log('Test complete!');
             
             // Kill MCPControl process
-            mcpControl.kill();
+            if (mcpControl) mcpControl.kill();
             
             // Close server
-            server.close(() => {
-                console.log('Server closed successfully');
-            });
+            if (server) {
+                server.close(() => {
+                    console.log('Server closed successfully');
+                });
+            }
             
             console.log('Check browser for click accuracy results');
         }, TEST_DURATION);
+        
+        return { mcpControl, server, cleanupTimeout };
     } catch (error) {
         console.error(`Error during test execution: ${error.message}`);
-        server.close();
-        process.exit(1);
+        // Cleanup any resources that were created
+        if (mcpControl) mcpControl.kill();
+        if (server) server.close();
+        if (cleanupTimeout) clearTimeout(cleanupTimeout);
+        throw error;
     }
 }
 

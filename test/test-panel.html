@@ -291,24 +291,12 @@
         const ACTIVE_DURATION = 500; // ms to show active state
         const FADE_DURATION = 1000; // ms for fade back animation
         const MAX_LOG_ENTRIES = 100; // Maximum number of log entries to keep
-        
-        const CLICK_SOUNDS = [
-            'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAyMjIyMjIyMjIyMjIyMjIyMjIyMjI+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+P////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAWr/+MYxAAAAANIAAAAAExBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV/+MYxDsAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV',
-            'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAyMjIyMjIyMjIyMjIyMjIyMjIyMjI+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+P////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAVw/+MYxAAAAANIAAAAAExBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV/+MYxDsAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV'
-        ];
 
         // State
         let totalClicks = 0;
         let buttonCounts = {};
         let mostClickedButton = null;
         let mostClickedCount = 0;
-        
-        // Create audio elements
-        const audioElements = CLICK_SOUNDS.map(sound => {
-            const audio = new Audio(sound);
-            audio.volume = 0.3;
-            return audio;
-        });
 
         // Create buttons
         const grid = document.getElementById('buttonGrid');
@@ -323,6 +311,9 @@
                 timeout = setTimeout(() => func.apply(context, args), wait);
             };
         }
+        
+        // Create debounce function once, outside the loop
+        const handleButtonClickDebounced = debounce(handleButtonClick, 100);
 
         for (let i = 1; i <= GRID_SIZE; i++) {
             const button = document.createElement('div');
@@ -348,9 +339,9 @@
             buttonCounts[i] = 0;
             
             // Add click event with debouncing (100ms)
-            button.addEventListener('click', debounce(function() {
-                handleButtonClick(i);
-            }, 100));
+            button.addEventListener('click', function() {
+                handleButtonClickDebounced(i);
+            });
 
             // Add keyboard accessibility
             button.addEventListener('keydown', function(e) {
@@ -398,11 +389,7 @@
             // Log the action
             addLogEntry(`Button ${buttonId} clicked (count: ${buttonCounts[buttonId]})`);
             
-            // Play sound
-            const soundIndex = Math.floor(Math.random() * audioElements.length);
-            const sound = audioElements[soundIndex];
-            sound.currentTime = 0;
-            sound.play().catch(e => console.log("Audio playback failed:", e));
+            // Audio removed
             
             // Handle animations
             animateButton(button);
