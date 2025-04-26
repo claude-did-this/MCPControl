@@ -22,7 +22,7 @@ export default tseslint.config(
       '@typescript-eslint/explicit-module-boundary-types': 'error',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
-    ignores: ['build/**', 'coverage/**'],
+    ignores: ['build/**', 'coverage/**', 'test/**'],
   },
   {
     // Test files specific configuration
@@ -37,5 +37,5 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-argument': 'off',
       '@typescript-eslint/unbound-method': 'off',
     },
-  }
+  },
 );
