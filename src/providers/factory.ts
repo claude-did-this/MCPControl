@@ -1,5 +1,6 @@
 import { AutomationProvider } from '../interfaces/provider.js';
 import { KeysenderProvider } from './keysender/index.js';
+import { PowerShellProvider } from './powershell/index.js';
 
 // Cache to store provider instances
 const providerCache: Record<string, AutomationProvider> = {};
@@ -19,7 +20,20 @@ export function createAutomationProvider(type: string = 'keysender'): Automation
   let provider: AutomationProvider;
   switch (providerType) {
     case 'keysender':
-      provider = new KeysenderProvider();
+      try {
+        provider = new KeysenderProvider();
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        throw new Error(`Failed to initialize keysender provider: ${errorMessage}`);
+      }
+      break;
+    case 'powershell':
+      try {
+        provider = new PowerShellProvider();
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        throw new Error(`Failed to initialize powershell provider: ${errorMessage}`);
+      }
       break;
     default:
       throw new Error(`Unknown provider type: ${providerType}`);

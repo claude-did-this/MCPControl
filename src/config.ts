@@ -4,7 +4,7 @@
 export interface AutomationConfig {
   /**
    * The provider to use for automation
-   * Currently supported: 'keysender'
+   * Currently supported: 'keysender', 'powershell'
    */
   provider: string;
 }

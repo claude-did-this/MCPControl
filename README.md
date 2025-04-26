@@ -78,7 +78,9 @@ The keysender dependency relies on Windows-specific native modules that require 
 
 ## MCP Server Configuration
 
-To use this project, you'll need the necessary build tools:
+### Basic Configuration
+
+To use this project with the default provider, you'll need the necessary build tools:
 
 1. Install Node.js using the official Windows installer, which includes necessary build tools
 2. Install additional required tools:
@@ -89,7 +91,6 @@ npm install -g cmake-js
 ```
 
 Then, add the following configuration to your MCP settings:
-
 
 ```json
 {
@@ -106,12 +107,57 @@ Then, add the following configuration to your MCP settings:
 }
 ```
 
+### PowerShell Provider Configuration
+
+MCPControl now includes a PowerShell-based provider that doesn't require native dependencies. To use it, add an environment variable to your MCP settings:
+
+#### Using CMD/Bash:
+```json
+{
+  "mcpServers": {
+    "MCPControl": {
+      "command": "npx",
+      "args": [
+        "--no-cache",
+        "-y",
+        "mcp-control"
+      ],
+      "env": {
+        "AUTOMATION_PROVIDER": "powershell"
+      }
+    }
+  }
+}
+```
+
+#### Using PowerShell:
+```json
+{
+  "mcpServers": {
+    "MCPControl": {
+      "command": "powershell.exe",
+      "args": [
+        "-Command",
+        "$env:AUTOMATION_PROVIDER='powershell'; npx --no-cache -y mcp-control"
+      ]
+    }
+  }
+}
+```
+
+The PowerShell provider offers a simpler implementation without native dependencies but requires PowerShell 5.1 or later on Windows.
+
 After configuring your MCP settings, restart your client to see the MCPControl service in the menu.
+
+See [providers.md](docs/providers.md) for more details on available providers.
 
 ## Project Structure
 
 - `/src`
   - `/handlers` - Request handlers and tool management
+  - `/providers` - Automation provider implementations
+    - `/keysender` - Default provider using native Windows automation
+    - `/powershell` - Alternative provider using PowerShell commands
   - `/tools` - Core functionality implementations
   - `/types` - TypeScript type definitions
   - `index.ts` - Main application entry point
@@ -119,7 +165,7 @@ After configuring your MCP settings, restart your client to see the MCPControl s
 ## Dependencies
 
 - [@modelcontextprotocol/sdk](https://www.npmjs.com/package/@modelcontextprotocol/sdk) - MCP SDK for protocol implementation
-- [keysender](https://www.npmjs.com/package/keysender) - Windows-only UI automation library
+- [keysender](https://www.npmjs.com/package/keysender) - Windows-only UI automation library (default provider)
 - [clipboardy](https://www.npmjs.com/package/clipboardy) - Clipboard handling
 - [sharp](https://www.npmjs.com/package/sharp) - Image processing
 - [uuid](https://www.npmjs.com/package/uuid) - UUID generation

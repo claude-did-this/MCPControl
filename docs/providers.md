@@ -8,13 +8,36 @@ MCPControl supports multiple automation providers to give users flexibility in h
 
 The Keysender provider uses the [keysender](https://github.com/garrettlynch/keysender) library for system automation. It provides comprehensive support for keyboard, mouse, screen, and clipboard operations.
 
+### PowerShell Provider
+
+The PowerShell provider uses Windows PowerShell to control the system through native commands. It leverages .NET Framework classes like `System.Windows.Forms` and Windows API calls to perform automation tasks. This provider requires PowerShell 5.1 or later on Windows.
+
+Key benefits:
+- Uses built-in Windows technologies without additional dependencies
+- Simpler implementation with standard PowerShell commands
+- No native compilation required
+- Leverages .NET Framework classes for robust automation
+
 ## Selecting a Provider
 
 You can select which provider to use by setting the `AUTOMATION_PROVIDER` environment variable:
 
+### Bash/CMD
 ```bash
 # Use the Keysender provider (default)
 AUTOMATION_PROVIDER=keysender node build/index.js
+
+# Use the PowerShell provider
+AUTOMATION_PROVIDER=powershell node build/index.js
+```
+
+### PowerShell
+```powershell
+# Use the Keysender provider (default)
+$env:AUTOMATION_PROVIDER="keysender"; node build/index.js
+
+# Use the PowerShell provider
+$env:AUTOMATION_PROVIDER="powershell"; node build/index.js
 ```
 
 ### Screen Automation Considerations

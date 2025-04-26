@@ -18,8 +18,15 @@ class MCPControlServer {
 
   constructor() {
     try {
+      // Log startup info
+      console.error('Starting MCP Control Server...');
+      
+      // Log environment variables
+      console.error(`Environment: AUTOMATION_PROVIDER=${process.env.AUTOMATION_PROVIDER || 'not set'}`);
+      
       // Load configuration
       const config = loadConfig();
+      console.error(`Loaded configuration: provider=${config.provider}`);
 
       // Validate configuration
       if (!config || typeof config.provider !== 'string') {
@@ -27,7 +34,9 @@ class MCPControlServer {
       }
 
       // Validate that the provider is supported
-      const supportedProviders = ['keysender']; // add others as they become available
+      const supportedProviders = ['keysender', 'powershell']; // add others as they become available
+      console.error(`Supported providers: ${supportedProviders.join(', ')}`);
+      
       if (!supportedProviders.includes(config.provider.toLowerCase())) {
         throw new Error(
           `Unsupported provider: ${config.provider}. Supported providers: ${supportedProviders.join(', ')}`,
@@ -35,7 +44,9 @@ class MCPControlServer {
       }
 
       // Create automation provider based on configuration
+      console.error(`Creating automation provider: ${config.provider}`);
       this.provider = createAutomationProvider(config.provider);
+      console.error(`Created provider: ${this.provider.constructor.name}`);
 
       this.server = new Server(
         {
