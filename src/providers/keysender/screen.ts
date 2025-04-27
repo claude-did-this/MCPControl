@@ -526,6 +526,13 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
         ...options,
       };
 
+      // Get the actual screen size for later metadata
+      const screenSizeResponse = this.getScreenSize();
+      const nativeScreenSize =
+        screenSizeResponse.success && screenSizeResponse.data
+          ? (screenSizeResponse.data as { width: number; height: number })
+          : { width: 1920, height: 1080 }; // fallback if we can't get screen size
+
       // Capture screen or region
       let captureResult;
 
@@ -617,6 +624,22 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
         const base64Data = outputBuffer.toString('base64');
         const mimeType = mergedOptions.format === 'jpeg' ? 'image/jpeg' : 'image/png';
 
+        // Calculate final dimensions
+        const finalWidth = mergedOptions.resize?.width || 1280;
+        const aspectRatio = height / width;
+        const finalHeight = Math.round(finalWidth * aspectRatio);
+
+        // Add metadata about scaling for coordinate transformation
+        const scalingMetadata = {
+          originalScreenSize: nativeScreenSize,
+          capturedSize: { width, height },
+          scaledSize: { width: finalWidth, height: finalHeight },
+          scalingFactors: {
+            x: width / finalWidth,
+            y: height / finalHeight,
+          },
+        };
+
         return {
           success: true,
           message: 'Screenshot captured successfully',
@@ -628,8 +651,8 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
                 height: options.region.height,
               }
             : {
-                width: Math.round(width),
-                height: Math.round(height),
+                width: finalWidth,
+                height: finalHeight,
               },
           content: [
             {
@@ -638,6 +661,7 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
               mimeType: mimeType,
             },
           ],
+          scaling: scalingMetadata,
         };
       } catch (sharpError) {
         // Fallback with minimal processing if sharp pipeline fails
@@ -657,6 +681,17 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
 
         const scaledWidth = Math.round(width * scaleFactor);
         const scaledHeight = Math.round(height * scaleFactor);
+
+        // Add scaling metadata even in fallback
+        const scalingMetadata = {
+          originalScreenSize: nativeScreenSize,
+          capturedSize: { width, height },
+          scaledSize: { width: scaledWidth, height: scaledHeight },
+          scalingFactors: {
+            x: width / scaledWidth,
+            y: height / scaledHeight,
+          },
+        };
 
         return {
           success: true,
@@ -679,6 +714,7 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
               mimeType: mimeType,
             },
           ],
+          scaling: scalingMetadata,
         };
       }
     } catch (error) {
