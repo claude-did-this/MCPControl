@@ -1,6 +1,7 @@
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
+// Create a flat config
 export default [
   // Ignore patterns for all configs
   {
@@ -11,26 +12,18 @@ export default [
       'mcpcontrol-wrapper.sh',
       'eslint.config.js',
       '.github/**',
-      'scripts/**'
+      'scripts/**',
+      'test/**'
     ]
   },
 
-  // Base config for all JavaScript files
-  {
-    files: ['**/*.js'],
-    ...eslint.configs.recommended,
-    rules: {
-      'no-console': 'off',
-    }
-  },
-
-  // TypeScript-specific configs
+  // Config for src TypeScript files
   ...tseslint.config(
-    eslint.configs.recommended,
-    ...tseslint.configs.recommended,
-    ...tseslint.configs.recommendedTypeChecked,
     {
-      files: ['**/*.ts'],
+      files: ['src/**/*.ts'],
+      ...eslint.configs.recommended,
+      ...tseslint.configs.recommended,
+      ...tseslint.configs.recommendedTypeChecked,
       languageOptions: {
         parserOptions: {
           project: true,
@@ -46,7 +39,7 @@ export default [
     },
     {
       // Test files specific configuration
-      files: ['**/*.test.ts', '**/*.spec.ts', '**/tests/**/*.ts'],
+      files: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
       rules: {
         '@typescript-eslint/no-explicit-any': 'off',
         '@typescript-eslint/no-non-null-assertion': 'off',
