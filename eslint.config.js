@@ -10,7 +10,8 @@ export default [
       '*.html',
       'mcpcontrol-wrapper.sh',
       'eslint.config.js',
-      '.github/**'
+      '.github/**',
+      'scripts/**'
     ]
   },
 
