@@ -16,8 +16,8 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
-    "format": "prettier --write \"src/**/*.{ts,js}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,js}\"",
+    "format": "prettier --write \"src/**/*.{ts,js}\" \"test/**/*.js\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js}\" \"test/**/*.js\"",
     "prepare": "husky"
   },
   "dependencies": {
@@ -34,7 +34,7 @@
   "devDependencies": {
     "@eslint/js": "^9.25.0",
     "@types/express": "^5.0.1",
-    "@types/node": "^22.14.1",
+    "@types/node": "^22.15.2",
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.29.1",
     "@typescript-eslint/parser": "^8.28.0",
