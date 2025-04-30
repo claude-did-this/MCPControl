@@ -87,7 +87,6 @@ for ITERATION in $(seq 1 $ITERATIONS); do
     if [ -f "test/server-port.txt" ]; then
       break
     fi
-    echo -n "."
     sleep 1
     
     # If we've waited too long, abort
