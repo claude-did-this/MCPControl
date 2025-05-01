@@ -26,8 +26,8 @@ jobs:
       uses: actions/cache@v3
       with:
         path: |
-          C:\Users\runneradmin\AppData\Roaming\npm\node_modules\node-gyp
-          C:\Users\runneradmin\AppData\Roaming\npm\node_modules\cmake-js
+          ${{ runner.os == 'Windows' && 'C:\Users\runneradmin\AppData\Roaming\npm\node_modules\node-gyp' || '~/.npm/node_modules/node-gyp' }}
+          ${{ runner.os == 'Windows' && 'C:\Users\runneradmin\AppData\Roaming\npm\node_modules\cmake-js' || '~/.npm/node_modules/cmake-js' }}
         key: ${{ runner.os }}-global-deps-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-global-deps-
