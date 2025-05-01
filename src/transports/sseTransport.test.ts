@@ -239,4 +239,140 @@ describe('SseTransport', () => {
       expect(mockWrite).toHaveBeenCalledWith(':\n\n');
     });
   });
+
+  describe('buffer management', () => {
+    it('should clear replay buffer', () => {
+      // Add some events to the buffer
+      transport.emitEvent('test-event', { data: 'test' });
+      transport.emitEvent('test-event', { data: 'test2' });
+
+      // Verify buffer has events
+      expect(transport.getReplayBufferSize()).toBe(2);
+
+      // Clear buffer
+      transport.clearReplayBuffer();
+
+      // Verify buffer is empty
+      expect(transport.getReplayBufferSize()).toBe(0);
+    });
+
+    it('should report client count correctly', () => {
+      transport.attach(mockExpressApp as any);
+
+      // Initially no clients
+      expect(transport.getClientCount()).toBe(0);
+
+      // Connect a client
+      const mockReq = {
+        header: vi.fn().mockReturnValue(null),
+        on: vi.fn((event, handler) => {
+          if (event === 'close') mockCloseHandlers.push(handler);
+          return mockReq;
+        }),
+      };
+
+      const mockRes = {
+        set: mockSet,
+        flushHeaders: mockFlushHeaders,
+        write: mockWrite,
+      };
+
+      // Connect client
+      mockRouteHandlers['/mcp/sse'](mockReq, mockRes);
+
+      // Should have one client
+      expect(transport.getClientCount()).toBe(1);
+
+      // Disconnect client
+      mockCloseHandlers[0]();
+
+      // Should have no clients
+      expect(transport.getClientCount()).toBe(0);
+    });
+
+    it('should update max buffer size', () => {
+      // Default buffer size is 5 (from beforeEach)
+
+      // Add more events than the buffer size
+      for (let i = 0; i < 7; i++) {
+        transport.emitEvent(`event-${i}`, { id: i });
+      }
+
+      // Should only keep the most recent 5
+      expect(transport.getReplayBufferSize()).toBe(5);
+
+      // Increase buffer size
+      transport.setMaxBufferSize(10);
+
+      // Add more events
+      transport.emitEvent('new-event', { id: 'new' });
+      transport.emitEvent('new-event-2', { id: 'new2' });
+
+      // Should keep all 7 events now
+      expect(transport.getReplayBufferSize()).toBe(7);
+
+      // Decrease buffer size
+      transport.setMaxBufferSize(3);
+
+      // Should trim to most recent 3
+      expect(transport.getReplayBufferSize()).toBe(3);
+    });
+
+    it('should throw error when setting negative buffer size', () => {
+      expect(() => transport.setMaxBufferSize(-1)).toThrow('Buffer size cannot be negative');
+    });
+  });
+
+  describe('error handling', () => {
+    it('should prevent multiple attachments', () => {
+      // First attachment
+      transport.attach(mockExpressApp as any);
+
+      // Second attachment should throw
+      expect(() => transport.attach(mockExpressApp as any)).toThrow(
+        'SseTransport is already attached to an Express app',
+      );
+    });
+
+    it('should handle client write errors during broadcast', () => {
+      transport.attach(mockExpressApp as any);
+
+      // Connect a client
+      const mockReq = {
+        header: vi.fn().mockReturnValue(null),
+        on: vi.fn((event, handler) => {
+          if (event === 'close') mockCloseHandlers.push(handler);
+          return mockReq;
+        }),
+      };
+
+      // Create a mock that will throw on write
+      const errorMockRes = {
+        set: mockSet,
+        flushHeaders: mockFlushHeaders,
+        write: vi.fn().mockImplementation(() => {
+          throw new Error('Connection lost');
+        }),
+      };
+
+      // Connect client
+      mockRouteHandlers['/mcp/sse'](mockReq, errorMockRes);
+
+      // Should have one client
+      expect(transport.getClientCount()).toBe(1);
+
+      // Mock console.error to prevent test output pollution
+      const originalConsoleError = console.error;
+      console.error = vi.fn();
+
+      // Emit event (should trigger write error)
+      transport.emitEvent('test-event', { data: 'test' });
+
+      // Restore console.error
+      console.error = originalConsoleError;
+
+      // Client should be removed due to error
+      expect(transport.getClientCount()).toBe(0);
+    });
+  });
 });

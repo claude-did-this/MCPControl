@@ -36,6 +36,11 @@ export class SseTransport extends Transport {
   private heartbeatTimer?: NodeJS.Timeout;
 
   /**
+   * Flag to track if this transport has been attached to an Express app
+   */
+  private isAttached = false;
+
+  /**
    * Creates a new SSE transport
    * @param options Configuration options
    * @param options.maxBufferSize Maximum number of events to keep in replay buffer (default: 100)
@@ -51,8 +56,14 @@ export class SseTransport extends Transport {
    * Attaches this SSE transport to the Express application
    * @param app Express application instance
    * @returns void
+   * @throws Error if the transport has already been attached
    */
   attach(app: import('express').Express): void {
+    // Prevent multiple attachments
+    if (this.isAttached) {
+      throw new Error('SseTransport is already attached to an Express app');
+    }
+
     app.get('/mcp/sse', (req, res) => {
       // Set SSE headers
       res.set({
@@ -62,17 +73,38 @@ export class SseTransport extends Transport {
       });
       res.flushHeaders(); // send headers right away
 
-      // Suggest client reconnection time
-      res.write('retry: 3000\n\n');
+      try {
+        // Suggest client reconnection time
+        res.write('retry: 3000\n\n');
 
-      // Add client to active connections
-      this.clients.add(res);
+        // Add client to active connections
+        this.clients.add(res);
 
-      // Replay missed events if Last-Event-ID is present
-      const lastId = req.header('Last-Event-ID');
-      if (lastId) {
-        const eventsToReplay = this.replayBuffer.filter((e) => e.id > lastId);
-        eventsToReplay.forEach((e) => res.write(e.data));
+        // Replay missed events if Last-Event-ID is present
+        const lastId = req.header('Last-Event-ID');
+        if (lastId) {
+          const eventsToReplay = this.replayBuffer.filter((e) => e.id > lastId);
+          eventsToReplay.forEach((e) => {
+            try {
+              res.write(e.data);
+            } catch (err) {
+              // If writing fails, remove the client
+              this.clients.delete(res);
+              console.error('Error writing to SSE client:', err);
+            }
+          });
+        }
+      } catch (err) {
+        // Handle any unexpected errors during setup
+        console.error('Error setting up SSE connection:', err);
+        this.clients.delete(res);
+        try {
+          // Attempt to close the response
+          res.end();
+        } catch {
+          // Ignore errors on end
+        }
+        return;
       }
 
       // Remove client when connection closes
@@ -85,6 +117,9 @@ export class SseTransport extends Transport {
     if (!this.heartbeatTimer) {
       this.heartbeatTimer = setInterval(() => this.broadcast(':\n\n'), this.heartbeatInterval);
     }
+
+    // Mark as attached
+    this.isAttached = true;
   }
 
   /**
@@ -118,13 +153,67 @@ export class SseTransport extends Transport {
    * @returns void
    */
   private broadcast(chunk: string): void {
+    const clientsToRemove: Response[] = [];
+
     for (const res of this.clients) {
-      res.write(chunk);
+      try {
+        res.write(chunk);
+      } catch (err) {
+        // If writing fails, mark this client for removal
+        clientsToRemove.push(res);
+        console.error('Error broadcasting to SSE client:', err);
+      }
+    }
+
+    // Remove any failed clients
+    for (const res of clientsToRemove) {
+      this.clients.delete(res);
     }
   }
 
   /**
-   * Stops the heartbeat timer
+   * Clears the replay buffer
+   * @returns void
+   */
+  clearReplayBuffer(): void {
+    this.replayBuffer = [];
+  }
+
+  /**
+   * Gets the current size of the replay buffer
+   * @returns Number of events in the buffer
+   */
+  getReplayBufferSize(): number {
+    return this.replayBuffer.length;
+  }
+
+  /**
+   * Gets the number of connected clients
+   * @returns Number of connected clients
+   */
+  getClientCount(): number {
+    return this.clients.size;
+  }
+
+  /**
+   * Updates the maximum buffer size
+   * @param maxSize New maximum buffer size
+   * @returns void
+   */
+  setMaxBufferSize(maxSize: number): void {
+    if (maxSize < 0) {
+      throw new Error('Buffer size cannot be negative');
+    }
+    this.maxBufferSize = maxSize;
+
+    // Trim buffer if needed
+    while (this.replayBuffer.length > this.maxBufferSize) {
+      this.replayBuffer.shift();
+    }
+  }
+
+  /**
+   * Stops the heartbeat timer and cleans up resources
    * @returns void
    */
   close(): void {
@@ -132,5 +221,9 @@ export class SseTransport extends Transport {
       clearInterval(this.heartbeatTimer);
       this.heartbeatTimer = undefined;
     }
+
+    // Clear clients and buffer
+    this.clients.clear();
+    this.isAttached = false;
   }
 }
