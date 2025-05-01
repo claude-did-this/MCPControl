@@ -101,11 +101,22 @@ class MCPControlServer {
     );
 
     // If HTTP_PORT is defined, start the HTTP server with SSE support
-    const httpPort = process.env.HTTP_PORT ? parseInt(process.env.HTTP_PORT, 10) : 3232;
+    let httpPort = process.env.HTTP_PORT ? parseInt(process.env.HTTP_PORT, 10) : 3232;
+    if (isNaN(httpPort)) {
+      process.stderr.write(
+        `Invalid HTTP_PORT value: ${process.env.HTTP_PORT}, using default 3232\n`,
+      );
+      httpPort = 3232;
+    }
 
     // Check if HTTP/SSE transport should be enabled
     if (process.env.ENABLE_HTTP === 'true' || process.env.ENABLE_SSE === 'true') {
       this.httpServer = createHttpServer(this.server, httpPort);
+
+      // Set up error handler for HTTP server
+      this.httpServer.httpServer.on('error', (err) => {
+        process.stderr.write(`Failed to start HTTP server: ${err.message}\n`);
+      });
     }
   }
 }

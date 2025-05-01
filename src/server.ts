@@ -10,6 +10,12 @@ import { SseTransport } from './transports/sseTransport.js';
 const MAX_SSE_CLIENTS = parseInt(process.env.MAX_SSE_CLIENTS || '100', 10);
 
 /**
+ * Maximum number of events to buffer per client
+ * Can be overridden with MAX_SSE_BUFFER_SIZE environment variable
+ */
+const MAX_SSE_BUFFER_SIZE = parseInt(process.env.MAX_SSE_BUFFER_SIZE || '100', 10);
+
+/**
  * Creates and configures an HTTP server with SSE support
  * @param mcpServer The MCP server instance to connect with
  * @param port The port to listen on (default: 3232)
@@ -30,7 +36,7 @@ export function createHttpServer(
 
   // Initialize SSE transport
   const sseTransport = new SseTransport({
-    maxBufferSize: 100,
+    maxBufferSize: MAX_SSE_BUFFER_SIZE,
     heartbeatInterval: 25000,
   });
 
@@ -40,6 +46,33 @@ export function createHttpServer(
   // Since the MCP Server doesn't have a native event system that we can listen to,
   // we'll use manual emit handling through our transport logic.
   // The actual emission will happen elsewhere in the codebase where tool responses are processed.
+
+  /**
+   * SSE Event Types:
+   * The following events are emitted over the SSE connection:
+   *
+   * 1. mcp.heartbeat - Sent every 25 seconds to keep connections alive
+   *    Format: { ts: ISO8601 timestamp }
+   *
+   * 2. mcp.tool.response - Sent when a tool completes execution
+   *    Format: {
+   *      toolId: string,
+   *      toolName: string,
+   *      success: boolean,
+   *      data?: any,
+   *      error?: string
+   *    }
+   *
+   * 3. mcp.tool.start - Sent when a tool starts execution
+   *    Format: {
+   *      toolId: string,
+   *      toolName: string,
+   *      params: Record<string, any>
+   *    }
+   *
+   * Clients should handle these events appropriately to maintain
+   * synchronization with the MCP Control server state.
+   */
 
   // Send a heartbeat every 25 seconds to keep connections alive
   setInterval(() => {
@@ -64,6 +97,9 @@ export function createHttpServer(
 
   // Log that the server is running
   process.stderr.write(`HTTP server running on port ${port} with SSE support\n`);
+
+  // Note: Error handling for the HTTP server should be done by the caller
+  // This approach is more testable and allows for proper error propagation
 
   return {
     app,
