@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { ulid } from 'ulid';
-import { Transport } from './baseTransport';
+import { Transport } from './baseTransport.js';
 
 /**
  * Server-Sent Events transport for streaming real-time events
