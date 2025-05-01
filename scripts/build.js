@@ -45,6 +45,10 @@ function execute(command, options = {}) {
 function build() {
   console.log(`\n${colors.green}===== MCPControl Build Process =====${colors.reset}\n`);
   
+  // Install dependencies using npm ci for faster and deterministic installs
+  console.log(`\n${colors.blue}Installing dependencies...${colors.reset}`);
+  execute('npm ci');
+  
   // Build MCPControl
   console.log(`\n${colors.blue}Building MCPControl...${colors.reset}`);
   execute('npm run build');
