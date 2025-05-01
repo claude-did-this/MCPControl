@@ -337,6 +337,9 @@ describe('SseTransport', () => {
     it('should handle client write errors during broadcast', () => {
       transport.attach(mockExpressApp as any);
 
+      // Make sure there are no clients initially
+      expect(transport.getClientCount()).toBe(0);
+
       // Connect a client
       const mockReq = {
         header: vi.fn().mockReturnValue(null),
@@ -346,33 +349,39 @@ describe('SseTransport', () => {
         }),
       };
 
-      // Create a mock that will throw on write
+      // Create a mock response where write succeeds during connection
+      // but fails during event broadcast
       const errorMockRes = {
         set: mockSet,
         flushHeaders: mockFlushHeaders,
-        write: vi.fn().mockImplementation(() => {
-          throw new Error('Connection lost');
-        }),
+        write: vi
+          .fn()
+          .mockImplementationOnce(() => true) // Succeed on first call (retry: 3000)
+          .mockImplementation(() => {
+            throw new Error('Connection lost');
+          }),
       };
 
       // Connect client
       mockRouteHandlers['/mcp/sse'](mockReq, errorMockRes);
 
-      // Should have one client
+      // Should have one client after connection
       expect(transport.getClientCount()).toBe(1);
 
       // Mock console.error to prevent test output pollution
       const originalConsoleError = console.error;
       console.error = vi.fn();
 
-      // Emit event (should trigger write error)
-      transport.emitEvent('test-event', { data: 'test' });
+      try {
+        // Emit event (should trigger write error)
+        transport.emitEvent('test-event', { data: 'test' });
 
-      // Restore console.error
-      console.error = originalConsoleError;
-
-      // Client should be removed due to error
-      expect(transport.getClientCount()).toBe(0);
+        // Client should be removed due to error
+        expect(transport.getClientCount()).toBe(0);
+      } finally {
+        // Restore console.error
+        console.error = originalConsoleError;
+      }
     });
   });
 });

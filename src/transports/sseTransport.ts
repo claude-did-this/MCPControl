@@ -166,9 +166,9 @@ export class SseTransport extends Transport {
     }
 
     // Remove any failed clients
-    for (const res of clientsToRemove) {
+    clientsToRemove.forEach((res) => {
       this.clients.delete(res);
-    }
+    });
   }
 
   /**
