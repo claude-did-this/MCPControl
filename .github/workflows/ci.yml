@@ -21,7 +21,19 @@ jobs:
         node-version: '18'
         cache: 'npm'
     
+    - name: Cache global dependencies
+      id: cache-globals
+      uses: actions/cache@v3
+      with:
+        path: |
+          ${{ runner.os == 'Windows' && 'C:\Users\runneradmin\AppData\Roaming\npm\node_modules\node-gyp' || '~/.npm/node_modules/node-gyp' }}
+          ${{ runner.os == 'Windows' && 'C:\Users\runneradmin\AppData\Roaming\npm\node_modules\cmake-js' || '~/.npm/node_modules/cmake-js' }}
+        key: ${{ runner.os }}-global-deps-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-global-deps-
+    
     - name: Install global dependencies
+      if: steps.cache-globals.outputs.cache-hit != 'true'
       run: |
         npm install -g node-gyp
         npm install -g cmake-js
@@ -35,12 +47,21 @@ jobs:
     - name: Check for known vulnerabilities
       run: npx audit-ci --high
       
-    - name: Build with libnut-core
+    - name: Build project
       run: node scripts/build.js
     
     - name: Run ESLint
       run: npm run lint
 
+    - name: Cache build output
+      id: cache-build
+      uses: actions/cache@v3
+      with:
+        path: build
+        key: ${{ runner.os }}-build-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-build-
+    
     - name: Run tests
       run: npm test
       

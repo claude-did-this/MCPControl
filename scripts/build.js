@@ -45,6 +45,24 @@ function execute(command, options = {}) {
 function build() {
   console.log(`\n${colors.green}===== MCPControl Build Process =====${colors.reset}\n`);
   
+  // Install dependencies using npm ci for faster and deterministic installs
+  console.log(`\n${colors.blue}Installing dependencies...${colors.reset}`);
+  
+  // Check if package-lock.json exists before running npm ci
+  if (fs.existsSync(path.join(process.cwd(), 'package-lock.json'))) {
+    try {
+      // Use a different execution method for npm ci to allow falling back to npm install
+      console.log(`${colors.cyan}> npm ci${colors.reset}`);
+      execSync('npm ci', { stdio: 'inherit' });
+    } catch (error) {
+      console.warn(`\n${colors.yellow}Warning: npm ci failed, falling back to npm install${colors.reset}`);
+      execute('npm install');
+    }
+  } else {
+    console.log(`\n${colors.yellow}package-lock.json not found, using npm install instead${colors.reset}`);
+    execute('npm install');
+  }
+  
   // Build MCPControl
   console.log(`\n${colors.blue}Building MCPControl...${colors.reset}`);
   execute('npm run build');
