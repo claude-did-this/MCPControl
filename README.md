@@ -10,7 +10,7 @@
   </a>
 </p>
 
-Windows control server for the [Model Context Protocol](https://modelcontextprotocol.github.io/), providing programmatic control over system operations including mouse, keyboard, window management, and screen capture functionality.
+Windows control server for the [Model Context Protocol](https://modelcontextprotocol.io/), providing programmatic control over system operations including mouse, keyboard, window management, and screen capture functionality.
 
 > **Note**: This project currently supports Windows only.
 
