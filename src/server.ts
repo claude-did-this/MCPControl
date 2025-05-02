@@ -94,8 +94,13 @@ export function createHttpServer(
 
   // Prometheus metrics endpoint
   app.get('/metrics', (req, res) => {
-    res.set('Content-Type', 'text/plain');
-    res.send(sseTransport.getPrometheusMetrics());
+    try {
+      res.set('Content-Type', 'text/plain; version=0.0.4');
+      res.send(sseTransport.getPrometheusMetrics());
+    } catch (error) {
+      console.error('Error generating metrics:', error);
+      res.status(500).send('Error generating metrics');
+    }
   });
 
   // Start listening

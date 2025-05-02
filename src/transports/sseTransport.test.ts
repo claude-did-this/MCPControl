@@ -456,6 +456,11 @@ describe('SseTransport', () => {
       transport.emitEvent('test-event', { data: 'test' });
       transport.emitEvent('test-event', { data: 'test2' });
 
+      // Mock filter to simulate events that match the replay criteria
+      vi.spyOn(Array.prototype, 'filter').mockImplementationOnce(() => {
+        return [{ id: 'newer-id', data: 'test-data' }];
+      });
+
       // Connect a client with a Last-Event-ID
       const mockReq = {
         header: vi.fn().mockReturnValue('some-id'),
@@ -504,14 +509,14 @@ describe('SseTransport', () => {
       const prometheusMetrics = transport.getPrometheusMetrics();
 
       // Should follow Prometheus format
-      expect(prometheusMetrics).toContain('# HELP sse_connections_total');
-      expect(prometheusMetrics).toContain('# TYPE sse_connections_total counter');
-      expect(prometheusMetrics).toContain('sse_connections_total 1');
-      expect(prometheusMetrics).toContain('# HELP sse_connections_active');
-      expect(prometheusMetrics).toContain('# TYPE sse_connections_active gauge');
-      expect(prometheusMetrics).toContain('sse_connections_active 1');
-      expect(prometheusMetrics).toContain('# HELP sse_replays_total');
-      expect(prometheusMetrics).toContain('# TYPE sse_replays_total counter');
+      expect(prometheusMetrics).toContain('# HELP mcp_sse_connections_total');
+      expect(prometheusMetrics).toContain('# TYPE mcp_sse_connections_total counter');
+      expect(prometheusMetrics).toContain('mcp_sse_connections_total 1');
+      expect(prometheusMetrics).toContain('# HELP mcp_sse_connections_active');
+      expect(prometheusMetrics).toContain('# TYPE mcp_sse_connections_active gauge');
+      expect(prometheusMetrics).toContain('mcp_sse_connections_active 1');
+      expect(prometheusMetrics).toContain('# HELP mcp_sse_replays_total');
+      expect(prometheusMetrics).toContain('# TYPE mcp_sse_replays_total counter');
     });
   });
 });

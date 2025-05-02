@@ -118,9 +118,10 @@ export class SseTransport extends Transport {
         if (lastId) {
           const eventsToReplay = this.replayBuffer.filter((e) => e.id > lastId);
 
-          // In the test, we're mocking a header but not the actual buffer check.
-          // We'll increment the metric regardless of whether events match
-          this.metrics.replaysTotal++;
+          // Only count as a replay if there are actually events to replay
+          if (eventsToReplay.length > 0) {
+            this.metrics.replaysTotal++;
+          }
 
           eventsToReplay.forEach((e) => {
             try {
@@ -289,16 +290,27 @@ export class SseTransport extends Transport {
    * @returns Prometheus-formatted metrics string
    */
   getPrometheusMetrics(): string {
+    // Ensure metrics values are always numeric with defensive checks
+    const connectionsTotal = Number.isFinite(this.metrics.connectionsTotal)
+      ? this.metrics.connectionsTotal
+      : 0;
+
+    const connectionsActive = Number.isFinite(this.metrics.connectionsActive)
+      ? this.metrics.connectionsActive
+      : 0;
+
+    const replaysTotal = Number.isFinite(this.metrics.replaysTotal) ? this.metrics.replaysTotal : 0;
+
     return [
-      '# HELP sse_connections_total Total number of SSE connections established',
-      '# TYPE sse_connections_total counter',
-      `sse_connections_total ${this.metrics.connectionsTotal}`,
-      '# HELP sse_connections_active Current number of active SSE connections',
-      '# TYPE sse_connections_active gauge',
-      `sse_connections_active ${this.metrics.connectionsActive}`,
-      '# HELP sse_replays_total Total number of event replay operations',
-      '# TYPE sse_replays_total counter',
-      `sse_replays_total ${this.metrics.replaysTotal}`,
+      '# HELP mcp_sse_connections_total Total number of SSE connections established',
+      '# TYPE mcp_sse_connections_total counter',
+      `mcp_sse_connections_total ${connectionsTotal}`,
+      '# HELP mcp_sse_connections_active Current number of active SSE connections',
+      '# TYPE mcp_sse_connections_active gauge',
+      `mcp_sse_connections_active ${connectionsActive}`,
+      '# HELP mcp_sse_replays_total Total number of event replay operations',
+      '# TYPE mcp_sse_replays_total counter',
+      `mcp_sse_replays_total ${replaysTotal}`,
     ].join('\n');
   }
 }
