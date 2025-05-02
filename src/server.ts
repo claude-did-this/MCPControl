@@ -92,6 +92,12 @@ export function createHttpServer(
     next();
   });
 
+  // Prometheus metrics endpoint
+  app.get('/metrics', (req, res) => {
+    res.set('Content-Type', 'text/plain');
+    res.send(sseTransport.getPrometheusMetrics());
+  });
+
   // Start listening
   httpServer.listen(port);
 

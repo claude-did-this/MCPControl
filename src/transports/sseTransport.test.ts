@@ -384,4 +384,134 @@ describe('SseTransport', () => {
       }
     });
   });
+
+  describe('metrics', () => {
+    it('should track connection metrics', () => {
+      transport.attach(mockExpressApp as any);
+
+      // Initially no metrics
+      const initialMetrics = transport.getMetrics();
+      expect(initialMetrics.connectionsTotal).toBe(0);
+      expect(initialMetrics.connectionsActive).toBe(0);
+
+      // Connect a client
+      const mockReq1 = {
+        header: vi.fn().mockReturnValue(null),
+        on: vi.fn((event, handler) => {
+          if (event === 'close') mockCloseHandlers.push(handler);
+          return mockReq1;
+        }),
+      };
+
+      const mockRes1 = {
+        set: mockSet,
+        flushHeaders: mockFlushHeaders,
+        write: mockWrite,
+      };
+
+      // Connect first client
+      mockRouteHandlers['/mcp/sse'](mockReq1, mockRes1);
+
+      // Metrics should be updated
+      let metrics = transport.getMetrics();
+      expect(metrics.connectionsTotal).toBe(1);
+      expect(metrics.connectionsActive).toBe(1);
+
+      // Connect a second client
+      const mockReq2 = {
+        header: vi.fn().mockReturnValue(null),
+        on: vi.fn((event, handler) => {
+          if (event === 'close') mockCloseHandlers.push(handler);
+          return mockReq2;
+        }),
+      };
+
+      const mockRes2 = {
+        set: mockSet,
+        flushHeaders: mockFlushHeaders,
+        write: mockWrite,
+      };
+
+      // Connect second client
+      mockRouteHandlers['/mcp/sse'](mockReq2, mockRes2);
+
+      // Metrics should be updated
+      metrics = transport.getMetrics();
+      expect(metrics.connectionsTotal).toBe(2);
+      expect(metrics.connectionsActive).toBe(2);
+
+      // Disconnect first client
+      mockCloseHandlers[0]();
+
+      // Active connections should be updated, but total should not decrease
+      metrics = transport.getMetrics();
+      expect(metrics.connectionsTotal).toBe(2);
+      expect(metrics.connectionsActive).toBe(1);
+    });
+
+    it('should track replay metrics', () => {
+      transport.attach(mockExpressApp as any);
+
+      // Add some events to the buffer
+      transport.emitEvent('test-event', { data: 'test' });
+      transport.emitEvent('test-event', { data: 'test2' });
+
+      // Connect a client with a Last-Event-ID
+      const mockReq = {
+        header: vi.fn().mockReturnValue('some-id'),
+        on: vi.fn((event, handler) => {
+          if (event === 'close') mockCloseHandlers.push(handler);
+          return mockReq;
+        }),
+      };
+
+      const mockRes = {
+        set: mockSet,
+        flushHeaders: mockFlushHeaders,
+        write: mockWrite,
+      };
+
+      // Connect client
+      mockRouteHandlers['/mcp/sse'](mockReq, mockRes);
+
+      // Should have incremented replay counter
+      const metrics = transport.getMetrics();
+      expect(metrics.replaysTotal).toBe(1);
+    });
+
+    it('should format metrics for Prometheus', () => {
+      transport.attach(mockExpressApp as any);
+
+      // Connect a client
+      const mockReq = {
+        header: vi.fn().mockReturnValue(null),
+        on: vi.fn((event, handler) => {
+          if (event === 'close') mockCloseHandlers.push(handler);
+          return mockReq;
+        }),
+      };
+
+      const mockRes = {
+        set: mockSet,
+        flushHeaders: mockFlushHeaders,
+        write: mockWrite,
+      };
+
+      // Connect client
+      mockRouteHandlers['/mcp/sse'](mockReq, mockRes);
+
+      // Get Prometheus metrics
+      const prometheusMetrics = transport.getPrometheusMetrics();
+
+      // Should follow Prometheus format
+      expect(prometheusMetrics).toContain('# HELP sse_connections_total');
+      expect(prometheusMetrics).toContain('# TYPE sse_connections_total counter');
+      expect(prometheusMetrics).toContain('sse_connections_total 1');
+      expect(prometheusMetrics).toContain('# HELP sse_connections_active');
+      expect(prometheusMetrics).toContain('# TYPE sse_connections_active gauge');
+      expect(prometheusMetrics).toContain('sse_connections_active 1');
+      expect(prometheusMetrics).toContain('# HELP sse_replays_total');
+      expect(prometheusMetrics).toContain('# TYPE sse_replays_total counter');
+    });
+  });
 });
