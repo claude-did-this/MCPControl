@@ -45,7 +45,7 @@ const mockApp = {
 };
 
 vi.mock('express', () => {
-  const mod = vi.fn().mockReturnValue(mockApp);
+  const mod: any = vi.fn().mockReturnValue(mockApp);
   mod.json = vi.fn().mockReturnValue(jsonMiddleware);
   return { default: mod, json: mod.json };
 });
