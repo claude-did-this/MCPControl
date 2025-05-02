@@ -4,6 +4,12 @@
   <img src="https://github.com/user-attachments/assets/1c577e56-7b8d-49e9-aaf5-b8550cc6cfc0" alt="MCPControl Logo" width="250">
 </p>
 
+<p align="center">
+  <a href="https://github.com/Cheffromspace/MCPControl/releases/tag/v0.1.22">
+    <img src="https://img.shields.io/badge/release-v0.1.22-blue.svg" alt="Latest Release">
+  </a>
+</p>
+
 Windows control server for the [Model Context Protocol](https://modelcontextprotocol.github.io/), providing programmatic control over system operations including mouse, keyboard, window management, and screen capture functionality.
 
 > **Note**: This project currently supports Windows only.
@@ -143,6 +149,23 @@ The keysender dependency relies on Windows-specific native modules that require 
   - `/tools` - Core functionality implementations
   - `/types` - TypeScript type definitions
   - `index.ts` - Main application entry point
+
+## 🔖 Repository Branches
+
+- **`main`** - Main development branch with the latest features and changes
+- **`release`** - Stable release branch that mirrors the latest stable tag (currently v0.1.22)
+
+### Version Installation
+
+You can install specific versions of MCPControl using npm:
+
+```bash
+# Install the latest stable release (from release branch)
+npm install mcp-control
+
+# Install a specific version
+npm install mcp-control@0.1.22
+```
 
 ## 📚 Dependencies
 
