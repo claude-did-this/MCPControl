@@ -1,7 +1,7 @@
 # MCPControl
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Cheffromspace/MCPControl/assets/logo/mcpcontrol-logo.png" alt="MCPControl Logo" width="250">
+  <img src="https://github.com/user-attachments/assets/1c577e56-7b8d-49e9-aaf5-b8550cc6cfc0" alt="MCPControl Logo" width="250">
 </p>
 
 Windows control server for the [Model Context Protocol](https://modelcontextprotocol.github.io/), providing programmatic control over system operations including mouse, keyboard, window management, and screen capture functionality.
