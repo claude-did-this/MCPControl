@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { ulid } from 'ulid';
 import { Transport } from './baseTransport.js';
 
@@ -26,13 +26,31 @@ export interface SseMetrics {
  * Server-Sent Events transport for streaming real-time events
  *
  * This transport maintains an in-memory buffer of recent events
- * and can replay missed events for clients that reconnect
+ * and can replay missed events for clients that reconnect.
+ *
+ * It also implements bidirectional communication with clients through
+ * SSE for server-to-client and HTTP POST for client-to-server.
  */
 export class SseTransport extends Transport {
   /**
    * Set of connected SSE clients
    */
   private clients = new Set<Response>();
+
+  /**
+   * Session ID for this transport
+   */
+  public readonly sessionId: string;
+
+  /**
+   * Message callback provided by MCP server
+   */
+  private messageCallback?: (message: string) => void;
+
+  /**
+   * Close callback that can be set by consumers
+   */
+  public onclose?: () => void;
 
   /**
    * In-memory buffer for event replay
@@ -79,6 +97,7 @@ export class SseTransport extends Transport {
     super();
     this.maxBufferSize = options.maxBufferSize ?? 100;
     this.heartbeatInterval = options.heartbeatInterval ?? 25000;
+    this.sessionId = ulid();
   }
 
   /**
@@ -93,6 +112,7 @@ export class SseTransport extends Transport {
       throw new Error('SseTransport is already attached to an Express app');
     }
 
+    // Set up the SSE endpoint
     app.get('/mcp/sse', (req, res) => {
       // Set SSE headers
       res.set({
@@ -105,6 +125,9 @@ export class SseTransport extends Transport {
       try {
         // Suggest client reconnection time
         res.write('retry: 3000\n\n');
+
+        // Send the session ID to the client so they can include it in POST requests
+        res.write(`event:mcp.session\ndata:${JSON.stringify({ sessionId: this.sessionId })}\n\n`);
 
         // Add client to active connections
         this.clients.add(res);
@@ -152,7 +175,28 @@ export class SseTransport extends Transport {
         this.clients.delete(res);
         // Update active connections metric
         this.metrics.connectionsActive = this.clients.size;
+
+        // If we have no more clients, call the onclose callback
+        if (this.clients.size === 0 && this.onclose) {
+          void this.onclose();
+        }
       });
+    });
+
+    // Set up the message endpoint for client-to-server communication
+    app.post('/mcp/messages', (req: Request, res: Response) => {
+      // Verify the session ID
+      const sessionId = req.query.sessionId as string;
+      if (!sessionId || sessionId !== this.sessionId) {
+        res.status(403).json({
+          success: false,
+          message: 'Invalid or missing session ID',
+        });
+        return;
+      }
+
+      // Handle the message
+      this.handlePostMessage(req, res);
     });
 
     // Start the heartbeat timer if not already running
@@ -162,6 +206,31 @@ export class SseTransport extends Transport {
 
     // Mark as attached
     this.isAttached = true;
+  }
+
+  /**
+   * Handles a POST message from a client
+   * This is called by the message endpoint
+   */
+  handlePostMessage(req: Request, res: Response): void {
+    try {
+      const body = req.body as Record<string, unknown>;
+
+      // If we have a message callback, forward the message
+      if (this.messageCallback) {
+        this.messageCallback(JSON.stringify(body));
+      }
+
+      // Send a generic success response
+      // The actual response will be sent via the SSE channel
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error('Error handling client message:', error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   /**
@@ -261,7 +330,7 @@ export class SseTransport extends Transport {
 
   /**
    * Stops the heartbeat timer and cleans up resources
-   * @returns void
+   * @returns Promise that resolves when closed
    */
   close(): void {
     if (this.heartbeatTimer) {
@@ -270,11 +339,54 @@ export class SseTransport extends Transport {
     }
 
     // Clear clients and buffer
+    this.clients.forEach((res) => {
+      try {
+        res.end();
+      } catch {
+        // Ignore errors when closing
+      }
+    });
     this.clients.clear();
     this.isAttached = false;
 
     // Update active connections metric
     this.metrics.connectionsActive = 0;
+
+    // Call onclose if set
+    if (this.onclose) {
+      void this.onclose();
+    }
+  }
+
+  /**
+   * Handle an MCP message and route it to appropriate clients
+   * @param message MCP JSON-RPC message to distribute
+   */
+  handleMcpMessage(message: string): void {
+    try {
+      // Parse the message to determine the appropriate event type
+      const parsedMessage = JSON.parse(message) as Record<string, unknown>;
+
+      // Determine the event type based on the message content
+      let eventType = 'mcp.message';
+
+      // Use optional chaining and type guard to check method property
+      const method = parsedMessage.method;
+      if (typeof method === 'string') {
+        if (method.startsWith('tool/')) {
+          eventType = 'mcp.tool.response';
+        } else if (method.startsWith('notification/')) {
+          eventType = 'mcp.notification';
+        }
+      }
+
+      // Emit the event to all clients
+      this.emitEvent(eventType, parsedMessage);
+    } catch (err) {
+      console.error('Error processing MCP message:', err);
+      // If we couldn't parse the message, send it as a raw message
+      this.emitEvent('mcp.message', { raw: message });
+    }
   }
 
   /**

@@ -16,7 +16,7 @@ const MAX_SSE_CLIENTS = parseInt(process.env.MAX_SSE_CLIENTS || '100', 10);
 const MAX_SSE_BUFFER_SIZE = parseInt(process.env.MAX_SSE_BUFFER_SIZE || '100', 10);
 
 /**
- * Creates and configures an HTTP server with SSE support
+ * Creates and configures an HTTP server with SSE transport
  * @param mcpServer The MCP server instance to connect with
  * @param port The port to listen on (default: 3232)
  * @returns Object containing the express app, http server, and transport instances
@@ -30,6 +30,10 @@ export function createHttpServer(
   sseTransport: SseTransport;
 } {
   const app = express();
+
+  // Set up middleware to parse JSON bodies
+  app.use(express.json());
+
   // Explicitly type the app to satisfy ESLint
   // eslint-disable-next-line @typescript-eslint/no-misused-promises
   const httpServer = http.createServer(app);
@@ -43,43 +47,10 @@ export function createHttpServer(
   // Attach transport to the Express app
   sseTransport.attach(app);
 
-  // Since the MCP Server doesn't have a native event system that we can listen to,
-  // we'll use manual emit handling through our transport logic.
-  // The actual emission will happen elsewhere in the codebase where tool responses are processed.
+  // We don't connect the SSE transport directly to the MCP server
+  // It works differently than the stdio transport
 
-  /**
-   * SSE Event Types:
-   * The following events are emitted over the SSE connection:
-   *
-   * 1. mcp.heartbeat - Sent every 25 seconds to keep connections alive
-   *    Format: { ts: ISO8601 timestamp }
-   *
-   * 2. mcp.tool.response - Sent when a tool completes execution
-   *    Format: {
-   *      toolId: string,
-   *      toolName: string,
-   *      success: boolean,
-   *      data?: any,
-   *      error?: string
-   *    }
-   *
-   * 3. mcp.tool.start - Sent when a tool starts execution
-   *    Format: {
-   *      toolId: string,
-   *      toolName: string,
-   *      params: Record<string, any>
-   *    }
-   *
-   * Clients should handle these events appropriately to maintain
-   * synchronization with the MCP Control server state.
-   */
-
-  // Send a heartbeat every 25 seconds to keep connections alive
-  setInterval(() => {
-    sseTransport.emitEvent('mcp.heartbeat', { ts: new Date().toISOString() });
-  }, 25000);
-
-  // Client limit enforcement
+  // Add client limit enforcement middleware
   app.use('/mcp/sse', (req, res, next) => {
     const clientCount = sseTransport.getClientCount();
     if (clientCount >= MAX_SSE_CLIENTS) {
@@ -91,6 +62,34 @@ export function createHttpServer(
     }
     next();
   });
+
+  /**
+   * SSE Event Types:
+   * The following events are emitted over the SSE connection:
+   *
+   * 1. mcp.session - Sent when a client connects, contains sessionId
+   *    Format: { sessionId: string }
+   *
+   * 2. mcp.heartbeat - Sent every 25 seconds to keep connections alive
+   *    Format: { ts: ISO8601 timestamp }
+   *
+   * 3. mcp.tool.response - Sent when a tool completes execution
+   *    Format: {
+   *      id: string,
+   *      result: {
+   *        success: boolean,
+   *        data?: any,
+   *        error?: string
+   *      }
+   *    }
+   *
+   * 4. mcp.message - Generic MCP messages
+   *
+   * 5. mcp.notification - Server notifications
+   *
+   * Clients should handle these events appropriately to maintain
+   * synchronization with the MCP Control server state.
+   */
 
   // Prometheus metrics endpoint
   app.get('/metrics', (req, res) => {
@@ -106,8 +105,7 @@ export function createHttpServer(
   // Start listening
   httpServer.listen(port);
 
-  // Log that the server is running
-  process.stderr.write(`HTTP server running on port ${port} with SSE support\n`);
+  // Do not log from here - we'll consolidate logging in index.ts
 
   // Note: Error handling for the HTTP server should be done by the caller
   // This approach is more testable and allows for proper error propagation
