@@ -18,6 +18,32 @@ MCPControl bridges the gap between AI models and your desktop, enabling secure, 
 - 📸 **Screen capture and analysis**
 - 📋 **Clipboard operations**
 
+## 🔌 Quick Start
+
+1. **Install Node.js** (if not already installed)
+   ```
+   # Visit https://nodejs.org and download the latest LTS version
+   ```
+
+2. **Configure MCP settings** in your Claude client:
+
+   ```json
+   {
+     "mcpServers": {
+       "MCPControl": {
+         "command": "npx",
+         "args": [
+           "--no-cache",
+           "-y",
+           "mcp-control"
+         ]
+       }
+     }
+   }
+   ```
+
+3. **Restart your client** and MCPControl will appear in your MCP menu!
+
 ## 🚀 Popular Use Cases
 
 ### Assisted Automation
@@ -54,83 +80,44 @@ By using this software, you acknowledge and accept that:
 
 ## 🌟 Features
 
-<p align="center">
-  <table>
-    <tr>
-      <td align="center">
-        <h3>🪟 Window Management</h3>
-        <ul>
-          <li>List all windows</li>
-          <li>Get active window info</li>
-          <li>Focus, resize & reposition</li>
-        </ul>
-      </td>
-      <td align="center">
-        <h3>🖱️ Mouse Control</h3>
-        <ul>
-          <li>Precision movement</li>
-          <li>Click & drag operations</li>
-          <li>Scrolling & position tracking</li>
-        </ul>
-      </td>
-    </tr>
-    <tr>
-      <td align="center">
-        <h3>⌨️ Keyboard Control</h3>
-        <ul>
-          <li>Text input & key combos</li>
-          <li>Key press/release control</li>
-          <li>Hold key functionality</li>
-        </ul>
-      </td>
-      <td align="center">
-        <h3>📸 Screen Operations</h3>
-        <ul>
-          <li>High-quality screenshots</li>
-          <li>Screen size detection</li>
-          <li>Active window capture</li>
-        </ul>
-      </td>
-    </tr>
-  </table>
-</p>
-
-## 🔌 Quick Start
-
-1. **Install Node.js** (if not already installed)
-   ```
-   # Visit https://nodejs.org and download the latest LTS version
-   ```
-
-2. **Configure MCP settings** in your Claude client:
-
-   ```json
-   {
-     "mcpServers": {
-       "MCPControl": {
-         "command": "npx",
-         "args": [
-           "--no-cache",
-           "-y",
-           "mcp-control"
-         ]
-       }
-     }
-   }
-   ```
-
-3. **Restart your client** and MCPControl will appear in your MCP menu!
-
-## 🧪 Try Our Test Panel
-
-Experience MCPControl's capabilities with our interactive test panel:
-
-1. Clone the repository
-2. Run `npm install && npm run build`
-3. Launch the test server: `cd test && node test-server.js`
-4. Open your browser to the displayed URL
-5. In a separate terminal, run MCPControl: `node build/index.js`
-6. Connect Claude to MCPControl and ask it to interact with the test panel
+<table>
+  <tr>
+    <td>
+      <h3>🪟 Window Management</h3>
+      <ul>
+        <li>List all windows</li>
+        <li>Get active window info</li>
+        <li>Focus, resize & reposition</li>
+      </ul>
+    </td>
+    <td>
+      <h3>🖱️ Mouse Control</h3>
+      <ul>
+        <li>Precision movement</li>
+        <li>Click & drag operations</li>
+        <li>Scrolling & position tracking</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <h3>⌨️ Keyboard Control</h3>
+      <ul>
+        <li>Text input & key combos</li>
+        <li>Key press/release control</li>
+        <li>Hold key functionality</li>
+      </ul>
+    </td>
+    <td>
+      <h3>📸 Screen Operations</h3>
+      <ul>
+        <li>High-quality screenshots</li>
+        <li>Screen size detection</li>
+        <li>Active window capture</li>
+      </ul>
+    </td>
+  </tr>
+</table>
 
 ## 🛠️ Development Setup
 
