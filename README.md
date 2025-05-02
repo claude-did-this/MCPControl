@@ -1,10 +1,42 @@
 # MCPControl
 
-Windows control server for the Model Context Protocol, providing programmatic control over system operations including mouse, keyboard, window management, and screen capture functionality.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Cheffromspace/MCPControl/assets/logo/mcpcontrol-logo.png" alt="MCPControl Logo" width="250">
+</p>
 
-I developed this project as an experiment a few months ago, wanting to see if Claude could play some video games. After seeing it work, I was impressed but set it aside. Recently, it's gained attention from the community, prompting me to resume development. While currently in pre-release state, I'm actively working toward a stable version. If you encounter any issues or want to help with testing, please submit them through the issue tracker.
+Windows control server for the [Model Context Protocol](https://modelcontextprotocol.github.io/), providing programmatic control over system operations including mouse, keyboard, window management, and screen capture functionality.
 
 > **Note**: This project currently supports Windows only.
+
+## 🔥 Why MCPControl?
+
+MCPControl bridges the gap between AI models and your desktop, enabling secure, programmatic control of:
+
+- 🖱️ **Mouse movements and clicks**
+- ⌨️ **Keyboard input and shortcuts**
+- 🪟 **Window management**
+- 📸 **Screen capture and analysis**
+- 📋 **Clipboard operations**
+
+## 🚀 Popular Use Cases
+
+### Assisted Automation
+
+- **Application Testing**: Delegate repetitive UI testing to Claude, allowing AI to navigate through applications and report issues
+- **Workflow Automation**: Have Claude operate applications on your behalf, handling repetitive tasks while you focus on creative work
+- **Form Filling**: Let Claude handle data entry tasks with your supervision
+
+### AI Experimentation
+
+- **AI Gaming**: Watch Claude learn to play simple games through visual feedback
+- **Visual Reasoning**: Test Claude's ability to navigate visual interfaces and solve visual puzzles
+- **Human-AI Collaboration**: Explore new interaction paradigms where Claude can see your screen and help with complex tasks
+
+### Development and Testing
+
+- **Cross-Application Integration**: Bridge applications that don't normally communicate
+- **UI Testing Framework**: Create robust testing scenarios with visual validation
+- **Demo Creation**: Automate the creation of product demonstrations
 
 ## ⚠️ IMPORTANT DISCLAIMER
 
@@ -20,50 +52,91 @@ By using this software, you acknowledge and accept that:
 
 **USE AT YOUR OWN RISK**
 
-## Features
+## 🌟 Features
 
-- **Window Management**
-  - List all windows
-  - Get active window information
-  - Get window titles
-  - Get window size and position
-  - Focus windows
-  - Resize windows
-  - Reposition windows
+<p align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <h3>🪟 Window Management</h3>
+        <ul>
+          <li>List all windows</li>
+          <li>Get active window info</li>
+          <li>Focus, resize & reposition</li>
+        </ul>
+      </td>
+      <td align="center">
+        <h3>🖱️ Mouse Control</h3>
+        <ul>
+          <li>Precision movement</li>
+          <li>Click & drag operations</li>
+          <li>Scrolling & position tracking</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td align="center">
+        <h3>⌨️ Keyboard Control</h3>
+        <ul>
+          <li>Text input & key combos</li>
+          <li>Key press/release control</li>
+          <li>Hold key functionality</li>
+        </ul>
+      </td>
+      <td align="center">
+        <h3>📸 Screen Operations</h3>
+        <ul>
+          <li>High-quality screenshots</li>
+          <li>Screen size detection</li>
+          <li>Active window capture</li>
+        </ul>
+      </td>
+    </tr>
+  </table>
+</p>
 
-- **Mouse Control**
-  - Mouse movement
-  - Click operations
-  - Scroll functionality
-  - Drag operations
-  - Cursor position tracking
+## 🔌 Quick Start
 
-- **Keyboard Control**
-  - Text input
-  - Key combinations
-  - Key press/release operations
-  - Hold key functionality
+1. **Install Node.js** (if not already installed)
+   ```
+   # Visit https://nodejs.org and download the latest LTS version
+   ```
 
-- **Screen Operations**
-  - Screen capture
-  - Screen size retrieval
-  - Active window detection
+2. **Configure MCP settings** in your Claude client:
 
-- **Clipboard Integration**
-  - Get clipboard content
-  - Set clipboard content
-  - Clear clipboard
-  - Check clipboard state
+   ```json
+   {
+     "mcpServers": {
+       "MCPControl": {
+         "command": "npx",
+         "args": [
+           "--no-cache",
+           "-y",
+           "mcp-control"
+         ]
+       }
+     }
+   }
+   ```
 
-## Usage
+3. **Restart your client** and MCPControl will appear in your MCP menu!
 
-Simply configure your Claude MCP settings to use MCPControl as shown in the [MCP Server Configuration](#mcp-server-configuration) section. No installation needed!
+## 🧪 Try Our Test Panel
 
-### Building From Source
+Experience MCPControl's capabilities with our interactive test panel:
+
+1. Clone the repository
+2. Run `npm install && npm run build`
+3. Launch the test server: `cd test && node test-server.js`
+4. Open your browser to the displayed URL
+5. In a separate terminal, run MCPControl: `node build/index.js`
+6. Connect Claude to MCPControl and ask it to interact with the test panel
+
+## 🛠️ Development Setup
 
 If you're interested in contributing or building from source, please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed instructions.
 
-#### Development Requirements
+### Development Requirements
 
 To build this project for development, you'll need:
 
@@ -76,39 +149,7 @@ To build this project for development, you'll need:
 
 The keysender dependency relies on Windows-specific native modules that require these build tools.
 
-## MCP Server Configuration
-
-To use this project, you'll need the necessary build tools:
-
-1. Install Node.js using the official Windows installer, which includes necessary build tools
-2. Install additional required tools:
-
-```
-npm install -g node-gyp
-npm install -g cmake-js
-```
-
-Then, add the following configuration to your MCP settings:
-
-
-```json
-{
-  "mcpServers": {
-    "MCPControl": {
-      "command": "npx",
-      "args": [
-        "--no-cache",
-        "-y",
-        "mcp-control"
-      ]
-    }
-  }
-}
-```
-
-After configuring your MCP settings, restart your client to see the MCPControl service in the menu.
-
-## Project Structure
+## 📋 Project Structure
 
 - `/src`
   - `/handlers` - Request handlers and tool management
@@ -116,7 +157,7 @@ After configuring your MCP settings, restart your client to see the MCPControl s
   - `/types` - TypeScript type definitions
   - `index.ts` - Main application entry point
 
-## Dependencies
+## 📚 Dependencies
 
 - [@modelcontextprotocol/sdk](https://www.npmjs.com/package/@modelcontextprotocol/sdk) - MCP SDK for protocol implementation
 - [keysender](https://www.npmjs.com/package/keysender) - Windows-only UI automation library
@@ -124,14 +165,7 @@ After configuring your MCP settings, restart your client to see the MCPControl s
 - [sharp](https://www.npmjs.com/package/sharp) - Image processing
 - [uuid](https://www.npmjs.com/package/uuid) - UUID generation
 
-## Testing
-
-The project currently includes unit tests for core functionality. The following test areas are planned for future development:
-- Integration tests for cross-module functionality
-- Performance testing
-- Error handling validation
-
-## Known Limitations
+## 🚧 Known Limitations
 
 - Window minimize/restore operations are currently unsupported
 - Multiple screen functions may not work as expected, depending on setup
@@ -140,14 +174,14 @@ The project currently includes unit tests for core functionality. The following 
 - Only Windows is supported
 - Click accuracy is currently working best at 1280x720 resolution, single screen. We're working on an offset/scaling bug and looking for testers or help creating testing tools
 
-## Contributing
+## 👥 Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md)
 
-## License
+## ⚖️ License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## References
+## 📖 References
 
 - [Model Context Protocol Documentation](https://modelcontextprotocol.github.io/)
