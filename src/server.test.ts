@@ -80,6 +80,13 @@ describe('HTTP Server', () => {
     expect(mockApp.use).toHaveBeenCalledWith('/mcp/sse', expect.any(Function));
   });
 
+  it('should register metrics endpoint', () => {
+    createHttpServer(mockMcpServer as any);
+
+    // Should have registered the metrics endpoint
+    expect(mockApp.get).toHaveBeenCalledWith('/metrics', expect.any(Function));
+  });
+
   it('should start listening on the specified port', () => {
     const port = 5555;
     createHttpServer(mockMcpServer as any, port);

@@ -3,6 +3,26 @@ import { ulid } from 'ulid';
 import { Transport } from './baseTransport.js';
 
 /**
+ * Simple metrics to track SSE-related operations
+ */
+export interface SseMetrics {
+  /**
+   * Total number of SSE connections since server start
+   */
+  connectionsTotal: number;
+
+  /**
+   * Total number of event replays performed
+   */
+  replaysTotal: number;
+
+  /**
+   * Current number of active SSE connections
+   */
+  connectionsActive: number;
+}
+
+/**
  * Server-Sent Events transport for streaming real-time events
  *
  * This transport maintains an in-memory buffer of recent events
@@ -39,6 +59,15 @@ export class SseTransport extends Transport {
    * Flag to track if this transport has been attached to an Express app
    */
   private isAttached = false;
+
+  /**
+   * Metrics for Prometheus monitoring
+   */
+  private metrics: SseMetrics = {
+    connectionsTotal: 0,
+    replaysTotal: 0,
+    connectionsActive: 0,
+  };
 
   /**
    * Creates a new SSE transport
@@ -80,16 +109,27 @@ export class SseTransport extends Transport {
         // Add client to active connections
         this.clients.add(res);
 
+        // Update metrics for new connection
+        this.metrics.connectionsTotal++;
+        this.metrics.connectionsActive = this.clients.size;
+
         // Replay missed events if Last-Event-ID is present
         const lastId = req.header('Last-Event-ID');
         if (lastId) {
           const eventsToReplay = this.replayBuffer.filter((e) => e.id > lastId);
+
+          // Only count as a replay if there are actually events to replay
+          if (eventsToReplay.length > 0) {
+            this.metrics.replaysTotal++;
+          }
+
           eventsToReplay.forEach((e) => {
             try {
               res.write(e.data);
             } catch (err) {
               // If writing fails, remove the client
               this.clients.delete(res);
+              this.metrics.connectionsActive = this.clients.size;
               console.error('Error writing to SSE client:', err);
             }
           });
@@ -110,6 +150,8 @@ export class SseTransport extends Transport {
       // Remove client when connection closes
       req.on('close', () => {
         this.clients.delete(res);
+        // Update active connections metric
+        this.metrics.connectionsActive = this.clients.size;
       });
     });
 
@@ -169,6 +211,11 @@ export class SseTransport extends Transport {
     clientsToRemove.forEach((res) => {
       this.clients.delete(res);
     });
+
+    // Update active connections metric if we removed any clients
+    if (clientsToRemove.length > 0) {
+      this.metrics.connectionsActive = this.clients.size;
+    }
   }
 
   /**
@@ -225,5 +272,45 @@ export class SseTransport extends Transport {
     // Clear clients and buffer
     this.clients.clear();
     this.isAttached = false;
+
+    // Update active connections metric
+    this.metrics.connectionsActive = 0;
+  }
+
+  /**
+   * Gets the current metrics for monitoring
+   * @returns Current SSE metrics
+   */
+  getMetrics(): SseMetrics {
+    return { ...this.metrics };
+  }
+
+  /**
+   * Formats metrics for Prometheus scraping
+   * @returns Prometheus-formatted metrics string
+   */
+  getPrometheusMetrics(): string {
+    // Ensure metrics values are always numeric with defensive checks
+    const connectionsTotal = Number.isFinite(this.metrics.connectionsTotal)
+      ? this.metrics.connectionsTotal
+      : 0;
+
+    const connectionsActive = Number.isFinite(this.metrics.connectionsActive)
+      ? this.metrics.connectionsActive
+      : 0;
+
+    const replaysTotal = Number.isFinite(this.metrics.replaysTotal) ? this.metrics.replaysTotal : 0;
+
+    return [
+      '# HELP mcp_sse_connections_total Total number of SSE connections established',
+      '# TYPE mcp_sse_connections_total counter',
+      `mcp_sse_connections_total ${connectionsTotal}`,
+      '# HELP mcp_sse_connections_active Current number of active SSE connections',
+      '# TYPE mcp_sse_connections_active gauge',
+      `mcp_sse_connections_active ${connectionsActive}`,
+      '# HELP mcp_sse_replays_total Total number of event replay operations',
+      '# TYPE mcp_sse_replays_total counter',
+      `mcp_sse_replays_total ${replaysTotal}`,
+    ].join('\n');
   }
 }
