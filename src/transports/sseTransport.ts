@@ -1,32 +1,8 @@
 import { Response } from 'express';
-import { ulid } from 'ulid';
 import { Transport } from './baseTransport.js';
 
 /**
- * Simple metrics to track SSE-related operations
- */
-export interface SseMetrics {
-  /**
-   * Total number of SSE connections since server start
-   */
-  connectionsTotal: number;
-
-  /**
-   * Total number of event replays performed
-   */
-  replaysTotal: number;
-
-  /**
-   * Current number of active SSE connections
-   */
-  connectionsActive: number;
-}
-
-/**
  * Server-Sent Events transport for streaming real-time events
- *
- * This transport maintains an in-memory buffer of recent events
- * and can replay missed events for clients that reconnect
  */
 export class SseTransport extends Transport {
   /**
@@ -35,20 +11,9 @@ export class SseTransport extends Transport {
   private clients = new Set<Response>();
 
   /**
-   * In-memory buffer for event replay
-   * Stores recent events for reconnection support with Last-Event-ID
-   */
-  private replayBuffer: { id: string; data: string }[] = [];
-
-  /**
-   * Maximum size of the replay buffer (number of events to keep)
-   */
-  private maxBufferSize: number;
-
-  /**
    * Heartbeat interval in milliseconds
    */
-  private heartbeatInterval: number;
+  private heartbeatInterval = 25000;
 
   /**
    * Heartbeat timer handle
@@ -56,43 +21,10 @@ export class SseTransport extends Transport {
   private heartbeatTimer?: NodeJS.Timeout;
 
   /**
-   * Flag to track if this transport has been attached to an Express app
-   */
-  private isAttached = false;
-
-  /**
-   * Metrics for Prometheus monitoring
-   */
-  private metrics: SseMetrics = {
-    connectionsTotal: 0,
-    replaysTotal: 0,
-    connectionsActive: 0,
-  };
-
-  /**
-   * Creates a new SSE transport
-   * @param options Configuration options
-   * @param options.maxBufferSize Maximum number of events to keep in replay buffer (default: 100)
-   * @param options.heartbeatInterval Interval in ms to send keepalive pings (default: 25000)
-   */
-  constructor(options: { maxBufferSize?: number; heartbeatInterval?: number } = {}) {
-    super();
-    this.maxBufferSize = options.maxBufferSize ?? 100;
-    this.heartbeatInterval = options.heartbeatInterval ?? 25000;
-  }
-
-  /**
    * Attaches this SSE transport to the Express application
    * @param app Express application instance
-   * @returns void
-   * @throws Error if the transport has already been attached
    */
   attach(app: import('express').Express): void {
-    // Prevent multiple attachments
-    if (this.isAttached) {
-      throw new Error('SseTransport is already attached to an Express app');
-    }
-
     app.get('/mcp/sse', (req, res) => {
       // Set SSE headers
       res.set({
@@ -102,56 +34,15 @@ export class SseTransport extends Transport {
       });
       res.flushHeaders(); // send headers right away
 
-      try {
-        // Suggest client reconnection time
-        res.write('retry: 3000\n\n');
+      // Suggest client reconnection time
+      res.write('retry: 3000\n\n');
 
-        // Add client to active connections
-        this.clients.add(res);
-
-        // Update metrics for new connection
-        this.metrics.connectionsTotal++;
-        this.metrics.connectionsActive = this.clients.size;
-
-        // Replay missed events if Last-Event-ID is present
-        const lastId = req.header('Last-Event-ID');
-        if (lastId) {
-          const eventsToReplay = this.replayBuffer.filter((e) => e.id > lastId);
-
-          // Only count as a replay if there are actually events to replay
-          if (eventsToReplay.length > 0) {
-            this.metrics.replaysTotal++;
-          }
-
-          eventsToReplay.forEach((e) => {
-            try {
-              res.write(e.data);
-            } catch (err) {
-              // If writing fails, remove the client
-              this.clients.delete(res);
-              this.metrics.connectionsActive = this.clients.size;
-              console.error('Error writing to SSE client:', err);
-            }
-          });
-        }
-      } catch (err) {
-        // Handle any unexpected errors during setup
-        console.error('Error setting up SSE connection:', err);
-        this.clients.delete(res);
-        try {
-          // Attempt to close the response
-          res.end();
-        } catch {
-          // Ignore errors on end
-        }
-        return;
-      }
+      // Add client to active connections
+      this.clients.add(res);
 
       // Remove client when connection closes
       req.on('close', () => {
         this.clients.delete(res);
-        // Update active connections metric
-        this.metrics.connectionsActive = this.clients.size;
       });
     });
 
@@ -159,31 +50,15 @@ export class SseTransport extends Transport {
     if (!this.heartbeatTimer) {
       this.heartbeatTimer = setInterval(() => this.broadcast(':\n\n'), this.heartbeatInterval);
     }
-
-    // Mark as attached
-    this.isAttached = true;
   }
 
   /**
    * Broadcasts a JSON payload under the given event name to all connected clients
    * @param eventName Optional event name (defaults to "message")
    * @param payload The data to send (will be JSON stringified)
-   * @returns void
    */
   emitEvent(eventName: string, payload: unknown): void {
-    const id = ulid();
-    const data =
-      `id:${id}\n` +
-      (eventName ? `event:${eventName}\n` : '') +
-      `data:${JSON.stringify(payload)}\n\n`;
-
-    // Store in replay buffer
-    this.replayBuffer.push({ id, data });
-
-    // Trim buffer if it exceeds max size
-    if (this.replayBuffer.length > this.maxBufferSize) {
-      this.replayBuffer.shift();
-    }
+    const data = (eventName ? `event:${eventName}\n` : '') + `data:${JSON.stringify(payload)}\n\n`;
 
     // Send to all connected clients
     this.broadcast(data);
@@ -192,7 +67,6 @@ export class SseTransport extends Transport {
   /**
    * Broadcasts a raw chunk of data to all connected clients
    * @param chunk The raw data chunk to send
-   * @returns void
    */
   private broadcast(chunk: string): void {
     const clientsToRemove: Response[] = [];
@@ -200,10 +74,10 @@ export class SseTransport extends Transport {
     for (const res of this.clients) {
       try {
         res.write(chunk);
-      } catch (err) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (_) {
         // If writing fails, mark this client for removal
         clientsToRemove.push(res);
-        console.error('Error broadcasting to SSE client:', err);
       }
     }
 
@@ -211,27 +85,6 @@ export class SseTransport extends Transport {
     clientsToRemove.forEach((res) => {
       this.clients.delete(res);
     });
-
-    // Update active connections metric if we removed any clients
-    if (clientsToRemove.length > 0) {
-      this.metrics.connectionsActive = this.clients.size;
-    }
-  }
-
-  /**
-   * Clears the replay buffer
-   * @returns void
-   */
-  clearReplayBuffer(): void {
-    this.replayBuffer = [];
-  }
-
-  /**
-   * Gets the current size of the replay buffer
-   * @returns Number of events in the buffer
-   */
-  getReplayBufferSize(): number {
-    return this.replayBuffer.length;
   }
 
   /**
@@ -243,25 +96,7 @@ export class SseTransport extends Transport {
   }
 
   /**
-   * Updates the maximum buffer size
-   * @param maxSize New maximum buffer size
-   * @returns void
-   */
-  setMaxBufferSize(maxSize: number): void {
-    if (maxSize < 0) {
-      throw new Error('Buffer size cannot be negative');
-    }
-    this.maxBufferSize = maxSize;
-
-    // Trim buffer if needed
-    while (this.replayBuffer.length > this.maxBufferSize) {
-      this.replayBuffer.shift();
-    }
-  }
-
-  /**
    * Stops the heartbeat timer and cleans up resources
-   * @returns void
    */
   close(): void {
     if (this.heartbeatTimer) {
@@ -269,48 +104,7 @@ export class SseTransport extends Transport {
       this.heartbeatTimer = undefined;
     }
 
-    // Clear clients and buffer
+    // Clear clients
     this.clients.clear();
-    this.isAttached = false;
-
-    // Update active connections metric
-    this.metrics.connectionsActive = 0;
-  }
-
-  /**
-   * Gets the current metrics for monitoring
-   * @returns Current SSE metrics
-   */
-  getMetrics(): SseMetrics {
-    return { ...this.metrics };
-  }
-
-  /**
-   * Formats metrics for Prometheus scraping
-   * @returns Prometheus-formatted metrics string
-   */
-  getPrometheusMetrics(): string {
-    // Ensure metrics values are always numeric with defensive checks
-    const connectionsTotal = Number.isFinite(this.metrics.connectionsTotal)
-      ? this.metrics.connectionsTotal
-      : 0;
-
-    const connectionsActive = Number.isFinite(this.metrics.connectionsActive)
-      ? this.metrics.connectionsActive
-      : 0;
-
-    const replaysTotal = Number.isFinite(this.metrics.replaysTotal) ? this.metrics.replaysTotal : 0;
-
-    return [
-      '# HELP mcp_sse_connections_total Total number of SSE connections established',
-      '# TYPE mcp_sse_connections_total counter',
-      `mcp_sse_connections_total ${connectionsTotal}`,
-      '# HELP mcp_sse_connections_active Current number of active SSE connections',
-      '# TYPE mcp_sse_connections_active gauge',
-      `mcp_sse_connections_active ${connectionsActive}`,
-      '# HELP mcp_sse_replays_total Total number of event replay operations',
-      '# TYPE mcp_sse_replays_total counter',
-      `mcp_sse_replays_total ${replaysTotal}`,
-    ].join('\n');
   }
 }

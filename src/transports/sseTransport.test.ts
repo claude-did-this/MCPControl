@@ -24,7 +24,7 @@ describe('SseTransport', () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
-    transport = new SseTransport({ maxBufferSize: 5, heartbeatInterval: 5000 });
+    transport = new SseTransport();
     mockCloseHandlers.length = 0;
 
     // Reset all mocks
@@ -136,40 +136,6 @@ describe('SseTransport', () => {
       );
     });
 
-    it('should maintain replay buffer and respect max size', () => {
-      // Set up
-      transport.attach(mockExpressApp as any);
-
-      // Emit multiple events (more than buffer size)
-      for (let i = 0; i < 7; i++) {
-        transport.emitEvent(`event-${i}`, { id: i });
-      }
-
-      // Clear previous calls
-      mockWrite.mockClear();
-
-      // Create mock for request and response with Last-Event-ID
-      const mockReq = {
-        header: vi.fn().mockReturnValue('some-id'),
-        on: vi.fn((event, handler) => {
-          if (event === 'close') mockCloseHandlers.push(handler);
-          return mockReq;
-        }),
-      };
-
-      const mockRes = {
-        set: mockSet,
-        flushHeaders: mockFlushHeaders,
-        write: mockWrite,
-      };
-
-      // Connect a client
-      mockRouteHandlers['/mcp/sse'](mockReq, mockRes);
-
-      // Should have called write for setup
-      expect(mockWrite).toHaveBeenCalled();
-    });
-
     it('should remove clients when they disconnect', () => {
       // Set up
       transport.attach(mockExpressApp as any);
@@ -232,30 +198,15 @@ describe('SseTransport', () => {
       // Clear previous calls
       mockWrite.mockClear();
 
-      // Advance timer to trigger heartbeat
-      vi.advanceTimersByTime(5000);
+      // Advance timer to trigger heartbeat (default is 25000ms)
+      vi.advanceTimersByTime(25000);
 
       // Should have sent a heartbeat
       expect(mockWrite).toHaveBeenCalledWith(':\n\n');
     });
   });
 
-  describe('buffer management', () => {
-    it('should clear replay buffer', () => {
-      // Add some events to the buffer
-      transport.emitEvent('test-event', { data: 'test' });
-      transport.emitEvent('test-event', { data: 'test2' });
-
-      // Verify buffer has events
-      expect(transport.getReplayBufferSize()).toBe(2);
-
-      // Clear buffer
-      transport.clearReplayBuffer();
-
-      // Verify buffer is empty
-      expect(transport.getReplayBufferSize()).toBe(0);
-    });
-
+  describe('client management', () => {
     it('should report client count correctly', () => {
       transport.attach(mockExpressApp as any);
 
@@ -289,51 +240,9 @@ describe('SseTransport', () => {
       // Should have no clients
       expect(transport.getClientCount()).toBe(0);
     });
-
-    it('should update max buffer size', () => {
-      // Default buffer size is 5 (from beforeEach)
-
-      // Add more events than the buffer size
-      for (let i = 0; i < 7; i++) {
-        transport.emitEvent(`event-${i}`, { id: i });
-      }
-
-      // Should only keep the most recent 5
-      expect(transport.getReplayBufferSize()).toBe(5);
-
-      // Increase buffer size
-      transport.setMaxBufferSize(10);
-
-      // Add more events
-      transport.emitEvent('new-event', { id: 'new' });
-      transport.emitEvent('new-event-2', { id: 'new2' });
-
-      // Should keep all 7 events now
-      expect(transport.getReplayBufferSize()).toBe(7);
-
-      // Decrease buffer size
-      transport.setMaxBufferSize(3);
-
-      // Should trim to most recent 3
-      expect(transport.getReplayBufferSize()).toBe(3);
-    });
-
-    it('should throw error when setting negative buffer size', () => {
-      expect(() => transport.setMaxBufferSize(-1)).toThrow('Buffer size cannot be negative');
-    });
   });
 
   describe('error handling', () => {
-    it('should prevent multiple attachments', () => {
-      // First attachment
-      transport.attach(mockExpressApp as any);
-
-      // Second attachment should throw
-      expect(() => transport.attach(mockExpressApp as any)).toThrow(
-        'SseTransport is already attached to an Express app',
-      );
-    });
-
     it('should handle client write errors during broadcast', () => {
       transport.attach(mockExpressApp as any);
 
@@ -382,141 +291,6 @@ describe('SseTransport', () => {
         // Restore console.error
         console.error = originalConsoleError;
       }
-    });
-  });
-
-  describe('metrics', () => {
-    it('should track connection metrics', () => {
-      transport.attach(mockExpressApp as any);
-
-      // Initially no metrics
-      const initialMetrics = transport.getMetrics();
-      expect(initialMetrics.connectionsTotal).toBe(0);
-      expect(initialMetrics.connectionsActive).toBe(0);
-
-      // Connect a client
-      const mockReq1 = {
-        header: vi.fn().mockReturnValue(null),
-        on: vi.fn((event, handler) => {
-          if (event === 'close') mockCloseHandlers.push(handler);
-          return mockReq1;
-        }),
-      };
-
-      const mockRes1 = {
-        set: mockSet,
-        flushHeaders: mockFlushHeaders,
-        write: mockWrite,
-      };
-
-      // Connect first client
-      mockRouteHandlers['/mcp/sse'](mockReq1, mockRes1);
-
-      // Metrics should be updated
-      let metrics = transport.getMetrics();
-      expect(metrics.connectionsTotal).toBe(1);
-      expect(metrics.connectionsActive).toBe(1);
-
-      // Connect a second client
-      const mockReq2 = {
-        header: vi.fn().mockReturnValue(null),
-        on: vi.fn((event, handler) => {
-          if (event === 'close') mockCloseHandlers.push(handler);
-          return mockReq2;
-        }),
-      };
-
-      const mockRes2 = {
-        set: mockSet,
-        flushHeaders: mockFlushHeaders,
-        write: mockWrite,
-      };
-
-      // Connect second client
-      mockRouteHandlers['/mcp/sse'](mockReq2, mockRes2);
-
-      // Metrics should be updated
-      metrics = transport.getMetrics();
-      expect(metrics.connectionsTotal).toBe(2);
-      expect(metrics.connectionsActive).toBe(2);
-
-      // Disconnect first client
-      mockCloseHandlers[0]();
-
-      // Active connections should be updated, but total should not decrease
-      metrics = transport.getMetrics();
-      expect(metrics.connectionsTotal).toBe(2);
-      expect(metrics.connectionsActive).toBe(1);
-    });
-
-    it('should track replay metrics', () => {
-      transport.attach(mockExpressApp as any);
-
-      // Add some events to the buffer
-      transport.emitEvent('test-event', { data: 'test' });
-      transport.emitEvent('test-event', { data: 'test2' });
-
-      // Mock filter to simulate events that match the replay criteria
-      vi.spyOn(Array.prototype, 'filter').mockImplementationOnce(() => {
-        return [{ id: 'newer-id', data: 'test-data' }];
-      });
-
-      // Connect a client with a Last-Event-ID
-      const mockReq = {
-        header: vi.fn().mockReturnValue('some-id'),
-        on: vi.fn((event, handler) => {
-          if (event === 'close') mockCloseHandlers.push(handler);
-          return mockReq;
-        }),
-      };
-
-      const mockRes = {
-        set: mockSet,
-        flushHeaders: mockFlushHeaders,
-        write: mockWrite,
-      };
-
-      // Connect client
-      mockRouteHandlers['/mcp/sse'](mockReq, mockRes);
-
-      // Should have incremented replay counter
-      const metrics = transport.getMetrics();
-      expect(metrics.replaysTotal).toBe(1);
-    });
-
-    it('should format metrics for Prometheus', () => {
-      transport.attach(mockExpressApp as any);
-
-      // Connect a client
-      const mockReq = {
-        header: vi.fn().mockReturnValue(null),
-        on: vi.fn((event, handler) => {
-          if (event === 'close') mockCloseHandlers.push(handler);
-          return mockReq;
-        }),
-      };
-
-      const mockRes = {
-        set: mockSet,
-        flushHeaders: mockFlushHeaders,
-        write: mockWrite,
-      };
-
-      // Connect client
-      mockRouteHandlers['/mcp/sse'](mockReq, mockRes);
-
-      // Get Prometheus metrics
-      const prometheusMetrics = transport.getPrometheusMetrics();
-
-      // Should follow Prometheus format
-      expect(prometheusMetrics).toContain('# HELP mcp_sse_connections_total');
-      expect(prometheusMetrics).toContain('# TYPE mcp_sse_connections_total counter');
-      expect(prometheusMetrics).toContain('mcp_sse_connections_total 1');
-      expect(prometheusMetrics).toContain('# HELP mcp_sse_connections_active');
-      expect(prometheusMetrics).toContain('# TYPE mcp_sse_connections_active gauge');
-      expect(prometheusMetrics).toContain('mcp_sse_connections_active 1');
-      expect(prometheusMetrics).toContain('# HELP mcp_sse_replays_total');
-      expect(prometheusMetrics).toContain('# TYPE mcp_sse_replays_total counter');
     });
   });
 });
