@@ -74,6 +74,11 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
   }
 
   _findMatchingString(A: KeyboardButtonType, ButtonList: KeyboardButtonType[]): KeyboardButtonType {
+    // Special case for generic Windows key - map to left Windows key
+    if (A.toLowerCase() === 'win') {
+      return 'lWin';
+    }
+
     const lowerA = A.toLowerCase();
     return ButtonList.filter((item) => lowerA == item.toLowerCase())[0];
   }
@@ -141,13 +146,16 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
       // Validate key hold operation using Zod schema
       KeyHoldOperationSchema.parse(operation);
 
+      // Map 'win' to 'lWin' if needed
+      const keyToUse = operation.key.toLowerCase() === 'win' ? 'lWin' : operation.key;
+
       // Toggle the key state (down/up)
-      await this.keyboard.toggleKey(operation.key, operation.state === 'down');
+      await this.keyboard.toggleKey(keyToUse, operation.state === 'down');
 
       // If it's a key press (down) with duration, wait for the specified duration then release
       if (operation.state === 'down' && operation.duration) {
         await new Promise((resolve) => setTimeout(resolve, operation.duration));
-        await this.keyboard.toggleKey(operation.key, false);
+        await this.keyboard.toggleKey(keyToUse, false);
       }
 
       return {

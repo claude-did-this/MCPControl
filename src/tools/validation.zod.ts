@@ -128,6 +128,7 @@ export const VALID_KEYS = [
   'rAlt',
   'lWin',
   'rWin',
+  'win', // Alias for Windows key
 ];
 
 export const VALID_KEYS_lowercase = VALID_KEYS.map((element) => element.toLowerCase());
