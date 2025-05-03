@@ -1,27 +1,7 @@
 {
-  "buttonClicks": [
-    {
-      "timestamp": "2025-04-26T21:31:57.589Z",
-      "buttonId": "A",
-      "count": 1
-    },
-    {
-      "timestamp": "2025-04-26T23:50:04.745Z",
-      "buttonId": "8",
-      "count": 1
-    }
-  ],
-  "sequences": [
-    {
-      "timestamp": "2025-04-26T21:31:57.591Z",
-      "sequence": "A"
-    },
-    {
-      "timestamp": "2025-04-26T23:50:04.747Z",
-      "sequence": "A8"
-    }
-  ],
-  "finalSequence": "A8",
-  "startTime": "2025-04-26T21:31:42.896Z",
-  "endTime": "2025-04-26T23:50:04.747Z"
+  "buttonClicks": [],
+  "sequences": [],
+  "finalSequence": "",
+  "startTime": "2025-05-02T21:59:57.956Z",
+  "endTime": "2025-05-02T21:59:59.135Z"
 }

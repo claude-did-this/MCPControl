@@ -140,10 +140,8 @@ EOL
 {
   "mcpServers": {
     "mcpcontrol": {
-      "type": "stdio",
-      "command": "./mcpcontrol-wrapper.sh",
-      "args": [],
-      "env": {}
+      "type": "sse",
+      "url": "http://192.168.1.36:3232/mcp"
     }
   }
 }
