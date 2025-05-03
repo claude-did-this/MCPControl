@@ -46,7 +46,7 @@ class MCPControlServer {
       this.server = new Server(
         {
           name: 'mcp-control',
-          version: '0.1.20',
+          version: '0.1.21-alpha.2',
         },
         {
           capabilities: {
@@ -144,12 +144,49 @@ class MCPControlServer {
       });
 
       const port = this.port ?? 3000;
-      app.listen(port, () => {
-        console.log(
-          `MCP Control server running in SSE mode on port ${port} (using ${
-            this.provider.constructor.name
-          })`,
-        );
+      app.listen(port, '0.0.0.0', () => {
+        // Get network interfaces to display available IP addresses
+        import('os')
+          .then((os) => {
+            const addresses: string[] = [];
+
+            // Collect all non-internal IPv4 addresses
+            const interfaces = os.networkInterfaces();
+            Object.keys(interfaces).forEach((ifaceName) => {
+              const iface = interfaces[ifaceName];
+              if (iface) {
+                iface.forEach((details) => {
+                  if (details.family === 'IPv4' && !details.internal) {
+                    addresses.push(details.address);
+                  }
+                });
+              }
+            });
+
+            console.log(
+              `MCP Control server running in SSE mode on port ${port}, bound to 0.0.0.0 (using ${
+                this.provider.constructor.name
+              })`,
+            );
+
+            // Display connection URLs
+            console.log(`Local URL: http://localhost:${port}/mcp`);
+            if (addresses.length > 0) {
+              console.log('Available on:');
+              addresses.forEach((ip) => {
+                console.log(`  http://${ip}:${port}/mcp`);
+              });
+            }
+          })
+          .catch((err) => {
+            console.log(
+              `MCP Control server running in SSE mode on port ${port}, bound to 0.0.0.0 (using ${
+                this.provider.constructor.name
+              })`,
+            );
+            console.log(`Local URL: http://localhost:${port}/mcp`);
+            console.error('Failed to get network interfaces:', err);
+          });
       });
     } else {
       const transport = new StdioServerTransport();

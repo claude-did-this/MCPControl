@@ -13,7 +13,7 @@ let testResults = {
   buttonClicks: [],
   sequences: [],
   finalSequence: null,
-  startTime: new Date().toISOString()
+  startTime: new Date().toISOString(),
 };
 
 // Create a simple HTTP server
@@ -26,48 +26,48 @@ const server = http.createServer((req, res) => {
     if (req.method === 'POST') {
       // Collect test data from the client
       let body = '';
-      req.on('data', chunk => {
+      req.on('data', (chunk) => {
         body += chunk.toString();
       });
-      
+
       req.on('end', () => {
         try {
           const data = JSON.parse(body);
-          
+
           // If this is a click event
           if (data.type === 'click') {
             testResults.buttonClicks.push({
               timestamp: new Date().toISOString(),
               buttonId: data.buttonId,
-              count: data.count
+              count: data.count,
             });
-            
+
             // Format click event with colored output
             console.log(`\x1b[38;2;127;187;255mClicked: ${data.buttonId}\x1b[0m`);
           }
-          
+
           // If this is a sequence update
           if (data.type === 'sequence') {
             testResults.sequences.push({
               timestamp: new Date().toISOString(),
-              sequence: data.sequence
+              sequence: data.sequence,
             });
-            
+
             // Removed sequence logging to simplify output
           }
-          
+
           // If this is the final result
           if (data.type === 'final') {
             testResults.finalSequence = data.sequence;
             testResults.endTime = new Date().toISOString();
-            
+
             // Write the results to a file for the test script to read
             fs.writeFileSync(
-              path.join(__dirname, 'test-results.json'), 
-              JSON.stringify(testResults, null, 2)
+              path.join(__dirname, 'test-results.json'),
+              JSON.stringify(testResults, null, 2),
             );
           }
-          
+
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ success: true }));
         } catch (error) {
@@ -93,15 +93,15 @@ const server = http.createServer((req, res) => {
       buttonClicks: [],
       sequences: [],
       finalSequence: null,
-      startTime: new Date().toISOString()
+      startTime: new Date().toISOString(),
     };
-    
+
     // Remove existing results file if it exists
     const resultsPath = path.join(__dirname, 'test-results.json');
     if (fs.existsSync(resultsPath)) {
       fs.unlinkSync(resultsPath);
     }
-    
+
     console.log('Test results reset');
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ success: true }));
@@ -116,7 +116,7 @@ const server = http.createServer((req, res) => {
         res.end('Internal server error');
         return;
       }
-      
+
       // Insert our API client code
       const apiClientCode = `
         // API client for test automation
@@ -156,10 +156,10 @@ const server = http.createServer((req, res) => {
           }
         };
       `;
-      
+
       // Insert the API client code before the closing body tag
       const modifiedData = data.replace('</body>', `<script>${apiClientCode}</script></body>`);
-      
+
       res.writeHead(200, { 'Content-Type': 'text/html' });
       res.end(modifiedData);
     });
@@ -174,15 +174,18 @@ const server = http.createServer((req, res) => {
 // Check if a port is in use
 function isPortAvailable(port) {
   return new Promise((resolve) => {
-    import('net').then(({ default: net }) => {
-      const tester = net.createServer()
-        .once('error', () => resolve(false))
-        .once('listening', () => {
-          tester.close();
-          resolve(true);
-        })
-        .listen(port);
-    }).catch(() => resolve(false));
+    import('net')
+      .then(({ default: net }) => {
+        const tester = net
+          .createServer()
+          .once('error', () => resolve(false))
+          .once('listening', () => {
+            tester.close();
+            resolve(true);
+          })
+          .listen(port);
+      })
+      .catch(() => resolve(false));
   });
 }
 
@@ -190,7 +193,7 @@ function isPortAvailable(port) {
 async function startServer() {
   const preferredPorts = [3000, 3001, 3002, 3003, 3004, 3005, 8080, 8081, 8082];
   let port = process.env.PORT;
-  
+
   // If PORT is not set, try to find an available port
   if (!port) {
     for (const preferredPort of preferredPorts) {
@@ -200,23 +203,47 @@ async function startServer() {
       }
     }
   }
-  
+
   // If we still don't have a port, use a random high port
   if (!port) {
     port = Math.floor(Math.random() * 16384) + 49152; // Random port between 49152 and 65535
   }
-  
-  server.listen(port, () => {
+
+  server.listen(port, '0.0.0.0', () => {
     // Write the port to a file for the test script to read
-    fs.writeFileSync(
-      path.join(__dirname, 'server-port.txt'), 
-      port.toString()
-    );
+    fs.writeFileSync(path.join(__dirname, 'server-port.txt'), port.toString());
+
+    // Get network interfaces to display available IP addresses
+    import('os')
+      .then(({ networkInterfaces }) => {
+        const addresses = [];
+
+        // Collect all non-internal IPv4 addresses
+        Object.keys(networkInterfaces()).forEach((iface) => {
+          networkInterfaces()[iface].forEach((details) => {
+            if (details.family === 'IPv4' && !details.internal) {
+              addresses.push(details.address);
+            }
+          });
+        });
+
+        console.log(`Test server running on http://localhost:${port}`);
+        if (addresses.length > 0) {
+          console.log('Available on:');
+          addresses.forEach((ip) => {
+            console.log(`  http://${ip}:${port}`);
+          });
+        }
+      })
+      .catch((err) => {
+        console.log(`Test server running on http://0.0.0.0:${port}`);
+        console.error('Failed to get network interfaces:', err);
+      });
   });
 }
 
 // Start the server
-startServer().catch(err => {
+startServer().catch((err) => {
   console.error('Failed to start server:', err);
   process.exit(1);
 });
