@@ -23,8 +23,8 @@ export function createHttpServer(
   app: ReturnType<typeof express>;
   httpServer: http.Server;
 } {
+  // Create the Express app
   const app = express();
-  app.use(express.json);
 
   // Explicitly type the app to satisfy ESLint
   // eslint-disable-next-line @typescript-eslint/no-misused-promises

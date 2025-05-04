@@ -28,9 +28,10 @@ const mockSSETransport = {
 
 // Mock the dependencies before importing the module to test
 vi.mock('express', () => {
+  const jsonMiddlewareMock = vi.fn();
   return {
     default: vi.fn(() => mockApp),
-    json: vi.fn(),
+    json: vi.fn().mockReturnValue(jsonMiddlewareMock),
   };
 });
 
