@@ -81,6 +81,7 @@ jobs:
         fetch-depth: 0
     
     - name: Send PR data to webhook for code review
+      continue-on-error: true # Allow this step to fail without failing the build
       uses: actions/github-script@v6
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -88,6 +89,22 @@ jobs:
           console.log('Processing PR #' + context.issue.number + ' in ' + context.repo.owner + '/' + context.repo.repo);
           
           try {
+            // Setup webhook URL
+            const webhookUrl = '${{ vars.WEBHOOK_URL }}';
+            
+            // Validate webhook URL and fail fast if not configured
+            if (!webhookUrl || !webhookUrl.trim()) {
+              console.log('WEBHOOK_URL is not configured. Skipping webhook call.');
+              return; // Exit gracefully without failing
+            }
+            
+            const url = new URL(webhookUrl);
+            // Ensure HTTPS is used for security
+            if (url.protocol !== 'https:') {
+              console.log('WEBHOOK_URL must use HTTPS protocol for security. Skipping webhook call.');
+              return; // Exit gracefully without failing
+            }
+            
             // Get PR details
             const pr = await github.rest.pulls.get({
               owner: context.repo.owner,
@@ -102,20 +119,6 @@ jobs:
               pull_number: context.issue.number
             });
             console.log('Files changed:', files.data.length);
-            
-            // Setup webhook URL
-            const webhookUrl = '${{ vars.WEBHOOK_URL }}';
-            
-            // Validate webhook URL
-            if (!webhookUrl || !webhookUrl.trim()) {
-              throw new Error('WEBHOOK_URL is not configured');
-            }
-            
-            const url = new URL(webhookUrl);
-            // Ensure HTTPS is used for security
-            if (url.protocol !== 'https:') {
-              throw new Error('WEBHOOK_URL must use HTTPS protocol for security');
-            }
             
             // Get PR comments
             const comments = await github.rest.issues.listComments({
@@ -269,8 +272,8 @@ jobs:
                   const errorMsg = `Failed to send PR data to webhook: Status ${res.statusCode}`;
                   console.error(errorMsg);
                   console.error(`Response: ${data}`);
-                  // Fail the job if the webhook returns an error
-                  core.setFailed(errorMsg);
+                  // Log error but don't fail the job
+                  console.warn('Webhook call failed but build will continue');
                 }
               });
             });
@@ -278,14 +281,16 @@ jobs:
             req.on('error', (error) => {
               const errorMsg = `Network error when sending to webhook: ${error.message}`;
               console.error(errorMsg);
-              core.setFailed(errorMsg);
+              // Log error but don't fail the job
+              console.warn('Webhook network error but build will continue');
             });
             
             req.on('timeout', () => {
               req.destroy();
               const errorMsg = 'Request to webhook timed out after 10 seconds';
               console.error(errorMsg);
-              core.setFailed(errorMsg);
+              // Log error but don't fail the job
+              console.warn('Webhook request timed out but build will continue');
             });
             
             req.write(stringifyResult.data);
@@ -293,5 +298,6 @@ jobs:
             
           } catch (error) {
             console.error(`Failed to process PR data: ${error.message}`);
-            core.setFailed(`PR review webhook error: ${error.message}`);
+            // Log error but don't fail the job
+            console.warn('PR webhook processing error but build will continue');
           }
