@@ -21,7 +21,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.10.2",
+    "@modelcontextprotocol/sdk": "^1.11.0",
     "clipboardy": "^4.0.0",
     "express": "^5.1.0",
     "keysender": "^2.3.0",
