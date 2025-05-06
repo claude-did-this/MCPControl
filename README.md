@@ -2,6 +2,8 @@
 
 # MCPControl
 
+> **Project Status**: De-prioritized. This project was created as an experiment, but Windows automation isn't something I'm looking to get deep into. I will review and merge PRs but will not be adding features soon. May revisit in the future. Looking for a maintainer.
+
 <p align="center">
   <img src="https://github.com/user-attachments/assets/1c577e56-7b8d-49e9-aaf5-b8550cc6cfc0" alt="MCPControl Logo" width="250">
 </p>
@@ -184,11 +186,13 @@ npm install mcp-control@0.1.22
 - The get_screenshot utility does not work with the VS Code Extension Cline. See [GitHub issue #1865](https://github.com/cline/cline/issues/1865)
 - Some operations may require elevated permissions depending on the target application
 - Only Windows is supported
-- Click accuracy is currently working best at 1280x720 resolution, single screen. We're working on an offset/scaling bug and looking for testers or help creating testing tools
+- MCPControl works best at 1280x720 resolution, single screen. Click accuracy is optimized for this resolution. We're working on an offset/scaling bug and looking for testers or help creating testing tools
 
 ## 👥 Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md)
+
+> **Note**: As this project is currently in a maintenance-only mode, we're primarily focusing on bug fixes. However, fully implemented and well-tested features will be considered for merging. Looking for maintainers to help keep the project active.
 
 ## ⚖️ License
 
