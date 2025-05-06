@@ -1,5 +1,3 @@
-[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/cheffromspace-mcpcontrol-badge.png)](https://mseep.ai/app/cheffromspace-mcpcontrol)
-
 # MCPControl
 
 > **Project Status**: De-prioritized. This project was created as an experiment, but Windows automation isn't something I'm looking to get deep into. I will review and merge PRs but will not be adding features soon. May revisit in the future. Looking for a maintainer.
@@ -201,3 +199,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 📖 References
 
 - [Model Context Protocol Documentation](https://modelcontextprotocol.github.io/)
+
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/cheffromspace-mcpcontrol-badge.png)](https://mseep.ai/app/cheffromspace-mcpcontrol)
+
