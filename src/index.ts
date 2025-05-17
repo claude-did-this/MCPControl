@@ -5,9 +5,11 @@ import { setupTools } from './handlers/tools.js';
 import { loadConfig } from './config.js';
 import { createAutomationProvider } from './providers/factory.js';
 import { AutomationProvider } from './interfaces/provider.js';
-import { createHttpServer } from './server.js';
+import { createHttpServer, DEFAULT_PORT } from './server.js';
 
 class MCPControlServer {
+  private useSse: boolean;
+  private port?: number;
   private server: Server;
 
   /**
@@ -18,11 +20,13 @@ class MCPControlServer {
   private provider: AutomationProvider;
 
   /**
-   * HTTP server instance if HTTP/SSE is enabled
+   * HTTP server instance if SSE mode is enabled
    */
   private httpServer?: ReturnType<typeof createHttpServer>;
 
-  constructor() {
+  constructor(useSse: boolean, port?: number) {
+    this.useSse = useSse;
+    this.port = port;
     try {
       // Load configuration
       const config = loadConfig();
@@ -46,7 +50,7 @@ class MCPControlServer {
       this.server = new Server(
         {
           name: 'mcp-control',
-          version: '0.1.20',
+          version: '0.1.21-alpha.2',
         },
         {
           capabilities: {
@@ -100,28 +104,33 @@ class MCPControlServer {
       `MCP Control server running on stdio (using ${this.provider.constructor.name})\n`,
     );
 
-    // If HTTP_PORT is defined, start the HTTP server with SSE support
-    let httpPort = process.env.HTTP_PORT ? parseInt(process.env.HTTP_PORT, 10) : 3232;
-    if (isNaN(httpPort)) {
-      process.stderr.write(
-        `Invalid HTTP_PORT value: ${process.env.HTTP_PORT}, using default 3232\n`,
-      );
-      httpPort = 3232;
-    }
-
-    // Check if HTTP/SSE transport should be enabled
-    if (process.env.ENABLE_HTTP === 'true' || process.env.ENABLE_SSE === 'true') {
-      this.httpServer = createHttpServer(this.server, httpPort);
+    // Start HTTP server with SSE support if requested
+    if (this.useSse) {
+      const port = this.port ?? DEFAULT_PORT;
+      this.httpServer = createHttpServer(this.server, port);
 
       // Set up error handler for HTTP server
       this.httpServer.httpServer.on('error', (err) => {
         process.stderr.write(`Failed to start HTTP server: ${err.message}\n`);
       });
+
+      process.stderr.write(`HTTP/SSE server enabled on port ${port}\n`);
     }
   }
 }
 
-const server = new MCPControlServer();
+// Parse CLI flags for SSE mode and port
+const args = process.argv.slice(2);
+const useSse = args.includes('--sse');
+let port: number | undefined;
+const portIndex = args.indexOf('--port');
+if (portIndex >= 0 && args[portIndex + 1]) {
+  const parsed = parseInt(args[portIndex + 1], 10);
+  if (!Number.isNaN(parsed)) {
+    port = parsed;
+  }
+}
+const server = new MCPControlServer(useSse, port);
 server.run().catch((err) => {
   // Using process.stderr.write to avoid affecting the JSON-RPC stream
   process.stderr.write(

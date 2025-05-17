@@ -1,7 +1,13 @@
 import express from 'express';
 import * as http from 'http';
 import { Server as MCPServer } from '@modelcontextprotocol/sdk/server/index.js';
-import { SseTransport } from './transports/sseTransport.js';
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { networkInterfaces } from 'os';
+
+/**
+ * Default port for the SSE server
+ */
+export const DEFAULT_PORT = 3232;
 
 /**
  * Maximum number of SSE clients that can connect simultaneously
@@ -10,79 +16,32 @@ import { SseTransport } from './transports/sseTransport.js';
 const MAX_SSE_CLIENTS = parseInt(process.env.MAX_SSE_CLIENTS || '100', 10);
 
 /**
- * Maximum number of events to buffer per client
- * Can be overridden with MAX_SSE_BUFFER_SIZE environment variable
- */
-const MAX_SSE_BUFFER_SIZE = parseInt(process.env.MAX_SSE_BUFFER_SIZE || '100', 10);
-
-/**
  * Creates and configures an HTTP server with SSE support
  * @param mcpServer The MCP server instance to connect with
- * @param port The port to listen on (default: 3232)
- * @returns Object containing the express app, http server, and transport instances
+ * @param port The port to listen on (default: DEFAULT_PORT)
+ * @returns Object containing the express app, http server
  */
 export function createHttpServer(
   mcpServer: MCPServer,
-  port = 3232,
+  port = DEFAULT_PORT,
 ): {
   app: ReturnType<typeof express>;
   httpServer: http.Server;
-  sseTransport: SseTransport;
 } {
+  // Create the Express app
   const app = express();
+
   // Explicitly type the app to satisfy ESLint
   // eslint-disable-next-line @typescript-eslint/no-misused-promises
   const httpServer = http.createServer(app);
 
-  // Initialize SSE transport
-  const sseTransport = new SseTransport({
-    maxBufferSize: MAX_SSE_BUFFER_SIZE,
-    heartbeatInterval: 25000,
-  });
+  // Track active transports by session ID
+  const transports: Record<string, SSEServerTransport> = {};
+  const endpoint = '/mcp';
 
-  // Attach transport to the Express app
-  sseTransport.attach(app);
-
-  // Since the MCP Server doesn't have a native event system that we can listen to,
-  // we'll use manual emit handling through our transport logic.
-  // The actual emission will happen elsewhere in the codebase where tool responses are processed.
-
-  /**
-   * SSE Event Types:
-   * The following events are emitted over the SSE connection:
-   *
-   * 1. mcp.heartbeat - Sent every 25 seconds to keep connections alive
-   *    Format: { ts: ISO8601 timestamp }
-   *
-   * 2. mcp.tool.response - Sent when a tool completes execution
-   *    Format: {
-   *      toolId: string,
-   *      toolName: string,
-   *      success: boolean,
-   *      data?: any,
-   *      error?: string
-   *    }
-   *
-   * 3. mcp.tool.start - Sent when a tool starts execution
-   *    Format: {
-   *      toolId: string,
-   *      toolName: string,
-   *      params: Record<string, any>
-   *    }
-   *
-   * Clients should handle these events appropriately to maintain
-   * synchronization with the MCP Control server state.
-   */
-
-  // Send a heartbeat every 25 seconds to keep connections alive
-  setInterval(() => {
-    sseTransport.emitEvent('mcp.heartbeat', { ts: new Date().toISOString() });
-  }, 25000);
-
-  // Client limit enforcement
-  app.use('/mcp/sse', (req, res, next) => {
-    const clientCount = sseTransport.getClientCount();
-    if (clientCount >= MAX_SSE_CLIENTS) {
+  // Client limit enforcement middleware
+  app.use(endpoint, (req, res, next) => {
+    if (req.method === 'GET' && Object.keys(transports).length >= MAX_SSE_CLIENTS) {
       res.status(503).json({
         success: false,
         message: `Maximum number of SSE clients (${MAX_SSE_CLIENTS}) reached`,
@@ -92,11 +51,71 @@ export function createHttpServer(
     next();
   });
 
-  // Prometheus metrics endpoint
+  // SSE connection endpoint
+  app.get(endpoint, async (req, res) => {
+    try {
+      const transport = new SSEServerTransport(endpoint, res);
+      const sessionId = transport.sessionId;
+
+      // Store transport and set up cleanup
+      transports[sessionId] = transport;
+      transport.onclose = () => {
+        delete transports[sessionId];
+      };
+
+      // Connect to MCP server
+      await mcpServer.connect(transport);
+    } catch (error) {
+      console.error(
+        `[MCP SSE] Error establishing SSE stream: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      if (!res.headersSent) {
+        res.status(500).send('Error establishing SSE stream');
+      }
+    }
+  });
+
+  // HTTP endpoint for bidirectional communication
+  app.post(endpoint, async (req, res) => {
+    const sessionId = req.query.sessionId as string;
+    if (!sessionId) {
+      res.status(400).send('Missing sessionId parameter');
+      return;
+    }
+
+    const transport = transports[sessionId];
+    if (!transport) {
+      res.status(404).send('Session not found');
+      return;
+    }
+
+    try {
+      await transport.handlePostMessage(req, res, req.body);
+    } catch (error) {
+      console.error(
+        `[MCP SSE] Error handling request: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      if (!res.headersSent) {
+        res.status(500).send('Error handling request');
+      }
+    }
+  });
+
+  // Simple metrics endpoint
   app.get('/metrics', (req, res) => {
     try {
+      const metrics = [
+        '# HELP mcp_sse_connections_active Current number of active SSE connections',
+        '# TYPE mcp_sse_connections_active gauge',
+        `mcp_sse_connections_active ${Object.keys(transports).length}`,
+      ].join('\n');
+
       res.set('Content-Type', 'text/plain; version=0.0.4');
-      res.send(sseTransport.getPrometheusMetrics());
+      res.send(metrics);
     } catch (error) {
       console.error('Error generating metrics:', error);
       res.status(500).send('Error generating metrics');
@@ -104,17 +123,43 @@ export function createHttpServer(
   });
 
   // Start listening
-  httpServer.listen(port);
+  httpServer.listen(port, '0.0.0.0', () => {
+    // Log that the server is running
+    console.log(`HTTP server running on port ${port} with SSE support`);
 
-  // Log that the server is running
-  process.stderr.write(`HTTP server running on port ${port} with SSE support\n`);
+    // Display all available network interfaces
+    try {
+      const addresses: string[] = [];
 
-  // Note: Error handling for the HTTP server should be done by the caller
-  // This approach is more testable and allows for proper error propagation
+      // Collect all non-internal IPv4 addresses
+      const interfaces = networkInterfaces();
+      Object.keys(interfaces).forEach((ifaceName) => {
+        const iface = interfaces[ifaceName];
+        if (iface) {
+          iface.forEach((details) => {
+            if (details.family === 'IPv4' && !details.internal) {
+              addresses.push(details.address);
+            }
+          });
+        }
+      });
+
+      // Display connection URLs
+      console.log(`Local URL: http://localhost:${port}${endpoint}`);
+      if (addresses.length > 0) {
+        console.log('Available on:');
+        addresses.forEach((ip) => {
+          console.log(`  http://${ip}:${port}${endpoint}`);
+        });
+      }
+    } catch (err) {
+      console.log(`Local URL: http://localhost:${port}${endpoint}`);
+      console.error('Failed to get network interfaces:', err);
+    }
+  });
 
   return {
     app,
     httpServer,
-    sseTransport,
   };
 }
