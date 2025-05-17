@@ -7,6 +7,11 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { networkInterfaces } from 'os';
 
 /**
+ * Default port for the SSE server
+ */
+export const DEFAULT_PORT = 3232;
+
+/**
  * Maximum number of SSE clients that can connect simultaneously
  * Can be overridden with MAX_SSE_CLIENTS environment variable
  */
@@ -15,7 +20,7 @@ const MAX_SSE_CLIENTS = parseInt(process.env.MAX_SSE_CLIENTS || '100', 10);
 /**
  * Creates and configures an HTTP server with SSE support
  * @param mcpServer The MCP server instance to connect with
- * @param port The port to listen on (default: 3232)
+ * @param port The port to listen on (default: DEFAULT_PORT)
  * @param useHttps Whether to use HTTPS (default: false)
  * @param certPath Path to TLS certificate (only used when useHttps is true)
  * @param keyPath Path to TLS key (only used when useHttps is true)
@@ -23,7 +28,7 @@ const MAX_SSE_CLIENTS = parseInt(process.env.MAX_SSE_CLIENTS || '100', 10);
  */
 export function createHttpServer(
   mcpServer: MCPServer,
-  port = 3232,
+  port = DEFAULT_PORT,
   useHttps = false,
   certPath?: string,
   keyPath?: string,

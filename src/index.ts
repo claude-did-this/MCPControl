@@ -5,7 +5,7 @@ import { setupTools } from './handlers/tools.js';
 import { loadConfig } from './config.js';
 import { createAutomationProvider } from './providers/factory.js';
 import { AutomationProvider } from './interfaces/provider.js';
-import { createHttpServer } from './server.js';
+import { createHttpServer, DEFAULT_PORT } from './server.js';
 
 class MCPControlServer {
   private useSse: boolean;
@@ -118,7 +118,7 @@ class MCPControlServer {
 
     // Start HTTP server with SSE support if requested
     if (this.useSse) {
-      const port = this.port ?? 3000;
+      const port = this.port ?? DEFAULT_PORT;
       try {
         this.httpServer = createHttpServer(
           this.server,
@@ -127,14 +127,6 @@ class MCPControlServer {
           this.certPath,
           this.keyPath,
         );
-
-        // Set up error handler for HTTP server
-        this.httpServer.httpServer.on('error', (err) => {
-          process.stderr.write(`Failed to start HTTP server: ${err.message}\n`);
-        });
-
-        const protocol = this.useHttps ? 'HTTPS' : 'HTTP';
-        process.stderr.write(`${protocol}/SSE server enabled on port ${port}\n`);
       } catch (error) {
         process.stderr.write(
           `Failed to create ${this.useHttps ? 'HTTPS' : 'HTTP'} server: ${
@@ -143,6 +135,14 @@ class MCPControlServer {
         );
         void this.server.close().then(() => process.exit(1));
       }
+
+      // Set up error handler for HTTP server
+      this.httpServer.httpServer.on('error', (err) => {
+        process.stderr.write(`Failed to start HTTP server: ${err.message}\n`);
+      });
+
+      const protocol = this.useHttps ? 'HTTPS' : 'HTTP';
+      process.stderr.write(`${protocol}/SSE server enabled on port ${port}\n`);
     }
   }
 }

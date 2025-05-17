@@ -212,7 +212,7 @@ npm install mcp-control@0.1.22
 - The get_screenshot utility does not work with the VS Code Extension Cline. See [GitHub issue #1865](https://github.com/cline/cline/issues/1865)
 - Some operations may require elevated permissions depending on the target application
 - Only Windows is supported
-- Click accuracy is currently working best at 1280x720 resolution, single screen. We're working on an offset/scaling bug and looking for testers or help creating testing tools
+- MCPControl works best at 1280x720 resolution, single screen. Click accuracy is optimized for this resolution. We're working on an offset/scaling bug and looking for testers or help creating testing tools
 
 ## 👥 Contributing
 
@@ -225,3 +225,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 📖 References
 
 - [Model Context Protocol Documentation](https://modelcontextprotocol.github.io/)
+
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/cheffromspace-mcpcontrol-badge.png)](https://mseep.ai/app/cheffromspace-mcpcontrol)
+
