@@ -188,8 +188,6 @@ npm install mcp-control@0.1.22
 
 See [CONTRIBUTING.md](CONTRIBUTING.md)
 
-> **Note**: As this project is currently in a maintenance-only mode, we're primarily focusing on bug fixes. However, fully implemented and well-tested features will be considered for merging. Looking for maintainers to help keep the project active.
-
 ## ⚖️ License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
