@@ -50,6 +50,36 @@ MCPControl bridges the gap between AI models and your desktop, enabling secure, 
 
 3. **Restart your client** and MCPControl will appear in your MCP menu!
 
+## 🔧 CLI Options
+
+MCPControl supports several command-line flags for advanced configurations:
+
+```bash
+# Run with SSE transport on default port (3232)
+mcp-control --sse
+
+# Run with SSE on custom port
+mcp-control --sse --port 3000
+
+# Run with HTTPS/TLS (required for production deployments)
+mcp-control --sse --https --cert /path/to/cert.pem --key /path/to/key.pem
+
+# Run with HTTPS on custom port
+mcp-control --sse --https --port 8443 --cert /path/to/cert.pem --key /path/to/key.pem
+```
+
+### Command Line Arguments
+
+- `--sse` - Enable SSE (Server-Sent Events) transport for network access
+- `--port [number]` - Specify custom port (default: 3232)
+- `--https` - Enable HTTPS/TLS (required for remote deployments per MCP spec)
+- `--cert [path]` - Path to TLS certificate file (required with --https)
+- `--key [path]` - Path to TLS private key file (required with --https)
+
+### Security Note
+
+According to the MCP specification, HTTPS is **mandatory** for all HTTP-based transports in production environments. When deploying MCPControl for remote access, always use the `--https` flag with valid TLS certificates.
+
 ## 🚀 Popular Use Cases
 
 ### Assisted Automation
