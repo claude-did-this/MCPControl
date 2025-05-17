@@ -134,6 +134,7 @@ class MCPControlServer {
           }\n`,
         );
         void this.server.close().then(() => process.exit(1));
+        return;
       }
 
       // Set up error handler for HTTP server
