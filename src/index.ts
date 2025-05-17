@@ -5,7 +5,7 @@ import { setupTools } from './handlers/tools.js';
 import { loadConfig } from './config.js';
 import { createAutomationProvider } from './providers/factory.js';
 import { AutomationProvider } from './interfaces/provider.js';
-import { createHttpServer } from './server.js';
+import { createHttpServer, DEFAULT_PORT } from './server.js';
 
 class MCPControlServer {
   private useSse: boolean;
@@ -106,7 +106,7 @@ class MCPControlServer {
 
     // Start HTTP server with SSE support if requested
     if (this.useSse) {
-      const port = this.port ?? 3000;
+      const port = this.port ?? DEFAULT_PORT;
       this.httpServer = createHttpServer(this.server, port);
 
       // Set up error handler for HTTP server
