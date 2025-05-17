@@ -1,7 +1,5 @@
 # MCPControl
 
-> **Project Status**: De-prioritized. This project was created as an experiment, but Windows automation isn't something I'm looking to get deep into. I will review and merge PRs but will not be adding features soon. May revisit in the future. Looking for a maintainer.
-
 <p align="center">
   <img src="https://github.com/user-attachments/assets/1c577e56-7b8d-49e9-aaf5-b8550cc6cfc0" alt="MCPControl Logo" width="250">
 </p>
