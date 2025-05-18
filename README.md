@@ -26,29 +26,62 @@ MCPControl bridges the gap between AI models and your desktop, enabling secure, 
 
 ## 🔌 Quick Start
 
-1. **Install Node.js** (if not already installed)
-   ```
-   # Visit https://nodejs.org and download the latest LTS version
-   ```
+### Prerequisites
 
-2. **Configure MCP settings** in your Claude client:
-
-   ```json
-   {
-     "mcpServers": {
-       "MCPControl": {
-         "command": "npx",
-         "args": [
-           "--no-cache",
-           "-y",
-           "mcp-control"
-         ]
-       }
-     }
-   }
+1. **Install Build Tools (including VC++ workload)**
+   ```powershell
+   # Run as Administrator - may take a few minutes to complete
+   winget install Microsoft.VisualStudio.2022.BuildTools --override "--wait --passive --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
    ```
 
-3. **Restart your client** and MCPControl will appear in your MCP menu!
+2. **Install Python** (if not already installed)
+   ```powershell
+   # Install Python (required for node-gyp)
+   winget install Python.Python.3.12
+   ```
+
+3. **Install Node.js**
+   ```powershell
+   # Install latest LTS version
+   winget install OpenJS.NodeJS
+   ```
+
+### Installation
+
+1. **Install MCPControl Package**
+   ```powershell
+   npm install -g mcp-control
+   ```
+
+### Configuration
+
+MCPControl works best in a **virtual machine at 1280x720 resolution** for optimal click accuracy.
+
+Configure your Claude client to use the SSE transport:
+
+```json
+{
+  "mcpServers": {
+    "MCPControl": {
+      "command": "mcp-control",
+      "args": [
+        "--transport",
+        "sse"
+      ]
+    }
+  }
+}
+```
+
+### Launch Server Manually (Optional)
+
+You can also run the server directly with SSE:
+
+```bash
+mcp-control --transport sse
+```
+
+**Restart your client** and MCPControl will appear in your MCP menu!
 
 ## 🔧 CLI Options
 
