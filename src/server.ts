@@ -47,10 +47,20 @@ export function createHttpServer(
       throw new Error('Certificate and key paths are required for HTTPS');
     }
 
+    // Validate certificate files exist
+    if (!fs.existsSync(certPath)) {
+      throw new Error(`Certificate file not found: ${certPath}`);
+    }
+    if (!fs.existsSync(keyPath)) {
+      throw new Error(`Key file not found: ${keyPath}`);
+    }
+
     try {
       const httpsOptions = {
         cert: fs.readFileSync(certPath),
         key: fs.readFileSync(keyPath),
+        // Security options
+        minVersion: 'TLSv1.2' as const,
       };
       // eslint-disable-next-line @typescript-eslint/no-misused-promises
       httpServer = https.createServer(httpsOptions, app);
