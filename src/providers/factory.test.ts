@@ -22,18 +22,20 @@ describe('createAutomationProvider', () => {
   });
 
   it('should create KeysenderProvider when explicitly specified', () => {
-    const provider = createAutomationProvider('keysender');
+    const provider = createAutomationProvider({ provider: 'keysender' });
     expect(KeysenderProvider).toHaveBeenCalled();
     expect(provider).toBeDefined();
   });
 
   it('should be case insensitive for KeysenderProvider', () => {
-    const provider = createAutomationProvider('KeYsEnDeR');
+    const provider = createAutomationProvider({ provider: 'KeYsEnDeR' });
     expect(KeysenderProvider).toHaveBeenCalled();
     expect(provider).toBeDefined();
   });
 
   it('should throw error for unknown provider type', () => {
-    expect(() => createAutomationProvider('unknown')).toThrow('Unknown provider type: unknown');
+    expect(() => createAutomationProvider({ provider: 'unknown' })).toThrow(
+      'Unknown provider type: unknown',
+    );
   });
 });

@@ -129,7 +129,7 @@ vi.mock('./clipboard.js', async () => {
 
 describe('KeysenderProvider', () => {
   it('should be created through the factory', () => {
-    const provider = createAutomationProvider('keysender');
+    const provider = createAutomationProvider({ provider: 'keysender' });
     expect(provider).toBeInstanceOf(MockKeysenderProvider);
   });
 
