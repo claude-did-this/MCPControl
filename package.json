@@ -23,9 +23,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.11.2",
     "clipboardy": "^4.0.0",
-    "express": "^5.1.0",
     "keysender": "^2.3.0",
-    "mcp-control": "^0.1.21-alpha.3",
     "sharp": "^0.34.1",
     "ulid": "^3.0.0",
     "uuid": "^11.1.0",
