@@ -27,3 +27,9 @@ yarn-error.log*
 Thumbs.db
 
 **/.claude/settings.local.json
+
+# Test certificates
+test/certs/
+*.pem
+*.crt
+*.key

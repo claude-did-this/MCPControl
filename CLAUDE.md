@@ -11,6 +11,12 @@
 - Coverage: `pwsh.exe -c "npm run test:coverage"` - Generates test coverage report
 - E2E Test: `cd test && ./e2e-test.sh [iterations]` - Runs end-to-end tests with Claude and MCPControl
 
+## Running with HTTPS/TLS
+MCPControl supports HTTPS for secure SSE connections (mandatory per MCP spec for production):
+- `node build/index.js --sse --https --cert /path/to/cert.pem --key /path/to/key.pem`
+- Default HTTPS port is still 3232 (use --port to change)
+- Both --cert and --key are required when using --https
+
 > Note: MCP Servers are typically launched by the Client as a subprocess.
 
 ## Code Style Guidelines

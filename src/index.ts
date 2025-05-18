@@ -11,6 +11,9 @@ class MCPControlServer {
   private useSse: boolean;
   private port?: number;
   private server: Server;
+  private useHttps: boolean;
+  private certPath?: string;
+  private keyPath?: string;
 
   /**
    * Automation provider instance used for system interaction
@@ -24,9 +27,18 @@ class MCPControlServer {
    */
   private httpServer?: ReturnType<typeof createHttpServer>;
 
-  constructor(useSse: boolean, port?: number) {
+  constructor(
+    useSse: boolean,
+    port?: number,
+    useHttps = false,
+    certPath?: string,
+    keyPath?: string,
+  ) {
     this.useSse = useSse;
     this.port = port;
+    this.useHttps = useHttps;
+    this.certPath = certPath;
+    this.keyPath = keyPath;
     try {
       // Load configuration
       const config = loadConfig();
@@ -107,14 +119,31 @@ class MCPControlServer {
     // Start HTTP server with SSE support if requested
     if (this.useSse) {
       const port = this.port ?? DEFAULT_PORT;
-      this.httpServer = createHttpServer(this.server, port);
+      try {
+        this.httpServer = createHttpServer(
+          this.server,
+          port,
+          this.useHttps,
+          this.certPath,
+          this.keyPath,
+        );
+      } catch (error) {
+        process.stderr.write(
+          `Failed to create ${this.useHttps ? 'HTTPS' : 'HTTP'} server: ${
+            error instanceof Error ? error.message : String(error)
+          }\n`,
+        );
+        void this.server.close().then(() => process.exit(1));
+        return;
+      }
 
       // Set up error handler for HTTP server
       this.httpServer.httpServer.on('error', (err) => {
         process.stderr.write(`Failed to start HTTP server: ${err.message}\n`);
       });
 
-      process.stderr.write(`HTTP/SSE server enabled on port ${port}\n`);
+      const protocol = this.useHttps ? 'HTTPS' : 'HTTP';
+      process.stderr.write(`${protocol}/SSE server enabled on port ${port}\n`);
     }
   }
 }
@@ -122,7 +151,12 @@ class MCPControlServer {
 // Parse CLI flags for SSE mode and port
 const args = process.argv.slice(2);
 const useSse = args.includes('--sse');
+const useHttps = args.includes('--https');
 let port: number | undefined;
+let certPath: string | undefined;
+let keyPath: string | undefined;
+
+// Parse port
 const portIndex = args.indexOf('--port');
 if (portIndex >= 0 && args[portIndex + 1]) {
   const parsed = parseInt(args[portIndex + 1], 10);
@@ -130,7 +164,25 @@ if (portIndex >= 0 && args[portIndex + 1]) {
     port = parsed;
   }
 }
-const server = new MCPControlServer(useSse, port);
+
+// Parse certificate and key paths for HTTPS
+const certIndex = args.indexOf('--cert');
+if (certIndex >= 0 && args[certIndex + 1]) {
+  certPath = args[certIndex + 1];
+}
+
+const keyIndex = args.indexOf('--key');
+if (keyIndex >= 0 && args[keyIndex + 1]) {
+  keyPath = args[keyIndex + 1];
+}
+
+// Validate HTTPS configuration
+if (useHttps && (!certPath || !keyPath)) {
+  process.stderr.write('Error: --cert and --key are required when using --https\n');
+  process.exit(1);
+}
+
+const server = new MCPControlServer(useSse, port, useHttps, certPath, keyPath);
 server.run().catch((err) => {
   // Using process.stderr.write to avoid affecting the JSON-RPC stream
   process.stderr.write(

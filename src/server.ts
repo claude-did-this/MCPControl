@@ -1,5 +1,7 @@
 import express from 'express';
 import * as http from 'http';
+import * as https from 'https';
+import * as fs from 'fs';
 import { Server as MCPServer } from '@modelcontextprotocol/sdk/server/index.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { networkInterfaces } from 'os';
@@ -19,21 +21,58 @@ const MAX_SSE_CLIENTS = parseInt(process.env.MAX_SSE_CLIENTS || '100', 10);
  * Creates and configures an HTTP server with SSE support
  * @param mcpServer The MCP server instance to connect with
  * @param port The port to listen on (default: DEFAULT_PORT)
+ * @param useHttps Whether to use HTTPS (default: false)
+ * @param certPath Path to TLS certificate (only used when useHttps is true)
+ * @param keyPath Path to TLS key (only used when useHttps is true)
  * @returns Object containing the express app, http server
  */
 export function createHttpServer(
   mcpServer: MCPServer,
   port = DEFAULT_PORT,
+  useHttps = false,
+  certPath?: string,
+  keyPath?: string,
 ): {
   app: ReturnType<typeof express>;
-  httpServer: http.Server;
+  httpServer: http.Server | https.Server;
 } {
   // Create the Express app
   const app = express();
 
-  // Explicitly type the app to satisfy ESLint
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
-  const httpServer = http.createServer(app);
+  // Create server based on protocol
+  let httpServer: http.Server | https.Server;
+
+  if (useHttps) {
+    if (!certPath || !keyPath) {
+      throw new Error('Certificate and key paths are required for HTTPS');
+    }
+
+    // Validate certificate files exist
+    if (!fs.existsSync(certPath)) {
+      throw new Error(`Certificate file not found: ${certPath}`);
+    }
+    if (!fs.existsSync(keyPath)) {
+      throw new Error(`Key file not found: ${keyPath}`);
+    }
+
+    try {
+      const httpsOptions = {
+        cert: fs.readFileSync(certPath),
+        key: fs.readFileSync(keyPath),
+        // Security options
+        minVersion: 'TLSv1.2' as const,
+      };
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
+      httpServer = https.createServer(httpsOptions, app);
+    } catch (error) {
+      throw new Error(
+        `Failed to load TLS certificates: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  } else {
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    httpServer = http.createServer(app);
+  }
 
   // Track active transports by session ID
   const transports: Record<string, SSEServerTransport> = {};
@@ -125,7 +164,8 @@ export function createHttpServer(
   // Start listening
   httpServer.listen(port, '0.0.0.0', () => {
     // Log that the server is running
-    console.log(`HTTP server running on port ${port} with SSE support`);
+    const protocol = useHttps ? 'HTTPS' : 'HTTP';
+    console.log(`${protocol} server running on port ${port} with SSE support`);
 
     // Display all available network interfaces
     try {
@@ -145,15 +185,17 @@ export function createHttpServer(
       });
 
       // Display connection URLs
-      console.log(`Local URL: http://localhost:${port}${endpoint}`);
+      const scheme = useHttps ? 'https' : 'http';
+      console.log(`Local URL: ${scheme}://localhost:${port}${endpoint}`);
       if (addresses.length > 0) {
         console.log('Available on:');
         addresses.forEach((ip) => {
-          console.log(`  http://${ip}:${port}${endpoint}`);
+          console.log(`  ${scheme}://${ip}:${port}${endpoint}`);
         });
       }
     } catch (err) {
-      console.log(`Local URL: http://localhost:${port}${endpoint}`);
+      const scheme = useHttps ? 'https' : 'http';
+      console.log(`Local URL: ${scheme}://localhost:${port}${endpoint}`);
       console.error('Failed to get network interfaces:', err);
     }
   });
