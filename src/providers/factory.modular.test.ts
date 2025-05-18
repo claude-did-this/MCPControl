@@ -29,6 +29,46 @@ vi.mock('./clipboard/clipboardy/index.js', () => ({
   })),
 }));
 
+// Mock keysender provider to avoid ELF header issue
+vi.mock('./keysender/index.js', () => ({
+  KeysenderProvider: vi.fn().mockImplementation(() => ({
+    keyboard: {
+      typeText: vi.fn().mockResolvedValue({ success: true }),
+      pressKey: vi.fn().mockResolvedValue({ success: true }),
+      pressKeyCombination: vi.fn().mockResolvedValue({ success: true }),
+      holdKey: vi.fn().mockResolvedValue({ success: true }),
+    },
+    mouse: {
+      moveMouse: vi.fn().mockResolvedValue({ success: true }),
+      clickMouse: vi.fn().mockResolvedValue({ success: true }),
+      doubleClick: vi.fn().mockResolvedValue({ success: true }),
+      getCursorPosition: vi.fn().mockResolvedValue({ success: true, data: { x: 0, y: 0 } }),
+      scrollMouse: vi.fn().mockResolvedValue({ success: true }),
+      dragMouse: vi.fn().mockResolvedValue({ success: true }),
+      clickAt: vi.fn().mockResolvedValue({ success: true }),
+    },
+    screen: {
+      getScreenSize: vi
+        .fn()
+        .mockResolvedValue({ success: true, data: { width: 1920, height: 1080 } }),
+      getActiveWindow: vi.fn().mockResolvedValue({ success: true, data: {} }),
+      focusWindow: vi.fn().mockResolvedValue({ success: true }),
+      resizeWindow: vi.fn().mockResolvedValue({ success: true }),
+      repositionWindow: vi.fn().mockResolvedValue({ success: true }),
+      getScreenshot: vi.fn().mockResolvedValue({
+        success: true,
+        data: { data: '', format: 'png', width: 1920, height: 1080 },
+      }),
+    },
+    clipboard: {
+      getClipboardContent: vi.fn().mockResolvedValue({ success: true, data: '' }),
+      setClipboardContent: vi.fn().mockResolvedValue({ success: true }),
+      hasClipboardText: vi.fn().mockResolvedValue({ success: true, data: true }),
+      clearClipboard: vi.fn().mockResolvedValue({ success: true }),
+    },
+  })),
+}));
+
 describe('Factory with Modular Providers', () => {
   beforeEach(() => {
     // Clear the registry before each test
@@ -143,6 +183,28 @@ describe('Factory with Modular Providers', () => {
 
   describe('createAutomationProvider with legacy config', () => {
     it('should create keysender provider by default', () => {
+      // Mock keysender provider to avoid ELF header issue
+      vi.doMock('./keysender/index.js', () => ({
+        KeysenderProvider: vi.fn().mockImplementation(() => ({
+          keyboard: {
+            typeText: vi.fn(),
+            pressKey: vi.fn(),
+          },
+          mouse: {
+            moveMouse: vi.fn(),
+            clickMouse: vi.fn(),
+          },
+          screen: {
+            getScreenSize: vi.fn(),
+            getActiveWindow: vi.fn(),
+          },
+          clipboard: {
+            getClipboardContent: vi.fn(),
+            setClipboardContent: vi.fn(),
+          },
+        })),
+      }));
+
       const provider = createAutomationProvider();
 
       expect(provider).toBeDefined();

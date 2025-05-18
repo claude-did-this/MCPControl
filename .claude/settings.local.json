@@ -6,7 +6,8 @@
       "Bash(gh label create:*)",
       "Bash(gh label create:*)",
       "Bash(gh issue create:*)",
-      "Bash(gh issue create:*)"
+      "Bash(gh issue create:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": []
   }

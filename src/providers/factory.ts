@@ -1,5 +1,6 @@
 import { AutomationProvider } from '../interfaces/provider.js';
 import { KeysenderProvider } from './keysender/index.js';
+import { AutoHotkeyProvider } from './autohotkey/index.js';
 import { registry } from './registry.js';
 import { AutomationConfig } from '../config.js';
 import {
@@ -23,6 +24,13 @@ export function initializeProviders(): void {
   // Register clipboard providers
   registry.registerClipboard('powershell', new PowerShellClipboardProvider());
   registry.registerClipboard('clipboardy', new ClipboardyProvider());
+
+  // Register AutoHotkey providers
+  const autohotkeyProvider = new AutoHotkeyProvider();
+  registry.registerKeyboard('autohotkey', autohotkeyProvider.keyboard);
+  registry.registerMouse('autohotkey', autohotkeyProvider.mouse);
+  registry.registerScreen('autohotkey', autohotkeyProvider.screen);
+  registry.registerClipboard('autohotkey', autohotkeyProvider.clipboard);
 
   // TODO: Register other providers as they are implemented
   // registry.registerKeyboard('robotjs', new RobotJSKeyboardProvider());
@@ -76,6 +84,9 @@ export function createAutomationProvider(config?: AutomationConfig): AutomationP
     switch (providerType) {
       case 'keysender':
         provider = new KeysenderProvider();
+        break;
+      case 'autohotkey':
+        provider = new AutoHotkeyProvider();
         break;
       default:
         throw new Error(`Unknown provider type: ${providerType}`);

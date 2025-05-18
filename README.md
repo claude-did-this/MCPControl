@@ -234,6 +234,39 @@ By using this software, you acknowledge and accept that:
   </tr>
 </table>
 
+## 🔧 Automation Providers
+
+MCPControl supports multiple automation providers for different use cases:
+
+- **keysender** (default) - Native Windows automation with high reliability
+- **powershell** - Windows PowerShell-based automation for simpler operations
+- **autohotkey** - AutoHotkey v2 scripting for advanced automation needs
+
+### Provider Configuration
+
+You can configure the automation provider using environment variables:
+
+```bash
+# Use a specific provider for all operations
+export AUTOMATION_PROVIDER=autohotkey
+
+# Configure AutoHotkey executable path (if not in PATH)
+export AUTOHOTKEY_PATH="C:\Program Files\AutoHotkey\v2\AutoHotkey.exe"
+```
+
+Or use modular configuration for specific operations:
+
+```bash
+# Mix and match providers for different operations
+export AUTOMATION_KEYBOARD_PROVIDER=autohotkey
+export AUTOMATION_MOUSE_PROVIDER=keysender
+export AUTOMATION_SCREEN_PROVIDER=keysender  
+export AUTOMATION_CLIPBOARD_PROVIDER=powershell
+```
+
+See provider-specific documentation:
+- [AutoHotkey Provider](src/providers/autohotkey/README.md)
+
 ## 🛠️ Development Setup
 
 If you're interested in contributing or building from source, please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed instructions.
