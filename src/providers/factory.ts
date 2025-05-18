@@ -1,5 +1,6 @@
 import { AutomationProvider } from '../interfaces/provider.js';
 import { KeysenderProvider } from './keysender/index.js';
+import { AutoHotkeyProvider } from './autohotkey/index.js';
 
 // Cache to store provider instances
 const providerCache: Record<string, AutomationProvider> = {};
@@ -20,6 +21,9 @@ export function createAutomationProvider(type: string = 'keysender'): Automation
   switch (providerType) {
     case 'keysender':
       provider = new KeysenderProvider();
+      break;
+    case 'autohotkey':
+      provider = new AutoHotkeyProvider();
       break;
     default:
       throw new Error(`Unknown provider type: ${providerType}`);
