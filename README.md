@@ -95,7 +95,7 @@ To launch MCPControl locally with SSE transport:
 
 First, start the MCPControl server on your VM or local machine:
 
-```bash
+```powershell
 mcp-control --sse
 ```
 
@@ -238,30 +238,30 @@ By using this software, you acknowledge and accept that:
 
 MCPControl supports multiple automation providers for different use cases:
 
-- **keysender** (default) - Native Windows automation with high reliability
+- **autohotkey** (default) - AutoHotkey v2 scripting for advanced automation needs
+- **keysender** - Native Windows automation with high reliability (optional)
 - **powershell** - Windows PowerShell-based automation for simpler operations
-- **autohotkey** - AutoHotkey v2 scripting for advanced automation needs
 
 ### Provider Configuration
 
 You can configure the automation provider using environment variables:
 
-```bash
+```powershell
 # Use a specific provider for all operations
-export AUTOMATION_PROVIDER=autohotkey
+$env:AUTOMATION_PROVIDER = "autohotkey"
 
 # Configure AutoHotkey executable path (if not in PATH)
-export AUTOHOTKEY_PATH="C:\Program Files\AutoHotkey\v2\AutoHotkey.exe"
+$env:AUTOHOTKEY_PATH = "C:\Program Files\AutoHotkey\v2\AutoHotkey.exe"
 ```
 
 Or use modular configuration for specific operations:
 
-```bash
+```powershell
 # Mix and match providers for different operations
-export AUTOMATION_KEYBOARD_PROVIDER=autohotkey
-export AUTOMATION_MOUSE_PROVIDER=keysender
-export AUTOMATION_SCREEN_PROVIDER=keysender  
-export AUTOMATION_CLIPBOARD_PROVIDER=powershell
+$env:AUTOMATION_KEYBOARD_PROVIDER = "autohotkey"
+$env:AUTOMATION_MOUSE_PROVIDER = "autohotkey"
+$env:AUTOMATION_SCREEN_PROVIDER = "autohotkey"  
+$env:AUTOMATION_CLIPBOARD_PROVIDER = "powershell"
 ```
 
 See provider-specific documentation:
@@ -275,14 +275,14 @@ If you're interested in contributing or building from source, please see [CONTRI
 
 To build this project for development, you'll need:
 
-1. Windows operating system (required for the keysender dependency)
+1. Windows operating system
 2. Node.js 18 or later (install using the official Windows installer which includes build tools)
 3. npm package manager
-4. Native build tools:
+4. Native build tools (optional, only needed if using the keysender provider):
    - node-gyp: `npm install -g node-gyp`
    - cmake-js: `npm install -g cmake-js`
 
-The keysender dependency relies on Windows-specific native modules that require these build tools.
+The keysender provider is optional and relies on Windows-specific native modules that require these build tools. If you don't need keysender, you can skip installing the build tools.
 
 ## 📋 Project Structure
 

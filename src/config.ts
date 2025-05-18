@@ -4,7 +4,8 @@
 export interface AutomationConfig {
   /**
    * Legacy: The provider to use for all automation
-   * Currently supported: 'keysender'
+   * Currently supported: 'keysender', 'autohotkey'
+   * Default: 'autohotkey'
    */
   provider?: string;
 
@@ -43,6 +44,6 @@ export function loadConfig(): AutomationConfig {
 
   // Fall back to legacy configuration
   return {
-    provider: process.env.AUTOMATION_PROVIDER || 'keysender',
+    provider: process.env.AUTOMATION_PROVIDER || 'autohotkey',
   };
 }
