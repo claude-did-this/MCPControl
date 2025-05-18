@@ -57,31 +57,77 @@ MCPControl bridges the gap between AI models and your desktop, enabling secure, 
 
 MCPControl works best in a **virtual machine at 1280x720 resolution** for optimal click accuracy.
 
-Configure your Claude client to use the SSE transport:
+Configure your Claude client to connect to MCPControl via SSE transport:
+
+#### Option 1: Direct SSE Connection
+
+For connecting to an MCPControl server running on a VM or remote machine:
+
+```json
+{
+  "mcpServers": {
+    "MCPControl": {
+      "transport": "sse",
+      "url": "http://192.168.1.100:3232/mcp"
+    }
+  }
+}
+```
+
+Replace `192.168.1.100:3232` with your server's IP address and port.
+
+#### Option 2: Local Launch with SSE
+
+To launch MCPControl locally with SSE transport:
 
 ```json
 {
   "mcpServers": {
     "MCPControl": {
       "command": "mcp-control",
-      "args": [
-        "--transport",
-        "sse"
-      ]
+      "args": ["--sse"]
     }
   }
 }
 ```
 
-### Launch Server Manually (Optional)
+### Starting the Server
 
-You can also run the server directly with SSE:
+First, start the MCPControl server on your VM or local machine:
 
 ```bash
-mcp-control --transport sse
+mcp-control --sse
 ```
 
-**Restart your client** and MCPControl will appear in your MCP menu!
+The server will display:
+- Available network interfaces and their IP addresses
+- The port number (default: 3232)
+- Connection status messages
+
+### VM Setup Example
+
+1. **Start your Windows VM** with 1280x720 resolution
+2. **Install MCPControl** on the VM:
+   ```bash
+   npm install -g mcp-control
+   ```
+3. **Run the server** with SSE transport:
+   ```bash
+   mcp-control --sse
+   ```
+4. **Note the VM's IP address** (e.g., `192.168.1.100`)
+5. **Configure Claude** with the SSE URL:
+   ```json
+   {
+     "mcpServers": {
+       "MCPControl": {
+         "transport": "sse",
+         "url": "http://192.168.1.100:3232/mcp"
+       }
+     }
+   }
+   ```
+6. **Restart Claude** and MCPControl will appear in your MCP menu!
 
 ## 🔧 CLI Options
 
