@@ -18,12 +18,13 @@
     "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --write \"src/**/*.{ts,js}\" \"test/**/*.js\"",
     "format:check": "prettier --check \"src/**/*.{ts,js}\" \"test/**/*.js\"",
-    "prepare": "husky"
+    "prepare": "husky",
+    "postinstall": "node scripts/postinstall.js || true"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.11.2",
     "clipboardy": "^4.0.0",
-    "keysender": "^2.3.0",
+    "keysender": "^2.2.0",
     "sharp": "^0.34.1",
     "ulid": "^3.0.0",
     "uuid": "^11.1.0",
