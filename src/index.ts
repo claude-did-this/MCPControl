@@ -57,7 +57,7 @@ class MCPControlServer {
       }
 
       // Create automation provider based on configuration
-      this.provider = createAutomationProvider(config.provider);
+      this.provider = createAutomationProvider(config);
 
       this.server = new Server(
         {
