@@ -4,7 +4,7 @@
 export interface AutomationConfig {
   /**
    * Legacy: The provider to use for all automation
-   * Currently supported: 'keysender'
+   * Currently supported: 'keysender', 'autohotkey'
    */
   provider?: string;
 
@@ -18,6 +18,22 @@ export interface AutomationConfig {
     screen?: string;
     clipboard?: string;
   };
+}
+
+/**
+ * Check if running on Windows platform
+ */
+export function isWindows(): boolean {
+  return process.platform === 'win32';
+}
+
+/**
+ * Get default provider based on platform
+ */
+export function getDefaultProvider(): string {
+  // On Windows, keysender is the default
+  // On non-Windows platforms, use clipboardy as it's cross-platform
+  return isWindows() ? 'keysender' : 'clipboardy';
 }
 
 /**
@@ -43,6 +59,6 @@ export function loadConfig(): AutomationConfig {
 
   // Fall back to legacy configuration
   return {
-    provider: process.env.AUTOMATION_PROVIDER || 'keysender',
+    provider: process.env.AUTOMATION_PROVIDER || getDefaultProvider(),
   };
 }

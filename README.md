@@ -12,7 +12,7 @@
 
 Windows control server for the [Model Context Protocol](https://modelcontextprotocol.io/), providing programmatic control over system operations including mouse, keyboard, window management, and screen capture functionality.
 
-> **Note**: This project currently supports Windows only.
+> **Note**: Full automation features require Windows. Basic clipboard functionality is supported on all platforms.
 
 ## 🔥 Why MCPControl?
 
@@ -27,6 +27,8 @@ MCPControl bridges the gap between AI models and your desktop, enabling secure, 
 ## 🔌 Quick Start
 
 ### Prerequisites
+
+#### For full functionality (Windows only):
 
 1. **Install Build Tools (including VC++ workload)**
    ```powershell
@@ -45,6 +47,12 @@ MCPControl bridges the gap between AI models and your desktop, enabling secure, 
    # Install latest LTS version
    winget install OpenJS.NodeJS
    ```
+
+#### For basic functionality (any platform):
+
+1. **Install Node.js 18.0.0 or later**
+   - On Linux/macOS: Use your package manager or download from [nodejs.org](https://nodejs.org/)
+   - On Windows: `winget install OpenJS.NodeJS`
 
 ### Installation
 
@@ -238,9 +246,10 @@ By using this software, you acknowledge and accept that:
 
 MCPControl supports multiple automation providers for different use cases:
 
-- **keysender** (default) - Native Windows automation with high reliability
-- **powershell** - Windows PowerShell-based automation for simpler operations
-- **autohotkey** - AutoHotkey v2 scripting for advanced automation needs
+- **keysender** (default on Windows) - Native Windows automation with high reliability
+- **powershell** - Windows PowerShell-based clipboard automation
+- **autohotkey** - AutoHotkey v2 scripting for advanced Windows automation needs
+- **clipboardy** (default on non-Windows) - Cross-platform clipboard operations
 
 ### Provider Configuration
 
@@ -323,7 +332,7 @@ npm install mcp-control@0.1.22
 - Multiple screen functions may not work as expected, depending on setup
 - The get_screenshot utility does not work with the VS Code Extension Cline. See [GitHub issue #1865](https://github.com/cline/cline/issues/1865)
 - Some operations may require elevated permissions depending on the target application
-- Only Windows is supported
+- Full automation features require Windows, but clipboard functionality works on all platforms
 - MCPControl works best at 1280x720 resolution, single screen. Click accuracy is optimized for this resolution. We're working on an offset/scaling bug and looking for testers or help creating testing tools
 
 ## 👥 Contributing

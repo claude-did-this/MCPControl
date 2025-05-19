@@ -39,26 +39,18 @@ class MCPControlServer {
     this.useHttps = useHttps;
     this.certPath = certPath;
     this.keyPath = keyPath;
+    
     try {
       // Load configuration
       const config = loadConfig();
 
-      // Validate configuration
-      if (!config || typeof config.provider !== 'string') {
-        throw new Error('Invalid configuration: provider property is missing or invalid');
-      }
-
-      // Validate that the provider is supported
-      const supportedProviders = ['keysender']; // add others as they become available
-      if (!supportedProviders.includes(config.provider.toLowerCase())) {
-        throw new Error(
-          `Unsupported provider: ${config.provider}. Supported providers: ${supportedProviders.join(', ')}`,
-        );
-      }
+      // No need to validate specific providers as we now have 
+      // platform-specific fallbacks and better error handling
 
       // Create automation provider based on configuration
       this.provider = createAutomationProvider(config);
-
+      
+      // Create server instance
       this.server = new Server(
         {
           name: 'mcp-control',
@@ -70,7 +62,7 @@ class MCPControlServer {
           },
         },
       );
-
+      
       this.setupHandlers();
       this.setupErrorHandling();
     } catch (error) {
