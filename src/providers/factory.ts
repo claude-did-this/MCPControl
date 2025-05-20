@@ -33,9 +33,6 @@ export function initializeProviders(): void {
   registry.registerClipboard('autohotkey', autohotkeyProvider.clipboard);
 
   // TODO: Register other providers as they are implemented
-  // registry.registerKeyboard('robotjs', new RobotJSKeyboardProvider());
-  // registry.registerMouse('robotjs', new RobotJSMouseProvider());
-  // registry.registerScreen('robotjs', new RobotJSScreenProvider());
 }
 
 /**
