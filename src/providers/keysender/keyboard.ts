@@ -13,12 +13,14 @@ import {
   KeyCombinationSchema,
   KeyHoldOperationSchema,
 } from '../../tools/validation.zod.js';
+import { createLogger } from '../../logger.js';
 
 /**
  * Keysender implementation of the KeyboardAutomation interface
  */
 export class KeysenderKeyboardAutomation implements KeyboardAutomation {
   private keyboard = new Hardware().keyboard;
+  private logger = createLogger('keysender:keyboard');
 
   typeText(input: KeyboardInput): WindowsControlResponse {
     try {
@@ -33,7 +35,7 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
 
       // Start the asynchronous operation and handle errors properly
       this.keyboard.printText(input.text).catch((err) => {
-        console.error('Error typing text:', err);
+        this.logger.error('Error typing text', err);
         // We can't update the response after it's returned, but at least log the error
       });
 
@@ -57,7 +59,7 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
 
       // Start the asynchronous operation and handle errors properly
       this.keyboard.sendKey(keyboardKey).catch((err) => {
-        console.error(`Error pressing key ${key}:`, err);
+        this.logger.error(`Error pressing key ${key}`, err);
         // We can't update the response after it's returned, but at least log the error
       });
 
@@ -94,11 +96,11 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
         validatedKeys.push(keyboardKey);
       }
       await this.keyboard.toggleKey(validatedKeys, true, 50).catch((err) => {
-        console.error('Error pressing keys:', err);
+        this.logger.error('Error pressing keys', err);
         throw err; // Re-throw to be caught by the outer try/catch
       });
       await this.keyboard.toggleKey(validatedKeys, false, 50).catch((err) => {
-        console.error('Error releasing keys:', err);
+        this.logger.error('Error releasing keys', err);
         throw err; // Re-throw to be caught by the outer try/catch
       });
       return {
@@ -115,12 +117,12 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
             const keyboardKey = this._findMatchingString(key, VALID_KEYS);
             cleanupPromises.push(
               this.keyboard.toggleKey(keyboardKey, false).catch((err) => {
-                console.error(`Error releasing key ${key} during cleanup:`, err);
+                this.logger.error(`Error releasing key ${key} during cleanup`, err);
                 // Ignore errors during cleanup
               }),
             );
           } catch (validationError) {
-            console.error(`Error validating key ${key} during cleanup:`, validationError);
+            this.logger.error(`Error validating key ${key} during cleanup`, validationError);
             // Continue with other keys
           }
         }
@@ -162,7 +164,7 @@ export class KeysenderKeyboardAutomation implements KeyboardAutomation {
         try {
           await this.keyboard.toggleKey(operation.key, false);
         } catch (releaseError) {
-          console.error(`Error releasing key ${operation.key} during cleanup:`, releaseError);
+          this.logger.error(`Error releasing key ${operation.key} during cleanup`, releaseError);
           // Ignore errors during cleanup
         }
       }

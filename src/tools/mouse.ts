@@ -2,9 +2,13 @@ import { MousePosition } from '../types/common.js';
 import { WindowsControlResponse } from '../types/responses.js';
 import { createAutomationProvider } from '../providers/factory.js';
 import { MousePositionSchema, MouseButtonSchema, ScrollAmountSchema } from './validation.zod.js';
+import { createLogger } from '../logger.js';
 
 // Get the automation provider
 const provider = createAutomationProvider();
+
+// Create a logger for mouse module
+const logger = createLogger('mouse');
 
 // Define button types
 type MouseButton = 'left' | 'right' | 'middle';
@@ -32,7 +36,7 @@ export function moveMouse(position: MousePosition): WindowsControlResponse {
           }
         }
       } catch (screenError) {
-        console.warn('Error checking screen bounds:', screenError);
+        logger.warn('Error checking screen bounds', screenError);
         // Continue without screen bounds check
       }
     }

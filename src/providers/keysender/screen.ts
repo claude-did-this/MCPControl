@@ -3,6 +3,7 @@ const { Hardware, getScreenSize: keysenderGetScreenSize, getAllWindows } = pkg;
 import { ScreenshotOptions } from '../../types/common.js';
 import { WindowsControlResponse } from '../../types/responses.js';
 import { ScreenAutomation } from '../../interfaces/automation.js';
+import { createLogger } from '../../logger.js';
 
 /**
  * Keysender implementation of the ScreenAutomation interface
@@ -12,6 +13,7 @@ import { ScreenAutomation } from '../../interfaces/automation.js';
  */
 export class KeysenderScreenAutomation implements ScreenAutomation {
   private hardware = new Hardware();
+  private logger = createLogger('keysender:screen');
 
   getScreenSize(): WindowsControlResponse {
     try {
@@ -46,7 +48,7 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
 
       // If no windows found, return null
       if (!allWindows || allWindows.length === 0) {
-        console.warn('No windows found');
+        this.logger.warn('No windows found');
         return null;
       }
 
@@ -56,7 +58,7 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
       );
 
       if (windowsWithTitle.length === 0) {
-        console.warn('No window with title found');
+        this.logger.warn('No window with title found');
         return null;
       }
 
@@ -74,7 +76,7 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
       if (matchingWindows.length === 0) {
         // If we were specifically looking for a window but didn't find it, return null
         if (targetTitle && targetTitle !== 'Unknown') {
-          console.warn(`No window matching "${targetTitle}" found`);
+          this.logger.warn(`No window matching "${targetTitle}" found`);
           return null;
         }
 
@@ -124,10 +126,10 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
               viewInfo: viewInfo,
             };
           } else {
-            console.warn(`Window "${typedWindow.title}" has invalid view info:`, viewInfo);
+            this.logger.warn(`Window "${typedWindow.title}" has invalid view info`, viewInfo);
           }
         } catch (error) {
-          console.warn(`Error checking window "${candidateWindow.title}":`, error);
+          this.logger.warn(`Error checking window "${candidateWindow.title}"`, error);
           // Continue to next window
         }
       }
@@ -141,7 +143,7 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
           handle: number;
         };
 
-        console.warn(`Using fallback window "${fallbackWindow.title}" with default view values`);
+        this.logger.warn(`Using fallback window "${fallbackWindow.title}" with default view values`);
 
         return {
           window: fallbackWindow,
@@ -152,7 +154,7 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
       // No suitable window found
       return null;
     } catch (error) {
-      console.error('Error in findSuitableWindow:', error);
+      this.logger.error('Error in findSuitableWindow', error);
       return null;
     }
   }
@@ -164,7 +166,7 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
 
       // If no suitable window found, return default values
       if (!windowInfo) {
-        console.warn('No suitable active window found, using default values');
+        this.logger.warn('No suitable active window found, using default values');
         return {
           success: true,
           message: 'Active window: Unknown (no suitable window found)',
@@ -188,7 +190,7 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
       try {
         this.hardware.workwindow.set(typedWindow.handle);
       } catch (error) {
-        console.warn(`Failed to set workwindow: ${String(error)}`);
+        this.logger.warn(`Failed to set workwindow: ${String(error)}`);
       }
 
       // Try to check if the window is in foreground
@@ -196,7 +198,7 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
       try {
         isForeground = this.hardware.workwindow.isForeground();
       } catch (error) {
-        console.warn(`Failed to check if window is in foreground: ${String(error)}`);
+        this.logger.warn(`Failed to check if window is in foreground: ${String(error)}`);
       }
 
       return {
@@ -244,7 +246,7 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
               try {
                 this.hardware.workwindow.setForeground();
               } catch (e) {
-                console.warn(`Failed to set window as foreground: ${String(e)}`);
+                this.logger.warn(`Failed to set window as foreground: ${String(e)}`);
               }
 
               // Check if the window is now in foreground
@@ -252,7 +254,7 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
               try {
                 isForeground = this.hardware.workwindow.isForeground();
               } catch (error) {
-                console.warn(`Failed to check if window is in foreground: ${String(error)}`);
+                this.logger.warn(`Failed to check if window is in foreground: ${String(error)}`);
               }
 
               return {
@@ -274,7 +276,7 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
                 },
               };
             } catch (error) {
-              console.warn(`Failed to set workwindow: ${String(error)}`);
+              this.logger.warn(`Failed to set workwindow: ${String(error)}`);
             }
           }
         }
@@ -291,14 +293,14 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
       try {
         this.hardware.workwindow.set(targetWindow.handle);
       } catch (error) {
-        console.warn(`Failed to set workwindow: ${String(error)}`);
+        this.logger.warn(`Failed to set workwindow: ${String(error)}`);
       }
 
       // Try to bring the window to the foreground
       try {
         this.hardware.workwindow.setForeground();
       } catch (e) {
-        console.warn(`Failed to set window as foreground: ${String(e)}`);
+        this.logger.warn(`Failed to set window as foreground: ${String(e)}`);
       }
 
       // Check if the window is now in foreground
@@ -306,7 +308,7 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
       try {
         isForeground = this.hardware.workwindow.isForeground();
       } catch (error) {
-        console.warn(`Failed to check if window is in foreground: ${String(error)}`);
+        this.logger.warn(`Failed to check if window is in foreground: ${String(error)}`);
       }
 
       // Try to check if the window is open
@@ -314,7 +316,7 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
       try {
         isOpen = this.hardware.workwindow.isOpen();
       } catch (error) {
-        console.warn(`Failed to check if window is open: ${String(error)}`);
+        this.logger.warn(`Failed to check if window is open: ${String(error)}`);
       }
 
       return {
@@ -388,8 +390,8 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
       try {
         currentView = this.hardware.workwindow.getView();
       } catch (viewError) {
-        console.warn(`Failed to get window view before ${operationType}: ${String(viewError)}`);
-        console.warn('Using default values');
+        this.logger.warn(`Failed to get window view before ${operationType}: ${String(viewError)}`);
+        this.logger.warn('Using default values');
         currentView = { x: 0, y: 0, width: 0, height: 0 };
       }
 
@@ -405,7 +407,7 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
       try {
         this.hardware.workwindow.setView(newView);
       } catch (updateError) {
-        console.warn(`Failed to ${operationType} window: ${String(updateError)}`);
+        this.logger.warn(`Failed to ${operationType} window: ${String(updateError)}`);
         // Continue anyway to return a success response since the UI test expects it
       }
 
@@ -424,8 +426,8 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
           height &&
           (Math.abs(updatedView.width - width) > 20 || Math.abs(updatedView.height - height) > 20)
         ) {
-          console.warn(
-            `Resize may not have been successful. Requested: ${width}x${height}, Got: ${updatedView.width}x${updatedView.height}`,
+          this.logger.warn(
+            `Resize may not have been successful. Requested: ${width}x${height}, Got: ${updatedView.width}x${updatedView.height}`
           );
         } else if (
           operationType === 'reposition' &&
@@ -433,14 +435,14 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
           y !== null &&
           (Math.abs(updatedView.x - x) > 20 || Math.abs(updatedView.y - y) > 20)
         ) {
-          console.warn(
-            `Repositioning may not have been successful. Requested: (${x}, ${y}), Got: (${updatedView.x}, ${updatedView.y})`,
+          this.logger.warn(
+            `Repositioning may not have been successful. Requested: (${x}, ${y}), Got: (${updatedView.x}, ${updatedView.y})`
           );
         }
       } catch (viewError) {
         const errorMessage = viewError instanceof Error ? viewError.message : String(viewError);
-        console.warn(`Failed to get window view after ${operationType}: ${errorMessage}`);
-        console.warn('Using requested values');
+        this.logger.warn(`Failed to get window view after ${operationType}: ${errorMessage}`);
+        this.logger.warn('Using requested values');
         updatedView = newView;
       }
 
@@ -450,7 +452,7 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
         isForeground = this.hardware.workwindow.isForeground();
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        console.warn(`Failed to check if window is in foreground: ${errorMessage}`);
+        this.logger.warn(`Failed to check if window is in foreground: ${errorMessage}`);
       }
 
       return {
@@ -641,7 +643,7 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
         };
       } catch (sharpError) {
         // Fallback with minimal processing if sharp pipeline fails
-        console.error(`Sharp processing failed: ${String(sharpError)}`);
+        this.logger.error(`Sharp processing failed: ${String(sharpError)}`);
 
         // Create a more basic version with minimal memory usage - still return the image data
         const base64Data = screenImage.toString('base64');

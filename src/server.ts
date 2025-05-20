@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import { Server as MCPServer } from '@modelcontextprotocol/sdk/server/index.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { networkInterfaces } from 'os';
+import { createLogger } from './logger.js';
 
 /**
  * Default port for the SSE server
@@ -26,6 +27,9 @@ const MAX_SSE_CLIENTS = parseInt(process.env.MAX_SSE_CLIENTS || '100', 10);
  * @param keyPath Path to TLS key (only used when useHttps is true)
  * @returns Object containing the express app, http server
  */
+// Create a logger for server module
+const logger = createLogger('server');
+
 export function createHttpServer(
   mcpServer: MCPServer,
   port = DEFAULT_PORT,
@@ -105,10 +109,10 @@ export function createHttpServer(
       // Connect to MCP server
       await mcpServer.connect(transport);
     } catch (error) {
-      console.error(
-        `[MCP SSE] Error establishing SSE stream: ${
+      logger.error(
+        `Error establishing SSE stream: ${
           error instanceof Error ? error.message : String(error)
-        }`,
+        }`
       );
       if (!res.headersSent) {
         res.status(500).send('Error establishing SSE stream');
@@ -133,10 +137,10 @@ export function createHttpServer(
     try {
       await transport.handlePostMessage(req, res, req.body);
     } catch (error) {
-      console.error(
-        `[MCP SSE] Error handling request: ${
+      logger.error(
+        `Error handling request: ${
           error instanceof Error ? error.message : String(error)
-        }`,
+        }`
       );
       if (!res.headersSent) {
         res.status(500).send('Error handling request');
@@ -156,7 +160,7 @@ export function createHttpServer(
       res.set('Content-Type', 'text/plain; version=0.0.4');
       res.send(metrics);
     } catch (error) {
-      console.error('Error generating metrics:', error);
+      logger.error('Error generating metrics', error);
       res.status(500).send('Error generating metrics');
     }
   });
@@ -165,7 +169,7 @@ export function createHttpServer(
   httpServer.listen(port, '0.0.0.0', () => {
     // Log that the server is running
     const protocol = useHttps ? 'HTTPS' : 'HTTP';
-    console.log(`${protocol} server running on port ${port} with SSE support`);
+    logger.info(`${protocol} server running on port ${port} with SSE support`);
 
     // Display all available network interfaces
     try {
@@ -186,17 +190,17 @@ export function createHttpServer(
 
       // Display connection URLs
       const scheme = useHttps ? 'https' : 'http';
-      console.log(`Local URL: ${scheme}://localhost:${port}${endpoint}`);
+      logger.info(`Local URL: ${scheme}://localhost:${port}${endpoint}`);
       if (addresses.length > 0) {
-        console.log('Available on:');
+        logger.info('Available on:');
         addresses.forEach((ip) => {
-          console.log(`  ${scheme}://${ip}:${port}${endpoint}`);
+          logger.info(`  ${scheme}://${ip}:${port}${endpoint}`);
         });
       }
     } catch (err) {
       const scheme = useHttps ? 'https' : 'http';
-      console.log(`Local URL: ${scheme}://localhost:${port}${endpoint}`);
-      console.error('Failed to get network interfaces:', err);
+      logger.info(`Local URL: ${scheme}://localhost:${port}${endpoint}`);
+      logger.error('Failed to get network interfaces', err);
     }
   });
 
