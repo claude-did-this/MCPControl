@@ -32,7 +32,12 @@ export function initializeProviders(): void {
   registry.registerScreen('autohotkey', autohotkeyProvider.screen);
   registry.registerClipboard('autohotkey', autohotkeyProvider.clipboard);
 
-  // TODO: Register other providers as they are implemented
+  // Register keysender provider
+  const keysenderProvider = new KeysenderProvider();
+  registry.registerKeyboard('keysender', keysenderProvider.keyboard);
+  registry.registerMouse('keysender', keysenderProvider.mouse);
+  registry.registerScreen('keysender', keysenderProvider.screen);
+  registry.registerClipboard('keysender', keysenderProvider.clipboard);
 }
 
 /**

@@ -370,15 +370,15 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
       }
 
       // Get the actual title and handle from the focus result
-      // Properly type the data to avoid TypeScript errors
-      const resultData = focusResult.data as
-        | {
-            title: string;
-            handle: number;
-            position?: { x: number; y: number };
-            size?: { width: number; height: number };
-          }
-        | undefined;
+      // Use a properly defined interface for the window data
+      interface WindowData {
+        title: string;
+        handle: number;
+        position?: { x: number; y: number };
+        size?: { width: number; height: number };
+      }
+      
+      const resultData = focusResult.data as WindowData | undefined;
 
       const actualTitle = resultData?.title || windowTitle;
       const handle = resultData?.handle || 0;

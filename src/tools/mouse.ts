@@ -19,7 +19,12 @@ export function moveMouse(position: MousePosition): WindowsControlResponse {
       try {
         const screenSizeResponse = provider.screen.getScreenSize();
         if (screenSizeResponse.success && screenSizeResponse.data) {
-          const screenSize = screenSizeResponse.data as { width: number; height: number };
+          // Define a proper interface for the screen size
+          interface ScreenSize {
+            width: number;
+            height: number;
+          }
+          const screenSize = screenSizeResponse.data as ScreenSize;
           if (
             position.x < 0 ||
             position.x >= screenSize.width ||
