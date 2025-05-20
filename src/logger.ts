@@ -19,13 +19,13 @@ type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | 'silen
  * Interface for a logger
  */
 export interface Logger {
-  trace(msg: string, ...args: any[]): void;
-  debug(msg: string, ...args: any[]): void;
-  info(msg: string, ...args: any[]): void;
-  warn(msg: string, ...args: any[]): void;
-  error(msg: string, ...args: any[]): void;
-  fatal(msg: string, ...args: any[]): void;
-  child(bindings: Record<string, any>): Logger;
+  trace(msg: string, ...args: unknown[]): void;
+  debug(msg: string, ...args: unknown[]): void;
+  info(msg: string, ...args: unknown[]): void;
+  warn(msg: string, ...args: unknown[]): void;
+  error(msg: string, ...args: unknown[]): void;
+  fatal(msg: string, ...args: unknown[]): void;
+  child(bindings: Record<string, unknown>): Logger;
 }
 
 /**
@@ -43,9 +43,9 @@ class ConsoleLogger implements Logger {
     fatal: 60,
     silent: 100,
   };
-  private context: Record<string, any> = {};
+  private context: Record<string, unknown> = {};
 
-  constructor(level: LogLevel = 'info', context: Record<string, any> = {}) {
+  constructor(level: LogLevel = 'info', context: Record<string, unknown> = {}) {
     this.level = this.levelMap[level];
     this.context = context;
   }
@@ -56,7 +56,7 @@ class ConsoleLogger implements Logger {
     }
     
     const contextStr = Object.entries(this.context)
-      .map(([key, value]) => `${key}=${value}`)
+      .map(([key, value]) => `${key}=${String(value)}`)
       .join(' ');
     
     return `[${contextStr}] ${msg}`;
@@ -66,43 +66,43 @@ class ConsoleLogger implements Logger {
     return this.levelMap[level] >= this.level;
   }
 
-  trace(msg: string, ...args: any[]): void {
+  trace(msg: string, ...args: unknown[]): void {
     if (this.shouldLog('trace')) {
       console.log(`[TRACE] ${this.formatMessage(msg)}`, ...args);
     }
   }
 
-  debug(msg: string, ...args: any[]): void {
+  debug(msg: string, ...args: unknown[]): void {
     if (this.shouldLog('debug')) {
       console.log(`[DEBUG] ${this.formatMessage(msg)}`, ...args);
     }
   }
 
-  info(msg: string, ...args: any[]): void {
+  info(msg: string, ...args: unknown[]): void {
     if (this.shouldLog('info')) {
       console.log(`[INFO] ${this.formatMessage(msg)}`, ...args);
     }
   }
 
-  warn(msg: string, ...args: any[]): void {
+  warn(msg: string, ...args: unknown[]): void {
     if (this.shouldLog('warn')) {
       console.warn(`[WARN] ${this.formatMessage(msg)}`, ...args);
     }
   }
 
-  error(msg: string, ...args: any[]): void {
+  error(msg: string, ...args: unknown[]): void {
     if (this.shouldLog('error')) {
       console.error(`[ERROR] ${this.formatMessage(msg)}`, ...args);
     }
   }
 
-  fatal(msg: string, ...args: any[]): void {
+  fatal(msg: string, ...args: unknown[]): void {
     if (this.shouldLog('fatal')) {
       console.error(`[FATAL] ${this.formatMessage(msg)}`, ...args);
     }
   }
 
-  child(bindings: Record<string, any>): Logger {
+  child(bindings: Record<string, unknown>): Logger {
     return new ConsoleLogger(
       Object.keys(this.levelMap).find(key => this.levelMap[key as LogLevel] === this.level) as LogLevel,
       { ...this.context, ...bindings }
