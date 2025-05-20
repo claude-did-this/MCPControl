@@ -10,12 +10,14 @@ import {
   MouseButtonSchema,
   ScrollAmountSchema,
 } from '../../tools/validation.zod.js';
+import { createLogger } from '../../logger.js';
 
 /**
  * Keysender implementation of the MouseAutomation interface
  */
 export class KeysenderMouseAutomation implements MouseAutomation {
   private mouse = new Hardware().mouse;
+  private logger = createLogger('keysender:mouse');
 
   /**
    * Validates mouse position against screen bounds including actual screen size
@@ -50,7 +52,7 @@ export class KeysenderMouseAutomation implements MouseAutomation {
 
       // Start the asynchronous operation and handle errors properly
       this.mouse.moveTo(position.x, position.y).catch((err) => {
-        console.error(`Error moving mouse to position ${position.x},${position.y}:`, err);
+        this.logger.error(`Error moving mouse to position ${position.x},${position.y}`, err);
         // We can't update the response after it's returned, but at least log the error
       });
 
@@ -74,7 +76,7 @@ export class KeysenderMouseAutomation implements MouseAutomation {
 
       // Start the asynchronous operation and handle errors properly
       this.mouse.click(mouseButton).catch((err) => {
-        console.error(`Error clicking ${button} button:`, err);
+        this.logger.error(`Error clicking ${button} button`, err);
         // We can't update the response after it's returned, but at least log the error
       });
 
@@ -98,7 +100,7 @@ export class KeysenderMouseAutomation implements MouseAutomation {
         this.validatePositionAgainstScreen(position);
 
         this.mouse.moveTo(position.x, position.y).catch((err) => {
-          console.error(`Error moving mouse to position ${position.x},${position.y}:`, err);
+          this.logger.error(`Error moving mouse to position ${position.x},${position.y}`, err);
           throw err; // Re-throw to be caught by the outer try/catch
         });
       }
@@ -111,10 +113,10 @@ export class KeysenderMouseAutomation implements MouseAutomation {
           setTimeout(() => {
             this.mouse
               .click()
-              .catch((err) => console.error('Error on second click of double-click:', err));
+              .catch((err) => this.logger.error('Error on second click of double-click', err));
           }, 50);
         })
-        .catch((err) => console.error('Error on first click of double-click:', err));
+        .catch((err) => this.logger.error('Error on first click of double-click', err));
 
       return {
         success: true,
@@ -155,7 +157,7 @@ export class KeysenderMouseAutomation implements MouseAutomation {
 
       // Start the asynchronous operation and handle errors properly
       this.mouse.scrollWheel(amount).catch((err) => {
-        console.error(`Error scrolling mouse by ${amount}:`, err);
+        this.logger.error(`Error scrolling mouse by ${amount}`, err);
         // We can't update the response after it's returned, but at least log the error
       });
 
@@ -203,23 +205,23 @@ export class KeysenderMouseAutomation implements MouseAutomation {
                     // Release mouse button
                     this.mouse
                       .toggle(mouseButton, false)
-                      .catch((err) => console.error(`Error releasing ${button} button:`, err));
+                      .catch((err) => this.logger.error(`Error releasing ${button} button`, err));
                   })
                   .catch((err) => {
-                    console.error(`Error moving mouse to end position ${to.x},${to.y}:`, err);
+                    this.logger.error(`Error moving mouse to end position ${to.x},${to.y}`, err);
                     // Ensure button is released even if move fails
                     this.mouse
                       .toggle(mouseButton, false)
                       .catch((releaseErr) =>
-                        console.error(`Error releasing ${button} button:`, releaseErr),
+                        this.logger.error(`Error releasing ${button} button`, releaseErr),
                       );
                   });
               }, 50);
             })
-            .catch((err) => console.error(`Error pressing ${button} button down:`, err));
+            .catch((err) => this.logger.error(`Error pressing ${button} button down`, err));
         })
         .catch((err) =>
-          console.error(`Error moving mouse to start position ${from.x},${from.y}:`, err),
+          this.logger.error(`Error moving mouse to start position ${from.x},${from.y}`, err),
         );
 
       return {
@@ -233,9 +235,9 @@ export class KeysenderMouseAutomation implements MouseAutomation {
         const mouseButton = button;
         this.mouse
           .toggle(mouseButton, false)
-          .catch((err) => console.error(`Error releasing ${button} button during cleanup:`, err));
+          .catch((err) => this.logger.error(`Error releasing ${button} button during cleanup`, err));
       } catch (releaseError) {
-        console.error(`Error during cleanup:`, releaseError);
+        this.logger.error(`Error during cleanup`, releaseError);
         // Ignore errors during cleanup
       }
 
@@ -271,9 +273,9 @@ export class KeysenderMouseAutomation implements MouseAutomation {
           // Click after moving
           this.mouse
             .click(mouseButton)
-            .catch((err) => console.error(`Error clicking ${button} button:`, err));
+            .catch((err) => this.logger.error(`Error clicking ${button} button`, err));
         })
-        .catch((err) => console.error(`Error moving mouse to position ${x},${y}:`, err));
+        .catch((err) => this.logger.error(`Error moving mouse to position ${x},${y}`, err));
 
       return {
         success: true,
