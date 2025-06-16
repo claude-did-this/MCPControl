@@ -3,9 +3,12 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { setupTools } from './handlers/tools.js';
 import { loadConfig } from './config.js';
-import { createAutomationProvider } from './providers/factory.js';
+import { createAutomationProvider, initializeProviders } from './providers/factory.js';
 import { AutomationProvider } from './interfaces/provider.js';
 import { createHttpServer, DEFAULT_PORT } from './server.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 class MCPControlServer {
   private useSse: boolean;
@@ -44,25 +47,42 @@ class MCPControlServer {
       const config = loadConfig();
 
       // Validate configuration
-      if (!config || typeof config.provider !== 'string') {
-        throw new Error('Invalid configuration: provider property is missing or invalid');
+      // Initialize available providers
+      initializeProviders();
+      
+      if (!config) {
+        throw new Error('Invalid configuration: configuration is missing');
       }
-
-      // Validate that the provider is supported
-      const supportedProviders = ['keysender']; // add others as they become available
-      if (!supportedProviders.includes(config.provider.toLowerCase())) {
-        throw new Error(
-          `Unsupported provider: ${config.provider}. Supported providers: ${supportedProviders.join(', ')}`,
-        );
+      
+      // Validate configuration based on whether we're using legacy or modular providers
+      if (config.providers) {
+        // Modular provider configuration
+        // The factory will handle validation of individual providers
+      } else if (config.provider) {
+        // Legacy provider configuration
+        // Validate that the provider is supported
+        const supportedProviders = ['keysender', 'autohotkey']; // add others as they become available
+        if (!supportedProviders.includes(config.provider.toLowerCase())) {
+          throw new Error(
+            `Unsupported provider: ${config.provider}. Supported providers: ${supportedProviders.join(', ')}`,
+          );
+        }
+      } else {
+        throw new Error('Invalid configuration: either provider or providers property must be specified');
       }
 
       // Create automation provider based on configuration
       this.provider = createAutomationProvider(config);
 
+      // Get package version from package.json
+      const __dirname = path.dirname(fileURLToPath(import.meta.url));
+      const packageJsonPath = path.resolve(__dirname, '../package.json');
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+      
       this.server = new Server(
         {
           name: 'mcp-control',
-          version: '0.1.21-alpha.2',
+          version: packageJson.version,
         },
         {
           capabilities: {
@@ -112,8 +132,17 @@ class MCPControlServer {
     await this.server.connect(transport);
 
     // Using process.stderr.write to avoid affecting the JSON-RPC stream
+    const providerName = this.provider.constructor.name === 'CompositeProvider'
+      ? 'Composite(' + Object.entries({
+          keyboard: this.provider.keyboard.constructor.name,
+          mouse: this.provider.mouse.constructor.name,
+          screen: this.provider.screen.constructor.name,
+          clipboard: this.provider.clipboard.constructor.name
+        }).map(([k, v]) => `${k}:${v}`).join(',') + ')'
+      : this.provider.constructor.name;
+    
     process.stderr.write(
-      `MCP Control server running on stdio (using ${this.provider.constructor.name})\n`,
+      `MCP Control server running on stdio (using ${providerName})\n`,
     );
 
     // Start HTTP server with SSE support if requested

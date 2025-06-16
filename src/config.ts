@@ -4,13 +4,19 @@
 export interface AutomationConfig {
   /**
    * Legacy: The provider to use for all automation
-   * Currently supported: 'keysender'
+   * Currently supported: 'keysender', 'autohotkey'
    */
   provider?: string;
 
   /**
    * New: Modular provider configuration
    * Allows mixing different providers for different components
+   * 
+   * For each component, supported values include:
+   * - keyboard: 'keysender', 'autohotkey'
+   * - mouse: 'keysender', 'autohotkey'
+   * - screen: 'keysender', 'autohotkey'
+   * - clipboard: 'clipboardy', 'powershell', 'autohotkey', 'keysender'
    */
   providers?: {
     keyboard?: string;
