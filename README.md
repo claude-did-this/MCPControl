@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/cheffromspace-mcpcontrol-badge.png)](https://mseep.ai/app/cheffromspace-mcpcontrol)
+
 # MCPControl
 
 <p align="center">
