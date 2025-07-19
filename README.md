@@ -5,8 +5,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Cheffromspace/MCPControl/releases/tag/v0.2.0">
-    <img src="https://img.shields.io/badge/release-v0.2.0-blue.svg" alt="Latest Release">
+  <a href="https://github.com/Cheffromspace/MCPControl/releases/tag/v0.3.0">
+    <img src="https://img.shields.io/badge/release-v0.3.0-blue.svg" alt="Latest Release">
   </a>
 </p>
 
@@ -330,7 +330,7 @@ The nutjs dependency relies on native modules that require these build tools. Si
 ## 🔖 Repository Branches
 
 - **`main`** - Main development branch with the latest features and changes
-- **`release`** - Stable release branch that mirrors the latest stable tag (currently v0.2.0)
+- **`release`** - Stable release branch that mirrors the latest stable tag (currently v0.3.0)
 
 ### Version Installation
 
