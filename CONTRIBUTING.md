@@ -1,6 +1,8 @@
-# Contributing to MCP Control
+# Contributing to MCPControl
 
-Thank you for your interest in contributing to MCP Control! This document provides guidelines and instructions for contributing to the project.
+> **Note**: MCPControl is not actively developed or supported. We will accept pull requests for bug fixes and new features, but please understand that response times may be slow and there is no guarantee of merging.
+
+This document provides guidelines for contributing to the project.
 
 ## Table of Contents
 
@@ -116,33 +118,33 @@ All new features should include appropriate test coverage. The project uses Vite
 
 ## Issue Tracking
 
-Check the [GitHub issues](https://github.com/Cheffromspace/MCPControl/issues) for existing issues you might want to contribute to. Current focus areas include:
-
-1. Creating an npm package for easy installation
-2. Adding remote computer control support
-3. Building a dedicated test application
+While we are not actively developing MCPControl, you may still submit issues for:
+- Bug reports with clear reproduction steps
+- Feature requests (though implementation is not guaranteed)
 
 When creating a new issue:
 - Use descriptive titles
 - Include steps to reproduce for bugs
 - For feature requests, explain the use case and potential implementation approach
+- Be prepared to implement the fix/feature yourself via PR
 
-## Future Roadmap
+## Areas for Contribution
 
-Current roadmap and planned features include:
+If you'd like to contribute, here are some areas that could use improvement:
 
-- Fixing click accuracy issues with different resolutions and multi-screen setups
-- Security implementation improvements
-- Comprehensive testing
-- Error handling enhancements
-- Performance optimization
-- Automation framework
-- Enhanced window management
-- Advanced integration features
+- Cross-platform compatibility enhancements
+- Additional automation providers (e.g., macOS, Linux)
+- Bug fixes for existing functionality
+- Documentation improvements
+- Test coverage improvements
+
+Note: There is no active roadmap or planned features as the project is not under active development.
 
 ## Publishing
 
-This project uses GitHub Actions to automatically publish to npm when a version tag is pushed to main:
+**Note**: MCPControl cannot be published to npm because the nutjs dependency requires compilation from source on each target system. Users must build from source following the instructions in the README.
+
+The npm publish workflow has been disabled. To create a new release:
 
 1. Ensure changes are merged to main
 2. Create and push a tag with the version number:
@@ -150,12 +152,7 @@ This project uses GitHub Actions to automatically publish to npm when a version 
    git tag v1.2.3
    git push origin v1.2.3
    ```
-3. The GitHub Action will automatically:
-   - Build and test the package
-   - Update the version in package.json
-   - Publish to npm
-
-Note: You need to have the `NPM_TOKEN` secret configured in the GitHub repository settings.
+3. Create a GitHub release with build instructions
 
 ---
 

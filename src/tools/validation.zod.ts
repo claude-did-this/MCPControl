@@ -9,7 +9,7 @@ export const MAX_SCROLL_AMOUNT = 1000;
  * List of allowed keyboard keys for validation
  */
 export const VALID_KEYS = [
-  // copied from keysender
+  // standard keyboard keys
   'backspace',
   'tab',
   'enter',

@@ -5,14 +5,20 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Cheffromspace/MCPControl/releases/tag/v0.2.0">
-    <img src="https://img.shields.io/badge/release-v0.2.0-blue.svg" alt="Latest Release">
+  <a href="https://github.com/Cheffromspace/MCPControl/releases/tag/v0.3.0">
+    <img src="https://img.shields.io/badge/release-v0.3.0-blue.svg" alt="Latest Release">
   </a>
 </p>
 
-Windows control server for the [Model Context Protocol](https://modelcontextprotocol.io/), providing programmatic control over system operations including mouse, keyboard, window management, and screen capture functionality.
+Cross-platform control server for the [Model Context Protocol](https://modelcontextprotocol.io/), providing programmatic control over system operations including mouse, keyboard, window management, and screen capture functionality.
 
-> **Note**: This project currently supports Windows only.
+> **Note**: With nutjs as the default provider, MCPControl now supports Windows, macOS, and Linux.
+
+> **Upgrading from v0.2.0?** See the [Migration Guide](MIGRATION.md) for detailed upgrade instructions.
+
+## 📢 Project Status
+
+MCPControl is **not actively developed** but we welcome bug reports and pull requests from the community. The project is functional and extensible for those who want to contribute or adapt it for their needs.
 
 ## 🔥 Why MCPControl?
 
@@ -28,30 +34,174 @@ MCPControl bridges the gap between AI models and your desktop, enabling secure, 
 
 ### Prerequisites
 
-1. **Install Build Tools (including VC++ workload)**
+> **Critical**: All prerequisites must be installed in the order shown below. The build will fail without these tools.
+
+#### Windows Prerequisites
+
+1. **Install Visual Studio Build Tools with C++ Workload** (Required for compiling nutjs)
    ```powershell
-   # Run as Administrator - may take a few minutes to complete
+   # Run as Administrator - This may take 5-10 minutes to complete
    winget install Microsoft.VisualStudio.2022.BuildTools --override "--wait --passive --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+   # Restart your terminal after installation
    ```
 
-2. **Install Python** (if not already installed)
+2. **Install Python 3.12+** (Required for node-gyp)
    ```powershell
-   # Install Python (required for node-gyp)
+   # Install Python and ensure it's added to PATH
    winget install Python.Python.3.12
+   # Verify installation: python --version
    ```
 
-3. **Install Node.js**
+3. **Install Node.js 18+** (LTS version recommended)
    ```powershell
-   # Install latest LTS version
+   # Install Node.js LTS
    winget install OpenJS.NodeJS
+   # Verify installation: node --version
+   ```
+
+4. **Install Global Build Tools**
+   ```powershell
+   # Install required npm global packages
+   npm install -g node-gyp cmake-js
+   ```
+
+#### macOS Prerequisites
+
+1. **Install Xcode Command Line Tools**
+   ```bash
+   # This includes the C++ compiler and build tools
+   xcode-select --install
+   ```
+
+2. **Install Python 3.12+** (if not already installed)
+   ```bash
+   # Using Homebrew
+   brew install python@3.12
+   # Verify installation: python3 --version
+   ```
+
+3. **Install Node.js 18+** (LTS version recommended)
+   ```bash
+   # Using Homebrew
+   brew install node
+   # Or download from nodejs.org
+   # Verify installation: node --version
+   ```
+
+4. **Install Global Build Tools**
+   ```bash
+   # Install required npm global packages
+   npm install -g node-gyp cmake-js
+   ```
+
+#### Linux Prerequisites
+
+1. **Install Build Essential and Development Tools**
+   ```bash
+   # Ubuntu/Debian
+   sudo apt-get update
+   sudo apt-get install -y build-essential python3 python3-dev cmake
+   
+   # Fedora/RHEL/CentOS
+   sudo dnf install -y gcc gcc-c++ make python3 python3-devel cmake
+   
+   # Arch Linux
+   sudo pacman -S base-devel python cmake
+   ```
+
+2. **Install X11 Development Libraries** (Required for nutjs on Linux)
+   ```bash
+   # Ubuntu/Debian
+   sudo apt-get install -y libx11-dev libxkbfile-dev libxtst-dev libpng++-dev
+   
+   # Fedora/RHEL/CentOS
+   sudo dnf install -y libX11-devel libxkbfile-devel libXtst-devel libpng-devel
+   
+   # Arch Linux
+   sudo pacman -S libx11 libxkbfile libxtst libpng
+   ```
+
+3. **Install Node.js 18+** (LTS version recommended)
+   ```bash
+   # Using NodeSource repository (Ubuntu/Debian)
+   curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+   sudo apt-get install -y nodejs
+   
+   # Using dnf (Fedora)
+   sudo dnf install nodejs
+   
+   # Verify installation: node --version
+   ```
+
+4. **Install Global Build Tools**
+   ```bash
+   # Install required npm global packages
+   npm install -g node-gyp cmake-js
    ```
 
 ### Installation
 
-1. **Install MCPControl Package**
-   ```powershell
-   npm install -g mcp-control
-   ```
+> **Important**: MCPControl is not published to npm because the nutjs dependency requires compilation from source with platform-specific build tools. You must build from source.
+
+#### Building on Windows
+
+```powershell
+# Clone the repository
+git clone https://github.com/claude-did-this/MCPControl.git
+cd MCPControl
+
+# Install dependencies (this will compile nutjs)
+npm install
+
+# Build the TypeScript project
+npm run build
+
+# Run directly
+node build/index.js --sse
+```
+
+#### Building on macOS
+
+```bash
+# Clone the repository
+git clone https://github.com/claude-did-this/MCPControl.git
+cd MCPControl
+
+# Install dependencies (this will compile nutjs)
+npm install
+
+# Build the TypeScript project
+npm run build
+
+# Run directly
+node build/index.js --sse
+```
+
+#### Building on Linux
+
+```bash
+# Clone the repository
+git clone https://github.com/claude-did-this/MCPControl.git
+cd MCPControl
+
+# Install dependencies (this will compile nutjs)
+# Note: On some Linux distributions, you may need to run this with sudo
+npm install
+
+# Build the TypeScript project
+npm run build
+
+# Run directly (may require sudo for input device access)
+node build/index.js --sse
+# Or with sudo if needed for input device permissions
+sudo node build/index.js --sse
+```
+
+> **Linux Note**: On Linux systems, you may need to run MCPControl with `sudo` or add your user to the `input` group to access input devices:
+> ```bash
+> # Add user to input group (logout and login again for changes to take effect)
+> sudo usermod -a -G input $USER
+> ```
 
 ### Configuration
 
@@ -107,10 +257,7 @@ The server will display:
 ### VM Setup Example
 
 1. **Start your Windows VM** with 1280x720 resolution
-2. **Install MCPControl** on the VM:
-   ```bash
-   npm install -g mcp-control
-   ```
+2. **Build MCPControl** on the VM (see Installation section above)
 3. **Run the server** with SSE transport:
    ```bash
    mcp-control --sse
@@ -238,9 +385,19 @@ By using this software, you acknowledge and accept that:
 
 MCPControl supports multiple automation providers for different use cases:
 
-- **keysender** (default) - Native Windows automation with high reliability
-- **powershell** - Windows PowerShell-based automation for simpler operations
-- **autohotkey** - AutoHotkey v2 scripting for advanced automation needs
+- **nutjs** (default) - Cross-platform automation library (Windows, macOS, Linux)
+- **powershell** - Windows PowerShell-based automation (Windows only)
+- **autohotkey** - AutoHotkey v2 scripting (Windows only)
+
+### Extensibility
+
+MCPControl is designed to be extensible with custom automation providers. You can create providers for:
+
+- **macOS** - Using AppleScript, Accessibility APIs, or libraries like robotjs
+- **Linux** - Using X11/Wayland APIs, xdotool, or similar automation tools
+- **Custom Solutions** - Any automation library that can implement the provider interface
+
+To add a new provider, implement the `AutomationProvider` interface in `src/interfaces/provider.ts`. See existing providers in `src/providers/` for examples.
 
 ### Provider Configuration
 
@@ -259,8 +416,8 @@ Or use modular configuration for specific operations:
 ```bash
 # Mix and match providers for different operations
 export AUTOMATION_KEYBOARD_PROVIDER=autohotkey
-export AUTOMATION_MOUSE_PROVIDER=keysender
-export AUTOMATION_SCREEN_PROVIDER=keysender  
+export AUTOMATION_MOUSE_PROVIDER=nutjs
+export AUTOMATION_SCREEN_PROVIDER=nutjs  
 export AUTOMATION_CLIPBOARD_PROVIDER=powershell
 ```
 
@@ -275,14 +432,14 @@ If you're interested in contributing or building from source, please see [CONTRI
 
 To build this project for development, you'll need:
 
-1. Windows operating system (required for the keysender dependency)
+1. Operating System: Windows, macOS, or Linux
 2. Node.js 18 or later (install using the official Windows installer which includes build tools)
 3. npm package manager
 4. Native build tools:
    - node-gyp: `npm install -g node-gyp`
    - cmake-js: `npm install -g cmake-js`
 
-The keysender dependency relies on Windows-specific native modules that require these build tools.
+The nutjs dependency relies on native modules that require these build tools. Since nutjs doesn't provide prebuilt binaries in the free version, it will compile from source during npm install. This is why MCPControl cannot be distributed as a pre-built npm package - each user must compile the native dependencies for their specific system.
 
 ## 📋 Project Structure
 
@@ -295,24 +452,25 @@ The keysender dependency relies on Windows-specific native modules that require 
 ## 🔖 Repository Branches
 
 - **`main`** - Main development branch with the latest features and changes
-- **`release`** - Stable release branch that mirrors the latest stable tag (currently v0.2.0)
+- **`release`** - Stable release branch that mirrors the latest stable tag (currently v0.3.0)
 
 ### Version Installation
 
-You can install specific versions of MCPControl using npm:
+Since MCPControl requires building from source, use git tags to get specific versions:
 
 ```bash
-# Install the latest stable release (from release branch)
-npm install mcp-control
-
-# Install a specific version
-npm install mcp-control@0.1.22
+# Clone and checkout a specific version
+git clone https://github.com/claude-did-this/MCPControl.git
+cd MCPControl
+git checkout v0.2.0  # or any other release tag
+npm install
+npm run build
 ```
 
 ## 📚 Dependencies
 
 - [@modelcontextprotocol/sdk](https://www.npmjs.com/package/@modelcontextprotocol/sdk) - MCP SDK for protocol implementation
-- [keysender](https://www.npmjs.com/package/keysender) - Windows-only UI automation library
+- [@nut-tree/libnut](https://www.npmjs.com/package/@nut-tree/libnut) - Cross-platform UI automation library
 - [clipboardy](https://www.npmjs.com/package/clipboardy) - Clipboard handling
 - [sharp](https://www.npmjs.com/package/sharp) - Image processing
 - [uuid](https://www.npmjs.com/package/uuid) - UUID generation
@@ -323,12 +481,13 @@ npm install mcp-control@0.1.22
 - Multiple screen functions may not work as expected, depending on setup
 - The get_screenshot utility does not work with the VS Code Extension Cline. See [GitHub issue #1865](https://github.com/cline/cline/issues/1865)
 - Some operations may require elevated permissions depending on the target application
-- Only Windows is supported
-- MCPControl works best at 1280x720 resolution, single screen. Click accuracy is optimized for this resolution. We're working on an offset/scaling bug and looking for testers or help creating testing tools
+- AutoHotkey and PowerShell providers only work on Windows
+- Some features may have platform-specific limitations
+- MCPControl works best at 1280x720 resolution, single screen. Click accuracy is optimized for this resolution
 
 ## 👥 Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md)
+MCPControl is not actively developed, but we welcome pull requests for bug fixes and new features. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## ⚖️ License
 

@@ -66,7 +66,6 @@ export function createHttpServer(
         // Security options
         minVersion: 'TLSv1.2' as const,
       };
-      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       httpServer = https.createServer(httpsOptions, app);
     } catch (error) {
       throw new Error(
@@ -74,7 +73,6 @@ export function createHttpServer(
       );
     }
   } else {
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     httpServer = http.createServer(app);
   }
 
@@ -110,9 +108,7 @@ export function createHttpServer(
       await mcpServer.connect(transport);
     } catch (error) {
       logger.error(
-        `Error establishing SSE stream: ${
-          error instanceof Error ? error.message : String(error)
-        }`
+        `Error establishing SSE stream: ${error instanceof Error ? error.message : String(error)}`,
       );
       if (!res.headersSent) {
         res.status(500).send('Error establishing SSE stream');
@@ -138,9 +134,7 @@ export function createHttpServer(
       await transport.handlePostMessage(req, res, req.body);
     } catch (error) {
       logger.error(
-        `Error handling request: ${
-          error instanceof Error ? error.message : String(error)
-        }`
+        `Error handling request: ${error instanceof Error ? error.message : String(error)}`,
       );
       if (!res.headersSent) {
         res.status(500).send('Error handling request');

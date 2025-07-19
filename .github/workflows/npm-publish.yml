@@ -1,4 +1,6 @@
-name: Publish to NPM
+# DISABLED: MCPControl cannot be published to npm because nutjs requires building from source
+# This workflow is kept for reference but should not be used
+name: Publish to NPM (DISABLED)
 
 on:
   push:
@@ -77,10 +79,17 @@ jobs:
             exit 1
           }
       
-      - name: Publish to NPM
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # NOTE: Publishing is disabled because nutjs must be compiled from source
+      # - name: Publish to NPM
+      #   run: npm publish
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      
+      - name: Skip Publishing
+        run: |
+          Write-Host "Publishing to npm is disabled for MCPControl"
+          Write-Host "nutjs requires compilation from source on each target system"
+          Write-Host "Users must build from source"
       
       - name: Verify publish
         run: npm view $(node -p "require('./package.json').name") version
