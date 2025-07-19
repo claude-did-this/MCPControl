@@ -104,11 +104,12 @@ export class NutJSScreenAutomation implements ScreenAutomation {
    * @param height - The new height of the window in pixels
    * @returns WindowsControlResponse indicating success or failure
    */
-  resizeWindow(
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async resizeWindow(
     title: string,
     width: number,
     height: number,
-  ): WindowsControlResponse {
+  ): Promise<WindowsControlResponse> {
     try {
       const handles = libnut.getWindows();
 
@@ -146,7 +147,8 @@ export class NutJSScreenAutomation implements ScreenAutomation {
    * @param y - The new y-coordinate of the window in pixels
    * @returns WindowsControlResponse indicating success or failure
    */
-  repositionWindow(title: string, x: number, y: number): WindowsControlResponse {
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async repositionWindow(title: string, x: number, y: number): Promise<WindowsControlResponse> {
     try {
       const handles = libnut.getWindows();
 

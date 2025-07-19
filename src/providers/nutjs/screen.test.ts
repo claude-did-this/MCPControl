@@ -188,7 +188,7 @@ describe('NutJSScreenAutomation', () => {
   });
 
   describe('resizeWindow', () => {
-    it('should resize window with matching title', () => {
+    it('should resize window with matching title', async () => {
       // Setup
       (libnut.getWindows as any).mockReturnValue([1, 2, 3]);
       (libnut.getWindowTitle as any).mockImplementation((handle: number) => {
@@ -196,7 +196,7 @@ describe('NutJSScreenAutomation', () => {
       });
 
       // Execute
-      const result = screen.resizeWindow('Target', 1024, 768);
+      const result = await screen.resizeWindow('Target', 1024, 768);
 
       // Verify
       expect(libnut.getWindows).toHaveBeenCalledTimes(1);
@@ -208,13 +208,13 @@ describe('NutJSScreenAutomation', () => {
       });
     });
 
-    it('should return error when window with title is not found', () => {
+    it('should return error when window with title is not found', async () => {
       // Setup
       (libnut.getWindows as any).mockReturnValue([1, 2, 3]);
       (libnut.getWindowTitle as any).mockImplementation((handle: number) => `Window ${handle}`);
 
       // Execute
-      const result = screen.resizeWindow('Nonexistent', 1024, 768);
+      const result = await screen.resizeWindow('Nonexistent', 1024, 768);
 
       // Verify
       expect(libnut.getWindowTitle).toHaveBeenCalledTimes(3);
@@ -225,14 +225,14 @@ describe('NutJSScreenAutomation', () => {
       });
     });
 
-    it('should return error response when resize operation fails', () => {
+    it('should return error response when resize operation fails', async () => {
       // Setup
       (libnut.getWindows as any).mockImplementation(() => {
         throw new Error('Cannot list windows');
       });
 
       // Execute
-      const result = screen.resizeWindow('Any', 1024, 768);
+      const result = await screen.resizeWindow('Any', 1024, 768);
 
       // Verify
       expect(result).toEqual({
@@ -243,7 +243,7 @@ describe('NutJSScreenAutomation', () => {
   });
 
   describe('repositionWindow', () => {
-    it('should reposition window with matching title', () => {
+    it('should reposition window with matching title', async () => {
       // Setup
       (libnut.getWindows as any).mockReturnValue([1, 2, 3]);
       (libnut.getWindowTitle as any).mockImplementation((handle: number) => {
@@ -251,7 +251,7 @@ describe('NutJSScreenAutomation', () => {
       });
 
       // Execute
-      const result = screen.repositionWindow('Target', 100, 200);
+      const result = await screen.repositionWindow('Target', 100, 200);
 
       // Verify
       expect(libnut.getWindows).toHaveBeenCalledTimes(1);
@@ -263,13 +263,13 @@ describe('NutJSScreenAutomation', () => {
       });
     });
 
-    it('should return error when window with title is not found', () => {
+    it('should return error when window with title is not found', async () => {
       // Setup
       (libnut.getWindows as any).mockReturnValue([1, 2, 3]);
       (libnut.getWindowTitle as any).mockImplementation((handle: number) => `Window ${handle}`);
 
       // Execute
-      const result = screen.repositionWindow('Nonexistent', 100, 200);
+      const result = await screen.repositionWindow('Nonexistent', 100, 200);
 
       // Verify
       expect(libnut.getWindowTitle).toHaveBeenCalledTimes(3);
@@ -280,14 +280,14 @@ describe('NutJSScreenAutomation', () => {
       });
     });
 
-    it('should return error response when reposition operation fails', () => {
+    it('should return error response when reposition operation fails', async () => {
       // Setup
       (libnut.getWindows as any).mockImplementation(() => {
         throw new Error('Cannot list windows');
       });
 
       // Execute
-      const result = screen.repositionWindow('Any', 100, 200);
+      const result = await screen.repositionWindow('Any', 100, 200);
 
       // Verify
       expect(result).toEqual({
