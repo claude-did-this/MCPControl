@@ -1,11 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createAutomationProvider } from './factory.js';
-import { KeysenderProvider } from './keysender/index.js';
+import { NutJSProvider } from './nutjs/index.js';
 
 // Mock the providers
-vi.mock('./keysender/index.js', () => {
+vi.mock('./nutjs/index.js', () => {
   return {
-    KeysenderProvider: vi.fn().mockImplementation(() => ({
+    NutJSProvider: vi.fn().mockImplementation(() => ({
       keyboard: {},
       mouse: {},
       screen: {},
@@ -15,21 +15,21 @@ vi.mock('./keysender/index.js', () => {
 });
 
 describe('createAutomationProvider', () => {
-  it('should create KeysenderProvider by default', () => {
+  it('should create NutJSProvider by default', () => {
     const provider = createAutomationProvider();
-    expect(KeysenderProvider).toHaveBeenCalled();
+    expect(NutJSProvider).toHaveBeenCalled();
     expect(provider).toBeDefined();
   });
 
-  it('should create KeysenderProvider when explicitly specified', () => {
-    const provider = createAutomationProvider({ provider: 'keysender' });
-    expect(KeysenderProvider).toHaveBeenCalled();
+  it('should create NutJSProvider when explicitly specified', () => {
+    const provider = createAutomationProvider({ provider: 'nutjs' });
+    expect(NutJSProvider).toHaveBeenCalled();
     expect(provider).toBeDefined();
   });
 
-  it('should be case insensitive for KeysenderProvider', () => {
-    const provider = createAutomationProvider({ provider: 'KeYsEnDeR' });
-    expect(KeysenderProvider).toHaveBeenCalled();
+  it('should be case insensitive for NutJSProvider', () => {
+    const provider = createAutomationProvider({ provider: 'NuTjS' });
+    expect(NutJSProvider).toHaveBeenCalled();
     expect(provider).toBeDefined();
   });
 

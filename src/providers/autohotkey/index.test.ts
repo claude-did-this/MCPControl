@@ -65,7 +65,7 @@ describe('AutoHotkeyProvider', () => {
 
 describe('AutoHotkeyProvider - Factory Integration', () => {
   beforeEach(() => {
-    // Mock the factory module to avoid keysender ELF header issue
+    // Mock the factory module
     vi.doMock('../factory.js', () => ({
       createAutomationProvider: vi.fn().mockImplementation((config: any) => {
         if (config?.provider === 'autohotkey' || config?.providers) {

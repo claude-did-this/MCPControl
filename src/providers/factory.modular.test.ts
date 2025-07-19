@@ -29,9 +29,9 @@ vi.mock('./clipboard/clipboardy/index.js', () => ({
   })),
 }));
 
-// Mock keysender provider to avoid ELF header issue
-vi.mock('./keysender/index.js', () => ({
-  KeysenderProvider: vi.fn().mockImplementation(() => ({
+// Mock nutjs provider
+vi.mock('./nutjs/index.js', () => ({
+  NutJSProvider: vi.fn().mockImplementation(() => ({
     keyboard: {
       typeText: vi.fn().mockResolvedValue({ success: true }),
       pressKey: vi.fn().mockResolvedValue({ success: true }),

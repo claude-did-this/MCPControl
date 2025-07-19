@@ -110,9 +110,7 @@ export function createHttpServer(
       await mcpServer.connect(transport);
     } catch (error) {
       logger.error(
-        `Error establishing SSE stream: ${
-          error instanceof Error ? error.message : String(error)
-        }`
+        `Error establishing SSE stream: ${error instanceof Error ? error.message : String(error)}`,
       );
       if (!res.headersSent) {
         res.status(500).send('Error establishing SSE stream');
@@ -138,9 +136,7 @@ export function createHttpServer(
       await transport.handlePostMessage(req, res, req.body);
     } catch (error) {
       logger.error(
-        `Error handling request: ${
-          error instanceof Error ? error.message : String(error)
-        }`
+        `Error handling request: ${error instanceof Error ? error.message : String(error)}`,
       );
       if (!res.headersSent) {
         res.status(500).send('Error handling request');

@@ -22,8 +22,9 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.11.4",
+    "@nut-tree-fork/libnut": "^4.2.6",
+    "@nut-tree-fork/shared": "^4.2.6",
     "clipboardy": "^4.0.0",
-    "keysender": "^2.3.0",
     "sharp": "^0.34.2",
     "ulid": "^3.0.0",
     "uuid": "^11.1.0",

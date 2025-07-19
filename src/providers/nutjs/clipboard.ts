@@ -4,12 +4,9 @@ import { WindowsControlResponse } from '../../types/responses.js';
 import { ClipboardAutomation } from '../../interfaces/automation.js';
 
 /**
- * Keysender implementation of the ClipboardAutomation interface
- *
- * Note: Since keysender doesn't provide direct clipboard functionality,
- * we use the clipboardy library (same as the NutJS implementation)
+ * NutJS implementation of the ClipboardAutomation interface
  */
-export class KeysenderClipboardAutomation implements ClipboardAutomation {
+export class NutJSClipboardAutomation implements ClipboardAutomation {
   async getClipboardContent(): Promise<WindowsControlResponse> {
     try {
       const content = await clipboardy.read();

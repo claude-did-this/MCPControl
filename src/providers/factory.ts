@@ -1,5 +1,5 @@
 import { AutomationProvider } from '../interfaces/provider.js';
-import { KeysenderProvider } from './keysender/index.js';
+import { NutJSProvider } from './nutjs/index.js';
 import { AutoHotkeyProvider } from './autohotkey/index.js';
 import { registry } from './registry.js';
 import { AutomationConfig } from '../config.js';
@@ -69,7 +69,7 @@ export function createAutomationProvider(config?: AutomationConfig): AutomationP
 
   if (!config || !config.providers) {
     // Legacy behavior: use monolithic provider
-    const type = config?.provider || 'keysender';
+    const type = config?.provider || 'nutjs';
     const providerType = type.toLowerCase();
 
     // Return cached instance if available
@@ -79,8 +79,8 @@ export function createAutomationProvider(config?: AutomationConfig): AutomationP
 
     let provider: AutomationProvider;
     switch (providerType) {
-      case 'keysender':
-        provider = new KeysenderProvider();
+      case 'nutjs':
+        provider = new NutJSProvider();
         break;
       case 'autohotkey':
         provider = new AutoHotkeyProvider();
@@ -103,19 +103,19 @@ export function createAutomationProvider(config?: AutomationConfig): AutomationP
   // Get individual components from the registry
   const keyboardProvider = config.providers.keyboard
     ? registry.getKeyboard(config.providers.keyboard)
-    : new KeysenderProvider().keyboard;
+    : new NutJSProvider().keyboard;
 
   const mouseProvider = config.providers.mouse
     ? registry.getMouse(config.providers.mouse)
-    : new KeysenderProvider().mouse;
+    : new NutJSProvider().mouse;
 
   const screenProvider = config.providers.screen
     ? registry.getScreen(config.providers.screen)
-    : new KeysenderProvider().screen;
+    : new NutJSProvider().screen;
 
   const clipboardProvider = config.providers.clipboard
     ? registry.getClipboard(config.providers.clipboard)
-    : new KeysenderProvider().clipboard;
+    : new NutJSProvider().clipboard;
 
   if (!keyboardProvider || !mouseProvider || !screenProvider || !clipboardProvider) {
     throw new Error('Failed to resolve all provider components');
