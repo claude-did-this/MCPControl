@@ -66,7 +66,6 @@ export function createHttpServer(
         // Security options
         minVersion: 'TLSv1.2' as const,
       };
-      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       httpServer = https.createServer(httpsOptions, app);
     } catch (error) {
       throw new Error(
@@ -74,7 +73,6 @@ export function createHttpServer(
       );
     }
   } else {
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     httpServer = http.createServer(app);
   }
 
