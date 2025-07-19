@@ -17,7 +17,8 @@
       "Bash(cat:*)",
       "Bash(for pr in 271 274 275)",
       "Bash(do echo \"Merging PR #$pr\")",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }

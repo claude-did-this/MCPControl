@@ -14,6 +14,8 @@ Cross-platform control server for the [Model Context Protocol](https://modelcont
 
 > **Note**: With nutjs as the default provider, MCPControl now supports Windows, macOS, and Linux.
 
+> **Upgrading from v0.2.0?** See the [Migration Guide](MIGRATION.md) for detailed upgrade instructions.
+
 ## 📢 Project Status
 
 MCPControl is **not actively developed** but we welcome bug reports and pull requests from the community. The project is functional and extensible for those who want to contribute or adapt it for their needs.
@@ -33,6 +35,8 @@ MCPControl bridges the gap between AI models and your desktop, enabling secure, 
 ### Prerequisites
 
 > **Critical**: All prerequisites must be installed in the order shown below. The build will fail without these tools.
+
+#### Windows Prerequisites
 
 1. **Install Visual Studio Build Tools with C++ Workload** (Required for compiling nutjs)
    ```powershell
@@ -61,25 +65,143 @@ MCPControl bridges the gap between AI models and your desktop, enabling secure, 
    npm install -g node-gyp cmake-js
    ```
 
+#### macOS Prerequisites
+
+1. **Install Xcode Command Line Tools**
+   ```bash
+   # This includes the C++ compiler and build tools
+   xcode-select --install
+   ```
+
+2. **Install Python 3.12+** (if not already installed)
+   ```bash
+   # Using Homebrew
+   brew install python@3.12
+   # Verify installation: python3 --version
+   ```
+
+3. **Install Node.js 18+** (LTS version recommended)
+   ```bash
+   # Using Homebrew
+   brew install node
+   # Or download from nodejs.org
+   # Verify installation: node --version
+   ```
+
+4. **Install Global Build Tools**
+   ```bash
+   # Install required npm global packages
+   npm install -g node-gyp cmake-js
+   ```
+
+#### Linux Prerequisites
+
+1. **Install Build Essential and Development Tools**
+   ```bash
+   # Ubuntu/Debian
+   sudo apt-get update
+   sudo apt-get install -y build-essential python3 python3-dev cmake
+   
+   # Fedora/RHEL/CentOS
+   sudo dnf install -y gcc gcc-c++ make python3 python3-devel cmake
+   
+   # Arch Linux
+   sudo pacman -S base-devel python cmake
+   ```
+
+2. **Install X11 Development Libraries** (Required for nutjs on Linux)
+   ```bash
+   # Ubuntu/Debian
+   sudo apt-get install -y libx11-dev libxkbfile-dev libxtst-dev libpng++-dev
+   
+   # Fedora/RHEL/CentOS
+   sudo dnf install -y libX11-devel libxkbfile-devel libXtst-devel libpng-devel
+   
+   # Arch Linux
+   sudo pacman -S libx11 libxkbfile libxtst libpng
+   ```
+
+3. **Install Node.js 18+** (LTS version recommended)
+   ```bash
+   # Using NodeSource repository (Ubuntu/Debian)
+   curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+   sudo apt-get install -y nodejs
+   
+   # Using dnf (Fedora)
+   sudo dnf install nodejs
+   
+   # Verify installation: node --version
+   ```
+
+4. **Install Global Build Tools**
+   ```bash
+   # Install required npm global packages
+   npm install -g node-gyp cmake-js
+   ```
+
 ### Installation
 
 > **Important**: MCPControl is not published to npm because the nutjs dependency requires compilation from source with platform-specific build tools. You must build from source.
 
-1. **Clone and Build from Source**
-   ```powershell
-   # Clone the repository
-   git clone https://github.com/claude-did-this/MCPControl.git
-   cd MCPControl
-   
-   # Install dependencies (this will compile nutjs)
-   npm install
-   
-   # Build the TypeScript project
-   npm run build
-   
-   # Run directly
-   node build/index.js --sse
-   ```
+#### Building on Windows
+
+```powershell
+# Clone the repository
+git clone https://github.com/claude-did-this/MCPControl.git
+cd MCPControl
+
+# Install dependencies (this will compile nutjs)
+npm install
+
+# Build the TypeScript project
+npm run build
+
+# Run directly
+node build/index.js --sse
+```
+
+#### Building on macOS
+
+```bash
+# Clone the repository
+git clone https://github.com/claude-did-this/MCPControl.git
+cd MCPControl
+
+# Install dependencies (this will compile nutjs)
+npm install
+
+# Build the TypeScript project
+npm run build
+
+# Run directly
+node build/index.js --sse
+```
+
+#### Building on Linux
+
+```bash
+# Clone the repository
+git clone https://github.com/claude-did-this/MCPControl.git
+cd MCPControl
+
+# Install dependencies (this will compile nutjs)
+# Note: On some Linux distributions, you may need to run this with sudo
+npm install
+
+# Build the TypeScript project
+npm run build
+
+# Run directly (may require sudo for input device access)
+node build/index.js --sse
+# Or with sudo if needed for input device permissions
+sudo node build/index.js --sse
+```
+
+> **Linux Note**: On Linux systems, you may need to run MCPControl with `sudo` or add your user to the `input` group to access input devices:
+> ```bash
+> # Add user to input group (logout and login again for changes to take effect)
+> sudo usermod -a -G input $USER
+> ```
 
 ### Configuration
 
