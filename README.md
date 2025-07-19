@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/claude-did-this-mcpcontrol-badge.png)](https://mseep.ai/app/claude-did-this-mcpcontrol)
+
 # MCPControl
 
 <p align="center">
