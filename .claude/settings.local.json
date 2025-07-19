@@ -7,7 +7,17 @@
       "Bash(gh label create:*)",
       "Bash(gh issue create:*)",
       "Bash(gh issue create:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(gh run view:*)",
+      "Bash(ls:*)",
+      "Bash(gh workflow:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(git fetch:*)",
+      "Bash(git checkout:*)",
+      "Bash(cat:*)",
+      "Bash(for pr in 271 274 275)",
+      "Bash(do echo \"Merging PR #$pr\")",
+      "Bash(done)"
     ],
     "deny": []
   }
