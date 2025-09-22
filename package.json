@@ -21,10 +21,10 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.16.0",
+    "@modelcontextprotocol/sdk": "^1.18.1",
     "clipboardy": "^4.0.0",
     "keysender": "^2.3.0",
-    "sharp": "^0.34.3",
+    "sharp": "^0.34.4",
     "ulid": "^3.0.1",
     "uuid": "^11.1.0",
     "zod": "^3.25.1"
