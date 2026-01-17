@@ -306,6 +306,8 @@ export const ScreenshotOptionsSchema = z.object({
   grayscale: z.boolean().optional(),
   resize: ScreenshotResizeSchema.optional(),
   compressionLevel: z.number().int().min(0).max(9).optional(),
+  grid: z.union([z.boolean(), z.number().int().min(10).max(500)]).optional(),
+  gridTransparency: z.number().int().min(0).max(100).optional(),
 });
 
 /**

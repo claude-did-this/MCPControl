@@ -143,7 +143,9 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
           handle: number;
         };
 
-        this.logger.warn(`Using fallback window "${fallbackWindow.title}" with default view values`);
+        this.logger.warn(
+          `Using fallback window "${fallbackWindow.title}" with default view values`,
+        );
 
         return {
           window: fallbackWindow,
@@ -427,7 +429,7 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
           (Math.abs(updatedView.width - width) > 20 || Math.abs(updatedView.height - height) > 20)
         ) {
           this.logger.warn(
-            `Resize may not have been successful. Requested: ${width}x${height}, Got: ${updatedView.width}x${updatedView.height}`
+            `Resize may not have been successful. Requested: ${width}x${height}, Got: ${updatedView.width}x${updatedView.height}`,
           );
         } else if (
           operationType === 'reposition' &&
@@ -436,7 +438,7 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
           (Math.abs(updatedView.x - x) > 20 || Math.abs(updatedView.y - y) > 20)
         ) {
           this.logger.warn(
-            `Repositioning may not have been successful. Requested: (${x}, ${y}), Got: (${updatedView.x}, ${updatedView.y})`
+            `Repositioning may not have been successful. Requested: (${x}, ${y}), Got: (${updatedView.x}, ${updatedView.y})`,
           );
         }
       } catch (viewError) {
@@ -597,6 +599,54 @@ export class KeysenderScreenAutomation implements ScreenAutomation {
             fit: mergedOptions.resize?.fit || 'inside',
             withoutEnlargement: true,
           });
+        }
+
+        // Draw grid overlay if requested
+        if (mergedOptions.grid) {
+          const gridSpacing = typeof mergedOptions.grid === 'number' ? mergedOptions.grid : 100;
+
+          // Calculate final image dimensions from resize settings
+          const targetWidth = mergedOptions.resize?.width || 1280;
+          const imgWidth = Math.min(width, targetWidth);
+          const imgHeight = Math.round(height * (imgWidth / width));
+
+          // Get window position offset to show true screen coordinates
+          let offsetX = 0;
+          let offsetY = 0;
+          try {
+            const viewInfo = this.hardware.workwindow.getView();
+            offsetX = viewInfo.x || 0;
+            offsetY = viewInfo.y || 0;
+          } catch {
+            // If we can't get window position, use 0 offset (full screen capture)
+          }
+
+          // Calculate scale factor (image pixels to screen pixels)
+          const scaleX = width / imgWidth;
+          const scaleY = height / imgHeight;
+
+          // Calculate grid opacity from transparency (0-100 -> 0-1)
+          const gridOpacity = (mergedOptions.gridTransparency ?? 50) / 100;
+          const textOpacity = Math.min(1, gridOpacity + 0.3); // Text slightly more visible
+
+          // Build SVG grid with screen coordinates (accounting for window offset and scale)
+          let svgLines = '';
+          for (let x = gridSpacing; x < imgWidth; x += gridSpacing) {
+            const screenX = Math.round(offsetX + x * scaleX);
+            svgLines += `<line x1="${x}" y1="0" x2="${x}" y2="${imgHeight}" stroke="rgba(255,0,0,${gridOpacity})" stroke-width="1"/>`;
+            svgLines += `<text x="${x + 2}" y="12" font-size="10" fill="rgba(255,0,0,${textOpacity})">${screenX}</text>`;
+          }
+          for (let y = gridSpacing; y < imgHeight; y += gridSpacing) {
+            const screenY = Math.round(offsetY + y * scaleY);
+            svgLines += `<line x1="0" y1="${y}" x2="${imgWidth}" y2="${y}" stroke="rgba(255,0,0,${gridOpacity})" stroke-width="1"/>`;
+            svgLines += `<text x="2" y="${y - 2}" font-size="10" fill="rgba(255,0,0,${textOpacity})">${screenY}</text>`;
+          }
+
+          const svgOverlay = Buffer.from(
+            `<svg width="${imgWidth}" height="${imgHeight}">${svgLines}</svg>`,
+          );
+
+          pipeline = pipeline.composite([{ input: svgOverlay, top: 0, left: 0 }]);
         }
 
         // Apply appropriate format-specific compression

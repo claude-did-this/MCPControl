@@ -93,6 +93,19 @@ export function setupTools(server: Server, provider: AutomationProvider): void {
               default: { width: 1280, fit: 'contain' },
               description: 'Resize options for the screenshot',
             },
+            grid: {
+              oneOf: [{ type: 'boolean' }, { type: 'number', minimum: 10, maximum: 500 }],
+              default: false,
+              description:
+                'Draw coordinate grid overlay (true for 100px spacing, or specify pixel spacing)',
+            },
+            gridTransparency: {
+              type: 'number',
+              minimum: 0,
+              maximum: 100,
+              default: 50,
+              description: 'Grid line transparency (0 = fully transparent, 100 = fully opaque)',
+            },
           },
         },
       },

@@ -87,4 +87,6 @@ export interface ScreenshotOptions {
     fit?: 'contain' | 'cover' | 'fill' | 'inside' | 'outside'; // Resize fit option
   };
   compressionLevel?: number; // PNG compression level (0-9), only used if format is 'png'
+  grid?: boolean | number; // Draw coordinate grid overlay (true for 100px, or specify spacing)
+  gridTransparency?: number; // Grid line transparency (0-100, default 50)
 }

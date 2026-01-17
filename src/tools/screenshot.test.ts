@@ -126,5 +126,59 @@ describe('Screenshot Functions', () => {
         message: 'Failed to capture screenshot: Capture failed',
       });
     });
+
+    it('should pass grid options to provider', async () => {
+      // Setup mock provider
+      const mockProvider = {
+        screen: {
+          getScreenshot: vi.fn().mockResolvedValue({
+            success: true,
+            message: 'Screenshot captured successfully',
+            content: [
+              {
+                type: 'image',
+                data: 'test-image-with-grid',
+                mimeType: 'image/png',
+              },
+            ],
+          }),
+        },
+      };
+
+      vi.mocked(createAutomationProvider).mockReturnValue(mockProvider as any);
+
+      const options = {
+        grid: true,
+        gridTransparency: 75,
+      };
+
+      const result = await getScreenshot(options);
+
+      expect(mockProvider.screen.getScreenshot).toHaveBeenCalledWith(options);
+      expect(result.success).toBe(true);
+    });
+
+    it('should pass grid spacing as number to provider', async () => {
+      const mockProvider = {
+        screen: {
+          getScreenshot: vi.fn().mockResolvedValue({
+            success: true,
+            message: 'Screenshot captured successfully',
+            content: [{ type: 'image', data: 'test', mimeType: 'image/png' }],
+          }),
+        },
+      };
+
+      vi.mocked(createAutomationProvider).mockReturnValue(mockProvider as any);
+
+      const options = {
+        grid: 200, // Custom grid spacing
+        gridTransparency: 30,
+      };
+
+      await getScreenshot(options);
+
+      expect(mockProvider.screen.getScreenshot).toHaveBeenCalledWith(options);
+    });
   });
 });
