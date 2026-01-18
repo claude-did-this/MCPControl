@@ -29,9 +29,9 @@ vi.mock('./clipboard/clipboardy/index.js', () => ({
   })),
 }));
 
-// Mock keysender provider to avoid ELF header issue
-vi.mock('./keysender/index.js', () => ({
-  KeysenderProvider: vi.fn().mockImplementation(() => ({
+// Mock robotjs provider
+vi.mock('./robotjs/index.js', () => ({
+  RobotJSProvider: vi.fn().mockImplementation(() => ({
     keyboard: {
       typeText: vi.fn().mockResolvedValue({ success: true }),
       pressKey: vi.fn().mockResolvedValue({ success: true }),

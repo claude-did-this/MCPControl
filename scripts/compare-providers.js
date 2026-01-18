@@ -1,5 +1,5 @@
 /* eslint-disable */
-// Script to compare window handling between Keysender and NutJS providers
+// Script to compare window handling between different providers
 import { loadConfig } from '../build/config.js';
 import { createAutomationProvider } from '../build/providers/factory.js';
 
@@ -70,11 +70,11 @@ async function testProvider(providerName) {
 // Main execution
 (async () => {
   try {
-    // First test keysender provider
-    await testProvider('keysender');
+    // Test nutjs provider
+    await testProvider('nutjs');
     
-    // Only test keysender provider
-    // await testProvider('other-provider');
+    // Test autohotkey provider if available
+    // await testProvider('autohotkey');
   } catch (error) {
     console.error('Error in testing:', error);
   }

@@ -1,11 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createAutomationProvider } from './factory.js';
-import { KeysenderProvider } from './keysender/index.js';
+import { RobotJSProvider } from './robotjs/index.js';
 
 // Mock the providers
-vi.mock('./keysender/index.js', () => {
+vi.mock('./robotjs/index.js', () => {
   return {
-    KeysenderProvider: vi.fn().mockImplementation(() => ({
+    RobotJSProvider: vi.fn().mockImplementation(() => ({
       keyboard: {},
       mouse: {},
       screen: {},
@@ -15,21 +15,21 @@ vi.mock('./keysender/index.js', () => {
 });
 
 describe('createAutomationProvider', () => {
-  it('should create KeysenderProvider by default', () => {
+  it('should create RobotJSProvider by default', () => {
     const provider = createAutomationProvider();
-    expect(KeysenderProvider).toHaveBeenCalled();
+    expect(RobotJSProvider).toHaveBeenCalled();
     expect(provider).toBeDefined();
   });
 
-  it('should create KeysenderProvider when explicitly specified', () => {
-    const provider = createAutomationProvider({ provider: 'keysender' });
-    expect(KeysenderProvider).toHaveBeenCalled();
+  it('should create RobotJSProvider when explicitly specified', () => {
+    const provider = createAutomationProvider({ provider: 'robotjs' });
+    expect(RobotJSProvider).toHaveBeenCalled();
     expect(provider).toBeDefined();
   });
 
-  it('should be case insensitive for KeysenderProvider', () => {
-    const provider = createAutomationProvider({ provider: 'KeYsEnDeR' });
-    expect(KeysenderProvider).toHaveBeenCalled();
+  it('should be case insensitive for RobotJSProvider', () => {
+    const provider = createAutomationProvider({ provider: 'RoBoTjS' });
+    expect(RobotJSProvider).toHaveBeenCalled();
     expect(provider).toBeDefined();
   });
 

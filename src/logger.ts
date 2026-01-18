@@ -54,11 +54,11 @@ class ConsoleLogger implements Logger {
     if (Object.keys(this.context).length === 0) {
       return msg;
     }
-    
+
     const contextStr = Object.entries(this.context)
       .map(([key, value]) => `${key}=${String(value)}`)
       .join(' ');
-    
+
     return `[${contextStr}] ${msg}`;
   }
 
@@ -104,8 +104,10 @@ class ConsoleLogger implements Logger {
 
   child(bindings: Record<string, unknown>): Logger {
     return new ConsoleLogger(
-      Object.keys(this.levelMap).find(key => this.levelMap[key as LogLevel] === this.level) as LogLevel,
-      { ...this.context, ...bindings }
+      Object.keys(this.levelMap).find(
+        (key) => this.levelMap[key as LogLevel] === this.level,
+      ) as LogLevel,
+      { ...this.context, ...bindings },
     );
   }
 }
@@ -115,14 +117,14 @@ class ConsoleLogger implements Logger {
  */
 export function getLogLevel(): LogLevel {
   const envLevel = process.env.LOG_LEVEL?.toLowerCase() as LogLevel | undefined;
-  
+
   // Validate that the provided level is valid
   const validLevels: LogLevel[] = ['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent'];
-  
+
   if (envLevel && validLevels.includes(envLevel)) {
     return envLevel;
   }
-  
+
   // Default to info in production, debug in development/test
   if (process.env.NODE_ENV === 'production') {
     return 'info';

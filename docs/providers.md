@@ -4,22 +4,22 @@ MCPControl supports multiple automation providers to give users flexibility in h
 
 ## Available Providers
 
-### Keysender Provider (Default)
+### NutJS Provider (Default)
 
-The Keysender provider uses the [keysender](https://github.com/garrettlynch/keysender) library for system automation. It provides comprehensive support for keyboard, mouse, screen, and clipboard operations.
+The NutJS provider uses the [@nut-tree/libnut](https://github.com/nut-tree/libnut) library for system automation. It provides comprehensive cross-platform support for keyboard, mouse, screen, and clipboard operations with excellent Windows compatibility.
 
 ## Selecting a Provider
 
 You can select which provider to use by setting the `AUTOMATION_PROVIDER` environment variable:
 
 ```bash
-# Use the Keysender provider (default)
-AUTOMATION_PROVIDER=keysender node build/index.js
+# Use the NutJS provider (default)
+AUTOMATION_PROVIDER=nutjs node build/index.js
 ```
 
 ### Screen Automation Considerations
 
-The Keysender provider has the following considerations for screen automation:
+The NutJS provider has the following considerations for screen automation:
 
 - **Window Detection Challenges**: Getting accurate window information can be challenging, especially with:
   - Window handles that may not always be valid

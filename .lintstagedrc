@@ -1,4 +1,4 @@
 {
-  "src/**/*.ts": ["prettier --write", "npm run lint:fix"],
-  "test/**/*.js": ["prettier --write"]
+  "src/**/*.ts": ["npx prettier --write", "npm run lint:fix"],
+  "test/**/*.js": ["npx prettier --write"]
 }
