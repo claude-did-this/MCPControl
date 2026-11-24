@@ -5,10 +5,21 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Cheffromspace/MCPControl/releases/tag/v0.2.0">
-    <img src="https://img.shields.io/badge/release-v0.2.0-blue.svg" alt="Latest Release">
+  <a href="https://github.com/claude-did-this/MCPControl/releases/tag/v0.2.0">
+    <img src="https://img.shields.io/badge/last%20release-v0.2.0-blue.svg" alt="Last Release">
   </a>
+  <img src="https://img.shields.io/badge/status-archived-lightgrey.svg" alt="Status: Archived">
 </p>
+
+## 📦 Project Status: Archived
+
+> [!WARNING]
+> **This project is no longer maintained** and the repository was archived in November 2026. The code remains available for reference and forking, but it receives no bug fixes, security patches, or dependency updates, and issues and pull requests are closed to new activity. The `mcp-control` npm package will not receive new releases.
+>
+> **If you install or fork it anyway, be aware of these known problems:**
+> - Native builds can fail on current toolchains, for example `cl` rejecting `-flto=thin` ([#356](https://github.com/claude-did-this/MCPControl/issues/356)), and installs fail on some Windows 10 setups ([#270](https://github.com/claude-did-this/MCPControl/issues/270)).
+> - Dependencies, including `@modelcontextprotocol/sdk`, have not been updated since mid-2025. Run `npm audit` before you use it.
+> - This server gives an AI model direct control of your mouse, keyboard and screen. Run it only in a VM or sandbox you are prepared to lose.
 
 Windows control server for the [Model Context Protocol](https://modelcontextprotocol.io/), providing programmatic control over system operations including mouse, keyboard, window management, and screen capture functionality.
 
@@ -324,11 +335,7 @@ npm install mcp-control@0.1.22
 - The get_screenshot utility does not work with the VS Code Extension Cline. See [GitHub issue #1865](https://github.com/cline/cline/issues/1865)
 - Some operations may require elevated permissions depending on the target application
 - Only Windows is supported
-- MCPControl works best at 1280x720 resolution, single screen. Click accuracy is optimized for this resolution. We're working on an offset/scaling bug and looking for testers or help creating testing tools
-
-## 👥 Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md)
+- MCPControl works best at 1280x720 resolution, single screen. Click accuracy is optimized for this resolution. There is a known offset/scaling bug at other resolutions
 
 ## ⚖️ License
 
